@@ -10,7 +10,7 @@ TOKEN = os.getenv("DISCORD_TOKEN")
 
 prefix="!"
 
-APPROVED_SERVERS=[797570077364977696,]
+APPROVED_SERVERS=[797570077364977696]
 #BLACKLIST = []
 #List of Cogs to run on startup;
 STARTUP_COGS = [
@@ -18,7 +18,9 @@ STARTUP_COGS = [
     ]
 
 #Channels and Roles
+server_id=848978999007117313
 stock_notifications_channel_id=849310570821713927
+stock_notifications_role_id=849561150684659732
 
 
 
