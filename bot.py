@@ -21,15 +21,9 @@ TOKEN = config.TOKEN
 @tasks.loop(minutes=15)
 async def status_update():
     await bot.wait_until_ready()
-    list_of_statuses=[ #discord.Activity(type = discord.ActivityType.playing, name = f'with your Mom'),
-                        discord.Activity(type = discord.ActivityType.watching, name = f'Shri30yans Gaming'),
-                        #discord.Activity(type = discord.ActivityType.competing, name = f'the race to gain Karma'),
+    list_of_statuses=[
                         discord.Activity(type = discord.ActivityType.watching, name = f"How to get a PS5?"),
-                        #discord.Activity(type = discord.ActivityType.playing, name = f"minesweeper"),
-                        #discord.Activity(type = discord.ActivityType.listening, name = f"\"Seagulls\", 10 Hour Version"),
-                        discord.Activity(type = discord.ActivityType.playing, name = f"Send help"),
-                        discord.Activity(type = discord.ActivityType.watching, name = f"Bots go Brrrr..."),
-                        discord.Activity(type = discord.ActivityType.watching, name = f"Cyberpunk on my toaster"),
+                        discord.Activity(type = discord.ActivityType.playing, name = f"Demon Souls"),
 
                         ]
 
@@ -61,18 +55,5 @@ async def on_ready():
     print(f"Running on: {platform.system()} {platform.release()} ({os.name})")
     print("-------------------")
 
-
-DATABASE_DICT = dict(eval(os.getenv("DISCORD_DATABASE_DETAILS")))
-class DATABASE_FORMAT:
-    def __init__(self):
-        self.database=DATABASE_DICT["database"]
-        self.user=DATABASE_DICT["user"]
-        self.password=DATABASE_DICT["password"]
-        self.host=DATABASE_DICT["host"]
-        self.port=DATABASE_DICT["port"]
-
-DATABASE_DETAILS= DATABASE_FORMAT()
-
-asyncpgloop = asyncio.get_event_loop()
-bot.pool = asyncpgloop.run_until_complete(asyncpg.create_pool(database=DATABASE_DETAILS.database,user=DATABASE_DETAILS.user,password=DATABASE_DETAILS.password,host=DATABASE_DETAILS.host,port=DATABASE_DETAILS.port))      
+    
 bot.run(TOKEN)

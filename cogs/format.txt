@@ -1,6 +1,5 @@
 import os,sys,discord,platform,random,aiohttp,json,time,asyncio,textwrap
 from discord.ext import commands,tasks
-import utils.awards as awards
 import config   
     
 class Starboard(commands.Cog): 
