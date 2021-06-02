@@ -1,13 +1,7 @@
-# Server Bot
-A bot made for specific server needs.
+# PS5_DiscordBot
 ### Functions:
 
-* Upvote/Downvote based Karma system
-* Server Economy 
-* An award system
-* Events
-* Starboard
-* Auto-reactions in meme and suggestion channels
+* Track stock notifications (India Only)
 
 ### To run the bot:
 1. To deploy this bot create a .env file similiar like to the one in the sample. 

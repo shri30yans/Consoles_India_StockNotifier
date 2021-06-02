@@ -2,4 +2,7 @@ discord.py #Main Library
 aiohttp #Async version of requests
 jishaku # To run cogs from console
 python-dotenv #Tp get .env file
+pytz
+lxml
+bs4
 git+https://github.com/Rapptz/discord-ext-menus #menus
