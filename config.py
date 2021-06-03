@@ -8,23 +8,30 @@ TOKEN = os.getenv("DISCORD_TOKEN")
 #DATABASE_DICT = dict(eval(os.getenv("DISCORD_DATABASE_DETAILS")))
 
 
-prefix="!"
+prefix="?"
 
 APPROVED_SERVERS=[797570077364977696]
 #BLACKLIST = []
 #List of Cogs to run on startup;
 STARTUP_COGS = [
-    "cogs.UtilityCog","cogs.GameDealCog","cogs.Notifications","cogs.StockChecker","jishaku"
+    "cogs.UtilityCog","cogs.GameDealCog","cogs.Notifications","cogs.StockChecker","utils.ErrorHandler","jishaku"
     ]
 
 #Channels and Roles
 #Test Server
-server_id=848978999007117313
-stock_notifications_channel_id=849310570821713927
-stock_notifications_role_id=849561150684659732
+# server_id=848978999007117313
+# stock_notifications_channel_id=849310570821713927
+# stock_notifications_role_id=849561150684659732
 #playstation India Server
 server_id=797570077364977696
 stock_notifications_channel_id=849605014350725160
+stock_notifications_role_id=849606608626647050
+
+head_moderator_role_id=798978668403753000
+moderator_role_id=803139873078771713
+game_trade_moderator_role_id=815165934338965504
+admin_role_id=797840269109624862
+bot_role_id=797840270028701756
 
 
 
@@ -34,4 +41,5 @@ embed_colours=[0xFFFF00,#yellow
             0x00FFFF,#blue
             0xFF00FF,#pink
 ]
+
 

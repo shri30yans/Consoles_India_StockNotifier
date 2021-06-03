@@ -79,11 +79,11 @@ class CommandErrorHandler(commands.Cog):
                 #await ctx.reinvoke()
             else:
                 embed=discord.Embed(title="⚠️ | Command on Cooldown",color = random.choice(colourlist))
-                embed.add_field(name="Slow down there, Romeo :rose: :race_car:", value=" Please wait before using this command again. You can use this command in {:.2f} s'seconds again.".format(error.retry_after), inline=False)
+                embed.add_field(name="You are on cool down mode.", value=" Please wait before using this command again. You can use this command in {:.2f} s'seconds again.".format(error.retry_after), inline=False)
                 await ctx.send(embed=embed)
         else:
             #traceback=traceback.format_exception(type(error), error, error.__traceback__)
-            embed=discord.Embed(title="⚠️ | Goddamn Karen!",description="I knew I could count on you for screwing this up...",color = random.choice(colourlist))
+            embed=discord.Embed(title="⚠️ | Error!",description="An unknown error occured. Contact the mods for further info.",color = random.choice(colourlist))
             #embed.add_field(name='Ignoring exception in command {}:'.format(ctx.command), file=sys.stderr)
             #etype, value, tb = sys.exc_info()
             embed.add_field(name="Something went wrong. Try again later",value=f"{error} \n {traceback.format_exc()}", inline=False)

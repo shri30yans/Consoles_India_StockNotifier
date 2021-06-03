@@ -1,4 +1,4 @@
-import discord,random
+import discord,random,platform,os
 from discord.ext import commands
 import config
 
@@ -10,22 +10,22 @@ class Utility(commands.Cog):
 
 
     
-    # @commands.command(name="Info",aliases=['botinfo'], help=f'Returns bot information \n {config.prefix}Info \nAliases: serverstats ')
-    # async def info(self,ctx):
-    #     embed=discord.Embed(title="Bot Info",color = random.choice(colourlist),timestamp=ctx.message.created_at)
-    #     embed.add_field(name="Created by:",value=f"Shri30yans",inline=False)
-    #     embed.add_field(name="Prefix",value=f"{config.prefix}",inline=False)
-    #     embed.add_field(name="Servers:",value=f"{str(len(self.bot.guilds))}",inline=False)
-    #     embed.add_field(name="Users:",value=f"{str(len(self.bot.users) + 1)}",inline=False)
-    #     embed.add_field(name="Logged in as:",value=f"{self.bot.user.name}",inline=False)
-    #     embed.add_field(name="Discord.py API version:",value=f"{discord.__version__}",inline=False)
-    #     embed.add_field(name="Python version:",value=f"{platform.python_version()}",inline=False)
-    #     embed.add_field(name="Running on:",value=f"{platform.system()} {platform.release()} ({os.name})",inline=False)
-    #     #embed.add_field(name="Support server",value=f"[Join the support server.](https://top.gg/bot/750236220595896370/vote)",inline=False)
-    #     #embed.add_field(name="Vote",value=f"[Top.gg Vote](https://top.gg/bot/750236220595896370/vote)",inline=False)
-    #     embed.set_thumbnail(url=str(self.bot.user.avatar_url)) 
-    #     embed.set_footer(icon_url= ctx.author.avatar_url,text=f"Requested by {ctx.message.author} • {self.bot.user.name} ")
-    #     await ctx.send(embed=embed)
+    @commands.command(name="Info",aliases=['botinfo'], help=f'Returns bot information \n {config.prefix}Info \nAliases: serverstats ')
+    async def info(self,ctx):
+        embed=discord.Embed(title="Bot Info",color = random.choice(colourlist),timestamp=ctx.message.created_at)
+        #embed.add_field(name="Created by:",value=f"Shri30yans",inline=False)
+        embed.add_field(name="Prefix",value=f"{config.prefix}",inline=False)
+        embed.add_field(name="Servers:",value=f"{str(len(self.bot.guilds))}",inline=False)
+        embed.add_field(name="Users:",value=f"{str(len(self.bot.users) + 1)}",inline=False)
+        embed.add_field(name="Logged in as:",value=f"{self.bot.user.name}",inline=False)
+        embed.add_field(name="Discord.py API version:",value=f"{discord.__version__}",inline=False)
+        embed.add_field(name="Python version:",value=f"{platform.python_version()}",inline=False)
+        embed.add_field(name="Running on:",value=f"{platform.system()} {platform.release()} ({os.name})",inline=False)
+        #embed.add_field(name="Support server",value=f"[Join the support server.](https://top.gg/bot/750236220595896370/vote)",inline=False)
+        #embed.add_field(name="Vote",value=f"[Top.gg Vote](https://top.gg/bot/750236220595896370/vote)",inline=False)
+        embed.set_thumbnail(url=str(self.bot.user.avatar_url)) 
+        embed.set_footer(icon_url= ctx.author.avatar_url,text=f"Requested by {ctx.message.author} • {self.bot.user.name} ")
+        await ctx.send(embed=embed)
         
 
     
@@ -103,6 +103,54 @@ class Utility(commands.Cog):
         author_avatar=ctx.author.avatar_url
         embed.set_footer(icon_url= author_avatar,text=f"Requested by {ctx.message.author} • {self.bot.user.name} ")
         await ctx.send(embed=embed)
+
+    @commands.has_permissions(manage_channels=True)
+    @commands.bot_has_permissions(manage_channels=True)
+    #@commands.cooldown(1, 5, commands.BucketType.user)
+    @commands.command(name="CreateTradeChannel",aliases=["ctc"], help=f'Creates a trade channel.  \n{config.prefix}CreateTradeChannel @User1 @User2 @User3 channel_description \nAliases: ctc',require_var_positional=True)#require_var_positional=True makes sure input is not empty
+    async def CreateTicket(self,ctx,members:commands.Greedy[discord.Member], *, description='Trade'):
+        if ctx.guild.id in config.APPROVED_SERVERS:
+            admin_role=ctx.guild.get_role(config.admin_role_id)
+            head_moderator_role=ctx.guild.get_role(config.head_moderator_role_id)
+            moderator_role=ctx.guild.get_role(config.moderator_role_id)
+            game_trade_moderator_role=ctx.guild.get_role(config.game_trade_moderator_role_id)
+            bot_role=ctx.guild.get_role(config.bot_role_id)
+
+        
+            overwrites = {  
+                            admin_role: discord.PermissionOverwrite(send_messages=True, read_messages=True,),#read_message_history=True,use_external_emojis=True,attach_files=True,embed_links=True),
+                            head_moderator_role: discord.PermissionOverwrite(send_messages=True, read_messages=True),
+                            moderator_role: discord.PermissionOverwrite(send_messages=True, read_messages=True),
+                            game_trade_moderator_role: discord.PermissionOverwrite(send_messages=True, read_messages=True),
+                            bot_role: discord.PermissionOverwrite(send_messages=True, read_messages=True),
+                            ctx.guild.default_role: discord.PermissionOverwrite(read_messages=False),}
+            member_names=""
+            for mbr in members:
+                if mbr == ctx.author: pass
+                
+                elif mbr.bot: pass
+                
+                else:
+                    overwrites[mbr] = discord.PermissionOverwrite(send_messages=True, read_messages=True)
+                    try:
+                        member_names += mbr.mention + ", "
+                    except:
+                        try:
+                            member_names += mbr.name + ", "
+                        except: pass
+            if member_names == "":
+                member_names="No members were added to this Trade."
+            else:
+                member_names="Member's added to trade: " + member_names
+
+                        
+            category = discord.utils.get(ctx.guild.categories, name="Trades")
+            channel = await category.create_text_channel('Trade', overwrites=overwrites,topic=description,reason="Trade Channel")
+            embed=discord.Embed(title=f"Trade channel created.",description=f"{channel.mention} \n{member_names} \nDescription: {description}")        
+            embed.set_footer(icon_url= ctx.author.avatar_url,text=f"Requested by {ctx.message.author} • {self.bot.user.name} ")
+            await ctx.send(embed=embed)
+        else:
+            await ctx.send("You can't use this command in this server. Use this command in a Approved Server.")
     
     @commands.cooldown(1, 3, commands.BucketType.user)
     @commands.command(name="PFP",aliases=['dp', 'avatar','av'], help=f'Shows the avatar of a user \n {config.prefix}pfp @User\n Aliases: DP, Avatar ')
