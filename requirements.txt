@@ -5,3 +5,4 @@ python-dotenv #Tp get .env file
 pytz
 lxml
 asyncpg
+requests
