@@ -38,8 +38,8 @@ jobs:
         id: deploy
         run: |
           aws deploy create-deployment \
-            --application-name Git_Application --region  ${{ secrets.AWS_REGION }} \
-            --deployment-group-name development_gropup \
+            --application-name github_application --region \
+            --deployment-group-name github_deployment_group \
             --deployment-config-name CodeDeployDefault.OneAtATime \
             --github-location repository=${{ github.repository }},commitId=${{ github.sha }}
 
