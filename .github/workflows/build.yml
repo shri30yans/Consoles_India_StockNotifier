@@ -21,7 +21,7 @@ jobs:
 
       - name: run the bot [bot.py]
         env: # Or as an environment variable
-        DISCORD_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
         run: python bot.py
 
   continuous-deployment:
