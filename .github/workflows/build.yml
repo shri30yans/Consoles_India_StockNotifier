@@ -5,22 +5,19 @@ on:
       branches: [main]
 jobs:
   continuous-integration:
+
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-versions: [3.8]
     steps:
       - uses: actions/checkout@v2
       - name: Build using Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: 3.8
       
       - name: Install dependencies [pip]
         run: |
           python -m pip install pip --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          pip install -e .
 
       - name: run the bot [bot.py]
         run: main
