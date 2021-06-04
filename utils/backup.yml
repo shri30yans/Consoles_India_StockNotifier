@@ -19,11 +19,6 @@ jobs:
         run: |
           python -m pip install pip --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-      #Step 4
-      - name: Run the bot [bot.py]
-        run: python bot.py
-        env: # Or as an environment variable
-          DISCORD_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
 
   continuous-deployment:
     runs-on: ubuntu-latest
@@ -36,16 +31,23 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          #All Regions: https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.RegionsAndAvailabilityZones.html
           aws-region: ${{ secrets.AWS_REGION }}
      # Step 2
       - name: Create CodeDeploy Deployment
         id: deploy
         run: |
           aws deploy create-deployment \
-            --application-name Git_Application \
+            --application-name Git_Application  \
             --deployment-group-name development_gropup \
             --deployment-config-name CodeDeployDefault.OneAtATime \
             --github-location repository=${{ github.repository }},commitId=${{ github.sha }}
+
+      #Step 3
+      - name: Run the bot [bot.py]
+        run: python bot.py
+        env: # Or as an environment variable
+          DISCORD_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
 
 
       
