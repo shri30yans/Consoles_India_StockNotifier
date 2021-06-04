@@ -4,3 +4,4 @@ jishaku # To run cogs from console
 python-dotenv #Tp get .env file
 pytz
 lxml
+asyncpg
