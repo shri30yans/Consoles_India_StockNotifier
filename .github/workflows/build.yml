@@ -20,6 +20,6 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
       - name: run the bot [bot.py]
-        run: main
+        run: python bot.py
 
 
