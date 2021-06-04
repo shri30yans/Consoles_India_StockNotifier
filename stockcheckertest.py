@@ -17,14 +17,20 @@ import lxml.html
 # 3) Flipkart often redirects requests to random pages resulting in errors.
 
 #Change the links to other products to test it out here        
+# All_Websites={
+#     "flipkart":"https://www.flipkart.com/sony-playstation-5-cfi-1008a01r-825-gb-astro-s-playroom/p/itma0201bdea62fa",
+#     "amazon":"https://www.amazon.in/dp/B08FV5GC28",
+#     "games_the_shop":"https://www.gamestheshop.com/PlayStation-5-Console/5111",
+#     "ppgc":"https://prepaidgamercard.com/product/playstation-5-console-ps5/",}
 All_Websites={
     "flipkart":"https://www.flipkart.com/sony-playstation-5-cfi-1008a01r-825-gb-astro-s-playroom/p/itma0201bdea62fa",
-    "amazon":"https://www.amazon.in/dp/B08FV5GC28",
+    "amazon":"https://www.amazon.in/Bundled-Spider-Man-GTaSport-Ratchet-3Month/dp/B08FNXXH5J/?_encoding=UTF8&pd_rd_w=RukHh&pf_rd_p=ab4aa62e-ee61-4bc4-928a-fc54f74f1993&pf_rd_r=BWEZTTGPG0X35GMQ0A75&pd_rd_r=eed58695-de47-41d2-bce5-c38b4f7a9b56&pd_rd_wg=Y6O6X&ref_=pd_gw_ci_mcx_mr_hp_d",
     "games_the_shop":"https://www.gamestheshop.com/PlayStation-5-Console/5111",
     "ppgc":"https://prepaidgamercard.com/product/playstation-5-console-ps5/",}
 
 def run_notifications(website_name):
-    print(f"Notification Alert! This product is in stock at {website_name}")
+    pass
+    #print(f"Notification Alert! This product is in stock at {website_name}")
 
 def startup(site):  
     if site == "flipkart" :
@@ -51,9 +57,13 @@ def scrape_amazon(amazon_link):
         doc = lxml.html.fromstring(page_html)
         try:
             stock=doc.xpath('//*[@id="availability"]/span')[0].text
+            #add_to_cart_button=doc.xpath('//*[@id="a-autoid-2-announce"]')
+            #all_buying_options=doc.xpath('//*[@id="buybox-see-all-buying-choices"]/span/a')
         except:
             stock="Amazon Error"
-        #print(stock)
+        print(stock)
+        #print(add_to_cart_button)
+        #print(all_buying_options)
         if "Currently unavailable." in stock or "We don't know when or if this item will be back in stock." in stock :
             status="Out of Stock"
         elif "In stock" in stock:
@@ -61,8 +71,8 @@ def scrape_amazon(amazon_link):
             run_notifications(website_name="amazon")
         else:
             status=f"A different response has been generated: {stock}"
-        time.sleep(5)
-        print(status)
+        time.sleep(2)
+        #print(status)
 
 def scrape_flipkart(flipkart_link):
     while True:
@@ -140,7 +150,7 @@ async def scrape_ppgc(ppgc_link):
 
 #Comment out the websites you are not using
 #To comment a site add "#" in front of it.
-startup(site="flipkart")
-# startup(site="amazon")
+#startup(site="flipkart")
+startup(site="amazon")
 # startup(site="gts")
 # startup(site="ppgc")

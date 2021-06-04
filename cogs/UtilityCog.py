@@ -108,7 +108,7 @@ class Utility(commands.Cog):
     @commands.bot_has_permissions(manage_channels=True)
     #@commands.cooldown(1, 5, commands.BucketType.user)
     @commands.command(name="CreateTradeChannel",aliases=["ctc"], help=f'Creates a trade channel.  \n{config.prefix}CreateTradeChannel @User1 @User2 @User3 channel_description \nAliases: ctc',require_var_positional=True)#require_var_positional=True makes sure input is not empty
-    async def CreateTicket(self,ctx,members:commands.Greedy[discord.Member], *, description='Trade'):
+    async def CreateTicket(self,ctx,members:commands.Greedy[discord.Member], *, description='Trade Channel'):
         if ctx.guild.id in config.APPROVED_SERVERS:
             admin_role=ctx.guild.get_role(config.admin_role_id)
             head_moderator_role=ctx.guild.get_role(config.head_moderator_role_id)
