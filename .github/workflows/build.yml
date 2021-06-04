@@ -19,10 +19,10 @@ jobs:
           python -m pip install pip --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-      - name: run the bot [bot.py]
+      - name: Run the bot [bot.py]
+        run: python bot.py
         env: # Or as an environment variable
           DISCORD_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
-        run: python bot.py
 
   continuous-deployment:
     runs-on: ubuntu-latest
