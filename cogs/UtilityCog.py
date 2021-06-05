@@ -9,7 +9,7 @@ class Utility(commands.Cog):
         self.bot = bot
 
     @commands.command(name="Prefix", help=f'Shows the current prefix \n {config.prefix}prefix')
-    async def info(self,ctx):
+    async def prefix(self,ctx):
         embed=discord.Embed(title="Current Prefix",color = random.choice(colourlist),timestamp=ctx.message.created_at)
         embed.add_field(name=f"{self.bot.user.name} Prefix",value=f"{config.prefix}",inline=False)
         embed.set_thumbnail(url=str(self.bot.user.avatar_url)) 
