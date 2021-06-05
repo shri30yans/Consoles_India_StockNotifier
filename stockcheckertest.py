@@ -24,13 +24,12 @@ import lxml.html
 #     "ppgc":"https://prepaidgamercard.com/product/playstation-5-console-ps5/",}
 All_Websites={
     "flipkart":"https://www.flipkart.com/sony-playstation-5-cfi-1008a01r-825-gb-astro-s-playroom/p/itma0201bdea62fa",
-    "amazon":"https://www.amazon.in/Bundled-Spider-Man-GTaSport-Ratchet-3Month/dp/B08FNXXH5J/?_encoding=UTF8&pd_rd_w=RukHh&pf_rd_p=ab4aa62e-ee61-4bc4-928a-fc54f74f1993&pf_rd_r=BWEZTTGPG0X35GMQ0A75&pd_rd_r=eed58695-de47-41d2-bce5-c38b4f7a9b56&pd_rd_wg=Y6O6X&ref_=pd_gw_ci_mcx_mr_hp_d",
+    "amazon":"https://www.amazon.in/Bundled-Spider-Man-GTaSport-Ratchet-3Month/dp/B08FNXXH5J/?_encoding=UTF8&pd_rd_w=BTrdH&pf_rd_p=ab4aa62e-ee61-4bc4-928a-fc54f74f1993&pf_rd_r=74VEN7QGBYG4HN0XXSFC&pd_rd_r=656faae0-d915-4297-bace-1579217e56db&pd_rd_wg=L1wUg&ref_=pd_gw_ci_mcx_mr_hp_d",
     "games_the_shop":"https://www.gamestheshop.com/PlayStation-5-Console/5111",
     "ppgc":"https://prepaidgamercard.com/product/playstation-5-console-ps5/",}
 
 def run_notifications(website_name):
-    pass
-    #print(f"Notification Alert! This product is in stock at {website_name}")
+    print(f"Notification Alert! This product is in stock at {website_name}")
 
 def startup(site):  
     if site == "flipkart" :
@@ -57,18 +56,30 @@ def scrape_amazon(amazon_link):
         doc = lxml.html.fromstring(page_html)
         try:
             stock=doc.xpath('//*[@id="availability"]/span')[0].text
-            #add_to_cart_button=doc.xpath('//*[@id="a-autoid-2-announce"]')
-            #all_buying_options=doc.xpath('//*[@id="buybox-see-all-buying-choices"]/span/a')
+            add_to_cart_button=doc.xpath('//*[@id="add-to-cart-button"]')
+            all_buying_options=doc.xpath('//*[@id="buybox-see-all-buying-choices"]/span/a')
+            pre_order_button=doc.xpath('//*[@id="buy-now-button"]')
         except:
             stock="Amazon Error"
-        print(stock)
-        #print(add_to_cart_button)
-        #print(all_buying_options)
+        #print(stock)
+        print(add_to_cart_button)
+        print(all_buying_options)
+        print(pre_order_button)
         if "Currently unavailable." in stock or "We don't know when or if this item will be back in stock." in stock :
             status="Out of Stock"
+        
         elif "In stock" in stock:
             status="In Stock"
             run_notifications(website_name="amazon")
+       
+        elif "This item will be released on":
+            status="In Stock"
+            run_notifications(website_name="amazon")
+        
+        elif (len(add_to_cart_button) != 0) or (len(all_buying_options) != 0) or (len(pre_order_button) != 0):
+            status="In Stock"
+            run_notifications(website_name="amazon")
+
         else:
             status=f"A different response has been generated: {stock}"
         time.sleep(2)
