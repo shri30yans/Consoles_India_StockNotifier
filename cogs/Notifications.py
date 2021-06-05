@@ -3,7 +3,7 @@ from discord.ext import commands
 import config   
 from pytz import timezone
 from datetime import datetime
-from links import All_Websites 
+from utils.links import All_Websites 
     
 class Notifications(commands.Cog): 
     def __init__(self, bot):
