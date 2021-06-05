@@ -44,7 +44,7 @@ class StockChecker(commands.Cog):
         if self.last_website_notifications == website_name:#checks whether already notified about availabilty
             self.last_website_notifications = None
             await asyncio.sleep(30)
-            print(f"notified {website_name}")
+            #print(f"Already notified {website_name}")
             
         else:
             Notifications = self.bot.get_cog('Notifications')
