@@ -1,13 +1,15 @@
-import discord
+import discord,os
 from discord.ext import commands
 import config   
 from pytz import timezone
 from datetime import datetime
 from utils.links import All_Websites 
+
     
 class Notifications(commands.Cog): 
     def __init__(self, bot):
         self.bot = bot
+
     
     async def notify(self,website_name):
         guild = await self.bot.fetch_guild(config.server_id)
@@ -22,6 +24,7 @@ class Notifications(commands.Cog):
         Indian_Time = datetime.now(timezone("Asia/Kolkata")).strftime('%d-%m-%y • %H:%M:%S')
         embed.set_footer(text=f"PS5 Stock Updates • {Indian_Time}")
         await channel.send(embed=embed,content=role.mention)
+
 
 
 

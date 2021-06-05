@@ -2,6 +2,8 @@
 import time
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from PIL import Image, ImageDraw, ImageFont,ImageFilter,ImageOps
+from io import BytesIO
 
 options = webdriver.ChromeOptions()
 options.headless = True
@@ -13,5 +15,9 @@ URL = "https://www.amazon.in/dp/B08FV5GC28"
 driver.get(URL)
 
 driver.get_screenshot_as_file("ss.png")
-
 driver.quit()
+#asset = asset_attachment
+#Converts it into bytes
+
+#converts it into a PIL Image object
+
