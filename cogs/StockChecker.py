@@ -4,6 +4,7 @@ import lxml.html
 import config
 from utils.links import All_Websites
 
+
 # How the bot checks for Stock availability?
 # Instead of using selenium to replicate a browser experience it uses the requests library to fetch the HTML code of a URL. The Bot then uses another library to scour the HTML code to and looks for certain keywords in a specified location.
 # Logic:
@@ -19,6 +20,8 @@ class StockChecker(commands.Cog):
         self.bot = bot
         self.bot.loop.create_task(self.startup())
         self.count={"amazon":0,"flipkart":0,"games_the_shop":0,"ppgc":0}
+
+
 
     @commands.cooldown(1, 3, commands.BucketType.user)
     @commands.command(name="RunCount", help=f'Shows how many times the StockChecker has ran successfully. \n{config.prefix}runcount')
