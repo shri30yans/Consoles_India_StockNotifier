@@ -1,0 +1,14 @@
+version: 0.0
+os: linux
+files:
+  - source: .
+    destination: /home/ec2-user/PS5_DiscordBot/
+hooks:
+  AfterInstall:
+   - location: setup.sh
+     timeout: 300
+     runas: root
+  ApplicationStart:
+   - location: bot.py
+     timeout: 300
+     runas: root
