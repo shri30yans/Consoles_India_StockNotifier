@@ -20,6 +20,7 @@ class StockChecker(commands.Cog):
         self.bot = bot
         self.bot.loop.create_task(self.startup())
         self.count={"amazon":0,"flipkart":0,"games_the_shop":0,"ppgc":0}
+        self.last_website_notifications=None
 
 
 
@@ -35,10 +36,20 @@ class StockChecker(commands.Cog):
 
     
 
-    
+    #async def check_whether_to_notify(self,website_name):
+
+
+
     async def run_notifications(self,website_name):
-        Notifications = self.bot.get_cog('Notifications')
-        await Notifications.notify(website_name)
+        if self.last_website_notifications == website_name:#checks whether already notified about availabilty
+            self.last_website_notifications = None
+            await asyncio.sleep(30)
+            print(f"notified {website_name}")
+            
+        else:
+            Notifications = self.bot.get_cog('Notifications')
+            await Notifications.notify(website_name)
+            self.last_website_notifications=website_name
    
     
     async def startup(self): 
@@ -61,14 +72,27 @@ class StockChecker(commands.Cog):
             doc = lxml.html.fromstring(page_html)
             try:
                 stock=doc.xpath('//*[@id="availability"]/span')[0].text
+                add_to_cart_button=doc.xpath('//*[@id="add-to-cart-button"]')
+                all_buying_options=doc.xpath('//*[@id="buybox-see-all-buying-choices"]/span/a')
+                pre_order_button=doc.xpath('//*[@id="buy-now-button"]')
             except:
                 stock="Amazon Error"
             #print(stock)
             if "Currently unavailable." in stock or "We don't know when or if this item will be back in stock." in stock :
                 status="Out of Stock"
+            
             elif "In stock" in stock:
                 status="In Stock"
+                await self.run_notifications(website_name="amazon")                 
+            
+            elif "This item will be released on":
+                status="In Stock"
                 await self.run_notifications(website_name="amazon")
+
+            elif (len(add_to_cart_button) != 0) or (len(all_buying_options) != 0) or (len(pre_order_button) != 0):
+                status="In Stock"
+                await self.run_notifications(website_name="amazon")
+            
             else:
                 status=f"A different response has been generated: {stock}"
             await asyncio.sleep(5)

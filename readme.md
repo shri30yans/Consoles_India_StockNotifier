@@ -4,11 +4,17 @@
 * Track stock notifications (India Only)
 * Create Trade Channels
 
-### Modules Installation
 
-	pip install -r requirements.txt
+### Basic Setup:
+1. Obtain a Discord bot token from the [Discord developer portal](https://ptb.discord.com/developers/applications/)
+2. Install all the required modules with:
+```
+pip install -r requirements.txt
+```
+3. Create a .env similiar to the .env sample.
+4. Chrome Web Drivers for selenium will also need to be installed from [here](https://ptb.discord.com/developers/applications/) to take the screenshot of webpages.
 
-### Setup:
+### Setup for Heroku:
 1. Obtain a Discord bot token from the [Discord developer portal](https://ptb.discord.com/developers/applications/)
 2. On Heroku, open your App. Click on the Settings tab and scroll down to Buildpacks. Add the following buildpacks that allow us to install Chrome drivers for selenium on Heroku:
 

@@ -12,9 +12,9 @@ colourlist=config.embed_colours
 
 
 #bot
-intents = discord.Intents.default()
-intents.members = True
-intents.presences = True
+intents = discord.Intents.all()
+#intents.members = True
+#intents.presences = True
 bot = commands.Bot(command_prefix=commands.when_mentioned_or(config.prefix),case_insensitive = True,intents = intents,help_command=EmbedHelpCommand())
 TOKEN = config.TOKEN
 

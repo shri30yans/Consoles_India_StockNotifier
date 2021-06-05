@@ -24,8 +24,9 @@ STARTUP_COGS = [
 # stock_notifications_role_id=849561150684659732
 #playstation India Server
 server_id=797570077364977696
-stock_notifications_channel_id=850096085770567700
-stock_notifications_role_id=849606608626647050
+stock_notifications_channel_id = 850096085770567700
+stock_notifications_role_id = 849606173522788352
+#screenshot_sharing_channel_id=850711788144164885
 
 head_moderator_role_id=798978668403753000
 moderator_role_id=803139873078771713
