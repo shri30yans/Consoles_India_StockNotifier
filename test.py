@@ -1,23 +1,12 @@
-#coding=utf-8                                                                                                                                                                              
-import time
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from PIL import Image, ImageDraw, ImageFont,ImageFilter,ImageOps
-from io import BytesIO
+import time
+import sys
 
-options = webdriver.ChromeOptions()
-options.headless = True
-driver = webdriver.Chrome(options=options)
-driver.set_window_size(1800,900)
-print("now")
-URL = "https://www.amazon.in/dp/B08FV5GC28"
-
-driver.get(URL)
-
-driver.get_screenshot_as_file("ss.png")
-driver.quit()
-#asset = asset_attachment
-#Converts it into bytes
-
-#converts it into a PIL Image object
-
+print( 'Without Headless')
+_start = time.time()
+br = webdriver.PhantomJS()
+br.get('https://www.amazon.in/dp/B08FV5GC28')
+br.save_screenshot('screenshot-phantom.png')
+br.quit
+_end = time.time()
+print ('Total time for non-headless {}'.format(_end - _start))
