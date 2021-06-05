@@ -2,7 +2,7 @@ import discord,random,asyncio,requests,time
 from discord.ext import commands,tasks
 import lxml.html
 import config
-from links import All_Websites
+from utils.links import All_Websites
 
 # How the bot checks for Stock availability?
 # Instead of using selenium to replicate a browser experience it uses the requests library to fetch the HTML code of a URL. The Bot then uses another library to scour the HTML code to and looks for certain keywords in a specified location.
