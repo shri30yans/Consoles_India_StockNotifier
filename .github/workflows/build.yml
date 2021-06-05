@@ -43,11 +43,11 @@ jobs:
             --deployment-config-name CodeDeployDefault.OneAtATime \
             --github-location repository=${{ github.repository }},commitId=${{ github.sha }}
 
-      #Step 3
-      - name: Run the bot [bot.py]
-        run: python bot.py
-        env: # Or as an environment variable
-          DISCORD_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+      # #Step 3
+      # - name: Run the bot [bot.py]
+      #   run: python bot.py
+      #   env: # Or as an environment variable
+      #     DISCORD_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
 
 
       
