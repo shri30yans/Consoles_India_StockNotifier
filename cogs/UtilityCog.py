@@ -8,7 +8,13 @@ class Utility(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-
+    @commands.command(name="Prefix", help=f'Shows the current prefix \n {config.prefix}prefix')
+    async def info(self,ctx):
+        embed=discord.Embed(title="Current Prefix",color = random.choice(colourlist),timestamp=ctx.message.created_at)
+        embed.add_field(name=f"{self.bot.user.name} Prefix",value=f"{config.prefix}",inline=False)
+        embed.set_thumbnail(url=str(self.bot.user.avatar_url)) 
+        embed.set_footer(icon_url= ctx.author.avatar_url,text=f"Requested by {ctx.message.author} • {self.bot.user.name} ")
+        await ctx.send(embed=embed)
     
     @commands.command(name="Info",aliases=['botinfo'], help=f'Returns bot information \n {config.prefix}Info \nAliases: serverstats ')
     async def info(self,ctx):
