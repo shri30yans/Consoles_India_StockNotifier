@@ -43,21 +43,21 @@ class StockChecker(commands.Cog):
     async def run_notifications(self,website_name,method):
         if self.last_website_notifications == website_name:#checks whether already notified about availabilty
             self.last_website_notifications = None
+            print(f"Already notified {website_name}")
             await asyncio.sleep(30)
-            #print(f"Already notified {website_name}")
             
         else:
             Notifications = self.bot.get_cog('Notifications')
-            await Notifications.notify(website_name)
+            await Notifications.notify(website_name,method)
             self.last_website_notifications=website_name#makes the last_website that has been notified about this one
    
     
     async def startup(self): 
         await self.bot.wait_until_ready()   
-        self.bot.loop.create_task(self.scrape_flipkart(flipkart_link=All_Websites["flipkart"].link) )
-        self.bot.loop.create_task(self.scrape_amazon(amazon_link=All_Websites["amazon"].link))    
-        self.bot.loop.create_task(self.scrape_games_the_shop(games_the_shop_link=All_Websites["games_the_shop"].link))
-        self.bot.loop.create_task(self.scrape_ppgc(ppgc_link=All_Websites["ppgc"].link))
+        self.bot.loop.create_task(self.scrape_flipkart(flipkart_link=All_Websites["flipkart"].PS5_link) )
+        self.bot.loop.create_task(self.scrape_amazon(amazon_link=All_Websites["amazon"].PS5_link))    
+        self.bot.loop.create_task(self.scrape_games_the_shop(games_the_shop_link=All_Websites["games_the_shop"].PS5_link))
+        self.bot.loop.create_task(self.scrape_ppgc(ppgc_link=All_Websites["ppgc"].PS5_link))
         
 
     async def get_page_html(self,url):
@@ -86,15 +86,27 @@ class StockChecker(commands.Cog):
                 #print("In stock in availability")
                 await self.run_notifications(website_name="amazon",method="In stock in availability")                 
             
-            elif "This item will be released on" in stock:
-                status="In Stock"
-                #print("This item will be released on")
-                await self.run_notifications(website_name="amazon",method="This item will be released on")
+            # elif "This item will be released on" in stock:
+            #     status="In Stock"
+            #     #print("This item will be released on")
+            #     await self.run_notifications(website_name="amazon",method="This item will be released on")
 
-            elif (len(add_to_cart_button) != 0) or (len(all_buying_options) != 0) or (len(pre_order_button) != 0):#If one of the buttons exist
+            # elif (len(add_to_cart_button) != 0) or (len(all_buying_options) != 0) or (len(pre_order_button) != 0):#If one of the buttons exist
+            #     status="In Stock"
+            #     #print("Buttons")
+            #     await self.run_notifications(website_name="amazon",method="Buttons")
+
+            elif len(add_to_cart_button) != 0: 
                 status="In Stock"
-                print("Buttons")
-                await self.run_notifications(website_name="amazon",method="Buttons")
+                await self.run_notifications(website_name="amazon",method="Add to Cart button")
+
+            elif len(all_buying_options) != 0:
+                status="In Stock"
+                await self.run_notifications(website_name="amazon",method="All buying options button")
+
+            elif len(pre_order_button) != 0:
+                status="In Stock"
+                await self.run_notifications(website_name="amazon",method="Pre Order Now button")
             
             else:
                 status=f"Amazon: A different response has been generated: {stock}"
