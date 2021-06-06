@@ -3,6 +3,7 @@ from discord.ext import commands,tasks
 import lxml.html
 import config
 from utils.links import All_Websites
+from collections import OrderedDict
 
 
 # How the bot checks for Stock availability?
@@ -27,23 +28,17 @@ class StockChecker(commands.Cog):
     @commands.cooldown(1, 3, commands.BucketType.user)
     @commands.command(name="RunCount", help=f'Shows how many times the StockChecker has ran successfully. \n{config.prefix}runcount')
     async def runcount(self,ctx):
-        embed=discord.Embed(Title="Run Count",description="Showing number of times StockChecker has run on each site.",colour=0x0000FF)
+        embed=discord.Embed(Title="Run Count",description="Showing number of times StockChecker has run succesfully on each site.",colour=0x0000FF)
         embed.add_field(name="Amazon",value=f"{self.count['amazon']} times.",inline=False)
         embed.add_field(name="Flipkart",value=f"{self.count['flipkart']} times.",inline=False)
         embed.add_field(name="Games the Shop",value=f"{self.count['games_the_shop']} times.",inline=False)
         embed.add_field(name="Prepaid Gamer Card",value=f"{self.count['ppgc']} times.",inline=False)
         await ctx.send(embed=embed)
 
-    
-
-    #async def check_whether_to_notify(self,website_name):
-
-
-
     async def run_notifications(self,website_name,method):
         if self.last_website_notifications == website_name:#checks whether already notified about availabilty
             self.last_website_notifications = None
-            print(f"Already notified {website_name}")
+            print(f"Already notified about {website_name}")
             await asyncio.sleep(30)
             
         else:
@@ -60,16 +55,115 @@ class StockChecker(commands.Cog):
         self.bot.loop.create_task(self.scrape_ppgc(ppgc_link=All_Websites["ppgc"].PS5_link))
         
 
-    async def get_page_html(self,url):
-        headers = {"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36"}
+    async def get_page_html(self,url,headers_list=[{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36"}]):
+        ordered_headers_list = []
+        for headers in headers_list:
+            h = OrderedDict()
+            for header,value in headers.items():
+                h[header]=value
+                ordered_headers_list.append(h)
+        headers = random.choice(headers_list)
+
         page = requests.get(url, headers=headers)
-        #print(page.status_code)
         return page.content
+
     
     async def scrape_amazon(self,amazon_link):
+        headers_list = [{
+            'Connection': 'keep-alive',
+            'sec-ch-ua': '^\\^',
+            'Accept': 'application/json',
+            'DNT': '1',
+            'X-Requested-With': 'XMLHttpRequest',
+            'sec-ch-ua-mobile': '?0',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36',
+            'Content-Type': 'application/json',
+            'Origin': 'https://www.amazon.in',
+            'Sec-Fetch-Site': 'cross-site',
+            'Sec-Fetch-Mode': 'cors',
+            'Sec-Fetch-Dest': 'empty',
+            'Referer': 'https://www.amazon.in/',
+            'Accept-Language': 'en-IN,en;q=0.9',
+        },
+        
+        {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0',
+            'Accept': 'application/json',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json',
+            'Origin': 'https://www.amazon.in/',
+            'DNT': '1',
+            'Connection': 'keep-alive',
+            'Referer': 'https://www.amazon.in/',},
+        {
+            'authority': 'www.amazon.in',
+            'x-kl-ajax-request': 'Ajax_Request',
+            'dnt': '1',
+            'rtt': '200',
+            'sec-ch-ua-mobile': '?0',
+            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36',
+            'content-type': 'application/x-www-form-urlencoded',
+            'accept': 'text/html,/',
+            'x-requested-with': 'XMLHttpRequest',
+            'downlink': '10',
+            'ect': '4g',
+            'sec-ch-ua': '^^',
+            'origin': 'https://www.amazon.in/',
+            'sec-fetch-site': 'same-origin',
+            'sec-fetch-mode': 'cors',
+            'sec-fetch-dest': 'empty',
+            'referer': 'https://www.amazon.in/',
+            'accept-language': 'en-US,en;q=0.9',
+           
+        },
+        {
+            'Connection': 'keep-alive',
+            'sec-ch-ua': '^^',
+            'Accept': 'application/json, text/javascript, /; q=0.01',
+            'sec-ch-ua-mobile': '?0',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36',
+            'Origin': 'https://www.amazon.in/',
+            'Sec-Fetch-Site': 'cross-site',
+            'Sec-Fetch-Mode': 'cors',
+            'Sec-Fetch-Dest': 'empty',
+            'Referer': 'https://www.amazon.in/',
+            'Accept-Language': 'en-GB,en;q=0.9',
+        },
+        {
+            'authority': 'www.amazon.in',
+            'sec-ch-ua': '^\\^',
+            'rtt': '50',
+            'sec-ch-ua-mobile': '?0',
+            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36',
+            'content-type': 'application/x-www-form-urlencoded',
+            'accept': 'text/html,*/*',
+            'x-requested-with': 'XMLHttpRequest',
+            'downlink': '10',
+            'ect': '4g',
+            'origin': 'https://www.amazon.in',
+            'sec-fetch-site': 'same-origin',
+            'sec-fetch-mode': 'cors',
+            'sec-fetch-dest': 'empty',
+            'referer': 'https://www.amazon.in/dp/B08FV5GC28',
+            'accept-language': 'en-US,en;q=0.9',         
+        },
+        {
+            'sec-ch-ua': '^^',
+            'Referer': 'https://www.amazon.in/',
+            'sec-ch-ua-mobile': '?1',
+            'User-Agent': 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Mobile Safari/537.36',
+        }
+
+
+        
+                      
+            
+        
+        ]
         while True:
-            page_html = await self.get_page_html(amazon_link)
-            doc = lxml.html.fromstring(page_html)
+            page_html = await self.get_page_html(amazon_link,headers_list)
+            doc = lxml.html.fromstring(str(page_html))
             try:
                 stock=doc.xpath('//*[@id="availability"]/span')[0].text#Fetches Stock element
                 add_to_cart_button=doc.xpath('//*[@id="add-to-cart-button"]')#Fetches the Add to Cart Button
@@ -77,6 +171,9 @@ class StockChecker(commands.Cog):
                 pre_order_button=doc.xpath('//*[@id="buy-now-button"]')#Fetches Pre Order button
             except:
                 print("Amazon Error")
+                status="error"
+                await asyncio.sleep(5)
+                continue
             #print(stock)
             if "Currently unavailable." in stock or "We don't know when or if this item will be back in stock." in stock:
                 status="Out of Stock"
@@ -90,11 +187,6 @@ class StockChecker(commands.Cog):
             #     status="In Stock"
             #     #print("This item will be released on")
             #     await self.run_notifications(website_name="amazon",method="This item will be released on")
-
-            # elif (len(add_to_cart_button) != 0) or (len(all_buying_options) != 0) or (len(pre_order_button) != 0):#If one of the buttons exist
-            #     status="In Stock"
-            #     #print("Buttons")
-            #     await self.run_notifications(website_name="amazon",method="Buttons")
 
             elif len(add_to_cart_button) != 0: 
                 status="In Stock"
@@ -110,21 +202,28 @@ class StockChecker(commands.Cog):
             
             else:
                 status=f"Amazon: A different response has been generated: {stock}"
-            await asyncio.sleep(5)
+            
+
             self.count["amazon"]+=1
+            await asyncio.sleep(5)
             #print(status)
 
     async def scrape_flipkart(self,flipkart_link):
         while True:
-            page_html = await self.get_page_html(flipkart_link)
-            doc = lxml.html.fromstring(page_html)
+            page_html =await self.get_page_html(flipkart_link)
+            doc = lxml.html.fromstring(str(page_html))
             try:
                 stock=doc.xpath('//*[@id="container"]/div/div[3]/div[1]/div[2]/div[3]/div')[0].text
                 add_to_cart_button=doc.xpath('//*[@id="container"]/div/div[3]/div[1]/div[1]/div[2]/div/ul/li[1]/button')
             except:
+                #print(page_html)
                 print("Flipkart Error")
-            #print(stock)
-            #print(add_to_cart_button)
+                status="error"
+                await asyncio.sleep(5)
+                continue
+            # print(stock)
+            # print(add_to_cart_button)
+            #stock will show Currently Unavailable when no stock is there
             #Flipkart shows no value for availabilty when an item is Out of Stock.
             #This checks if the Availabilty value is None and the Add to Cart Button Exists
             if stock is None and len(add_to_cart_button) !=0 :
@@ -140,8 +239,10 @@ class StockChecker(commands.Cog):
 
             else:
                 status=f"Flipkart: A different response has been generated: {stock}"
-            await asyncio.sleep(3)
+            
+
             self.count["flipkart"]+=1
+            await asyncio.sleep(5)
             #print(status)
 
     async def scrape_games_the_shop(self,games_the_shop_link):
@@ -153,6 +254,9 @@ class StockChecker(commands.Cog):
                 #print(stock)
             except:
                 print("Games the Shop Error")
+                status="error"
+                await asyncio.sleep(5)
+                continue
         
             if " ADD TO CART" in stock:
                 status="In Stock"
@@ -163,8 +267,10 @@ class StockChecker(commands.Cog):
 
             else:
                 status=f"Games the Shop: A different response has been generated: {stock}"               
-            await asyncio.sleep(2)
+            
+
             self.count["games_the_shop"]+=1
+            await asyncio.sleep(2)
             #print(status)
     
 
@@ -177,6 +283,9 @@ class StockChecker(commands.Cog):
                 #print(stock)
             except:
                 print("Prepaid Gamer Card Error")
+                status="error"
+                await asyncio.sleep(5)
+                continue
         
             if "Add to cart" in stock:
                 status="In Stock"
@@ -186,11 +295,12 @@ class StockChecker(commands.Cog):
                 status="Out of Stock"
 
             else:
-                status=f"Prepaid Gamer Card: A different response has been generated: {stock}"
-                
-            await asyncio.sleep(2)
-            #print(status)
+                status=f"Prepaid Gamer Card: A different response has been generated: {stock}"                
+            
+
             self.count["ppgc"]+=1
+            await asyncio.sleep(2)
+                        #print(status)
 
     
             
