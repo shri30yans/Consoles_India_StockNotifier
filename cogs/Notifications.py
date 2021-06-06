@@ -10,14 +10,21 @@ from selenium import webdriver
 class Notifications(commands.Cog): 
     def __init__(self, bot):
         self.bot = bot
+        #Heroku
         # chrome_options = webdriver.ChromeOptions()
-        # chrome_options.binary_location = os.environ.get("GOOGLE_CHROME_BIN")
+        # #chrome_options.binary_location = os.environ.get("GOOGLE_CHROME_BIN")
         # chrome_options.add_argument("--headless")
-        # chrome_options.add_argument("--disable-dev-shm-usage")
-        # chrome_options.add_argument("--no-sandbox")
+        # #chrome_options.add_argument("--disable-dev-shm-usage")
+        # #chrome_options.add_argument("--no-sandbox")
         # #self.driver = webdriver.Chrome(executable_path=os.environ.get("CHROMEDRIVER_PATH"), chrome_options=chrome_options)
         # self.driver = webdriver.Chrome()
         # self.driver.set_window_size(1800,900)
+
+        # options = webdriver.ChromeOptions()
+        # options.headless = True
+        # self.driver = webdriver.Chrome(options=options)
+        # self.driver.set_window_size(1800,900)
+
 
 
     
