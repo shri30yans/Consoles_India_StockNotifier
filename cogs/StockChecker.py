@@ -103,10 +103,7 @@ class StockChecker(commands.Cog):
             'rtt': '200',
             'sec-ch-ua-mobile': '?0',
             'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36',
-            'content-type': 'application/x-www-form-urlencoded',
             'accept': 'text/html,/',
-            'x-requested-with': 'XMLHttpRequest',
-            'downlink': '10',
             'ect': '4g',
             'sec-ch-ua': '^^',
             'origin': 'https://www.amazon.in/',
@@ -155,10 +152,6 @@ class StockChecker(commands.Cog):
             'User-Agent': 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Mobile Safari/537.36',
         }
 
-
-        
-                      
-            
         
         ]
         while True:
