@@ -76,7 +76,7 @@ class StockChecker(commands.Cog):
                 all_buying_options=doc.xpath('//*[@id="buybox-see-all-buying-choices"]/span/a')#Fetches the button with All Buying Options
                 pre_order_button=doc.xpath('//*[@id="buy-now-button"]')#Fetches Pre Order button
             except:
-                stock="Amazon Error"
+                print("Amazon Error")
             #print(stock)
             if "Currently unavailable." in stock or "We don't know when or if this item will be back in stock." in stock:
                 status="Out of Stock"
@@ -84,7 +84,7 @@ class StockChecker(commands.Cog):
             elif "In stock" in stock:
                 status="In Stock"
                 #print("In stock in availability")
-                await self.run_notifications(website_name="amazon",method="In stock in availability")                 
+                await self.run_notifications(website_name="amazon",method="In stock throught availabilty element")                 
             
             # elif "This item will be released on" in stock:
             #     status="In Stock"
