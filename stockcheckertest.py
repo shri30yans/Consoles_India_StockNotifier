@@ -24,7 +24,7 @@ import lxml.html
 #     "ppgc":"https://prepaidgamercard.com/product/playstation-5-console-ps5/",}
 All_Websites={
     "flipkart":"https://www.flipkart.com/sony-playstation-5-cfi-1008a01r-825-gb-astro-s-playroom/p/itma0201bdea62fa",
-    "amazon":"https://www.amazon.in/Bundled-Spider-Man-GTaSport-Ratchet-3Month/dp/B08FNXXH5J/?_encoding=UTF8&pd_rd_w=BTrdH&pf_rd_p=ab4aa62e-ee61-4bc4-928a-fc54f74f1993&pf_rd_r=74VEN7QGBYG4HN0XXSFC&pd_rd_r=656faae0-d915-4297-bace-1579217e56db&pd_rd_wg=L1wUg&ref_=pd_gw_ci_mcx_mr_hp_d",
+    "amazon":"https://www.amazon.in/PS5-RATCHET-CLANK-RIFT-APART/dp/B08WK5T3HY/ref=sr_1_1?crid=3ATMVHS5NX4PJ&dchild=1&keywords=rachet+and+clank&qid=1622949015&sprefix=rachet+and%2Caps%2C293&sr=8-1",
     "games_the_shop":"https://www.gamestheshop.com/PlayStation-5-Console/5111",
     "ppgc":"https://prepaidgamercard.com/product/playstation-5-console-ps5/",}
 
@@ -72,7 +72,7 @@ def scrape_amazon(amazon_link):
             status="In Stock"
             run_notifications(website_name="amazon")
        
-        elif "This item will be released on":
+        elif "This item will be released on" in stock:
             status="In Stock"
             run_notifications(website_name="amazon")
         
