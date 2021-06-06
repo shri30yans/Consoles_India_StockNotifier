@@ -113,8 +113,8 @@ class Utility(commands.Cog):
     @commands.has_permissions(manage_channels=True)
     @commands.bot_has_permissions(manage_channels=True)
     #@commands.cooldown(1, 5, commands.BucketType.user)
-    @commands.command(name="CreateTradeChannel",aliases=["ctc"], help=f'Creates a trade channel.  \n{config.prefix}CreateTradeChannel @User1 @User2 @User3 channel_description \nAliases: ctc',require_var_positional=True)#require_var_positional=True makes sure input is not empty
-    async def CreateTicket(self,ctx,members:commands.Greedy[discord.Member], *, description='Trade Channel'):
+    @commands.command(name="CreateTradeChannel",aliases=["ctc"], help=f'Creates a trade channel.  \n{config.prefix}CreateTradeChannel @User1 @User2 @User3 trade_number channel_description \nAliases: ctc',require_var_positional=True)#require_var_positional=True makes sure input is not empty
+    async def CreateTicket(self,ctx,members:commands.Greedy[discord.Member],trade_number="",*, description='Trade Channel'):
         if ctx.guild.id in config.APPROVED_SERVERS:
             admin_role=ctx.guild.get_role(config.admin_role_id)
             head_moderator_role=ctx.guild.get_role(config.head_moderator_role_id)
@@ -151,7 +151,7 @@ class Utility(commands.Cog):
 
                         
             category = discord.utils.get(ctx.guild.categories, name="Trades")
-            channel = await category.create_text_channel('Trade', overwrites=overwrites,topic=description,reason="Trade Channel")
+            channel = await category.create_text_channel(f'trade {trade_number}', overwrites=overwrites,topic=description,reason="Trade Channel")
             embed=discord.Embed(title=f"Trade channel created.",description=f"{channel.mention} \n{member_names} \nDescription: {description}")        
             embed.set_footer(icon_url= ctx.author.avatar_url,text=f"Requested by {ctx.message.author} • {self.bot.user.name} ")
             await ctx.send(embed=embed)
