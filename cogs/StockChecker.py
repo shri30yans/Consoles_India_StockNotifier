@@ -40,7 +40,7 @@ class StockChecker(commands.Cog):
 
 
 
-    async def run_notifications(self,website_name):
+    async def run_notifications(self,website_name,method):
         if self.last_website_notifications == website_name:#checks whether already notified about availabilty
             self.last_website_notifications = None
             await asyncio.sleep(30)
@@ -49,7 +49,7 @@ class StockChecker(commands.Cog):
         else:
             Notifications = self.bot.get_cog('Notifications')
             await Notifications.notify(website_name)
-            self.last_website_notifications=website_name
+            self.last_website_notifications=website_name#makes the last_website that has been notified about this one
    
     
     async def startup(self): 
@@ -71,30 +71,33 @@ class StockChecker(commands.Cog):
             page_html = await self.get_page_html(amazon_link)
             doc = lxml.html.fromstring(page_html)
             try:
-                stock=doc.xpath('//*[@id="availability"]/span')[0].text
-                add_to_cart_button=doc.xpath('//*[@id="add-to-cart-button"]')
-                all_buying_options=doc.xpath('//*[@id="buybox-see-all-buying-choices"]/span/a')
-                pre_order_button=doc.xpath('//*[@id="buy-now-button"]')
+                stock=doc.xpath('//*[@id="availability"]/span')[0].text#Fetches Stock element
+                add_to_cart_button=doc.xpath('//*[@id="add-to-cart-button"]')#Fetches the Add to Cart Button
+                all_buying_options=doc.xpath('//*[@id="buybox-see-all-buying-choices"]/span/a')#Fetches the button with All Buying Options
+                pre_order_button=doc.xpath('//*[@id="buy-now-button"]')#Fetches Pre Order button
             except:
                 stock="Amazon Error"
             #print(stock)
-            if "Currently unavailable." in stock or "We don't know when or if this item will be back in stock." in stock :
+            if "Currently unavailable." in stock or "We don't know when or if this item will be back in stock." in stock:
                 status="Out of Stock"
             
             elif "In stock" in stock:
                 status="In Stock"
-                await self.run_notifications(website_name="amazon")                 
+                #print("In stock in availability")
+                await self.run_notifications(website_name="amazon",method="In stock in availability")                 
             
-            elif "This item will be released on":
+            elif "This item will be released on" in stock:
                 status="In Stock"
-                await self.run_notifications(website_name="amazon")
+                #print("This item will be released on")
+                await self.run_notifications(website_name="amazon",method="This item will be released on")
 
-            elif (len(add_to_cart_button) != 0) or (len(all_buying_options) != 0) or (len(pre_order_button) != 0):
+            elif (len(add_to_cart_button) != 0) or (len(all_buying_options) != 0) or (len(pre_order_button) != 0):#If one of the buttons exist
                 status="In Stock"
-                await self.run_notifications(website_name="amazon")
+                print("Buttons")
+                await self.run_notifications(website_name="amazon",method="Buttons")
             
             else:
-                status=f"A different response has been generated: {stock}"
+                status=f"Amazon: A different response has been generated: {stock}"
             await asyncio.sleep(5)
             self.count["amazon"]+=1
             #print(status)
@@ -110,11 +113,13 @@ class StockChecker(commands.Cog):
                 print("Flipkart Error")
             #print(stock)
             #print(add_to_cart_button)
+            #Flipkart shows no value for availabilty when an item is Out of Stock.
+            #This checks if the Availabilty value is None and the Add to Cart Button Exists
             if stock is None and len(add_to_cart_button) !=0 :
                 status="In Stock"
-                await self.run_notifications(website_name="flipkart")
+                await self.run_notifications(website_name="flipkart",method="Add to Cart exists and Stock element is not shown")
 
-            if stock is None:
+            elif stock is None:
                 #No value was retrived, but Add to Cart button doesn't exist
                 pass
 
@@ -122,8 +127,8 @@ class StockChecker(commands.Cog):
                 status="Out of Stock"
 
             else:
-                status=f"A different response has been generated: {stock}"
-            await asyncio.sleep(2)
+                status=f"Flipkart: A different response has been generated: {stock}"
+            await asyncio.sleep(3)
             self.count["flipkart"]+=1
             #print(status)
 
@@ -139,13 +144,13 @@ class StockChecker(commands.Cog):
         
             if " ADD TO CART" in stock:
                 status="In Stock"
-                await self.run_notifications(website_name="games_the_shop")
+                await self.run_notifications(website_name="games_the_shop",method="Add to Cart button")
 
             elif len(stock) == 0:
                 status="Out of Stock"
 
             else:
-                status=f"A different response has been generated: {stock}"               
+                status=f"Games the Shop: A different response has been generated: {stock}"               
             await asyncio.sleep(2)
             self.count["games_the_shop"]+=1
             #print(status)
@@ -163,13 +168,13 @@ class StockChecker(commands.Cog):
         
             if "Add to cart" in stock:
                 status="In Stock"
-                await self.run_notifications(website_name="ppgc")
+                await self.run_notifications(website_name="ppgc",method="Add to Cart Button")
 
             elif len(stock) == 0:
                 status="Out of Stock"
 
             else:
-                status=f"A different response has been generated: {stock}"
+                status=f"Prepaid Gamer Card: A different response has been generated: {stock}"
                 
             await asyncio.sleep(2)
             #print(status)
