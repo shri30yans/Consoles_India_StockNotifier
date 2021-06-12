@@ -26,7 +26,8 @@ All_Websites={
     "flipkart":"https://www.flipkart.com/demon-s-souls/p/itmdnayzmhdehghu?pid=GAMFYTWBYAQJSKYB&lid=LSTGAMFYTWBYAQJSKYBHKUMXO&marketplace=FLIPKART&store=4rr&srno=b_1_2&otracker=clp_banner_1_2.banner.BANNER_gaming-store_2GSQZNPR3D52&fm=neo%2Fmerchandising&iid=a1fc4bdc-c7bf-41aa-bd6a-fd4ea242ba2c.GAMFYTWBYAQJSKYB.SEARCH&ppt=clp&ppn=gaming-store&ssid=546zyh1ua80000001622964859694",
     "amazon":"https://www.amazon.in/PS5-RATCHET-CLANK-RIFT-APART/dp/B08WK5T3HY/ref=sr_1_1?crid=3ATMVHS5NX4PJ&dchild=1&keywords=rachet+and+clank&qid=1622949015&sprefix=rachet+and%2Caps%2C293&sr=8-1",
     "games_the_shop":"https://www.gamestheshop.com/PlayStation-5-Console/5111",
-    "ppgc":"https://prepaidgamercard.com/product/playstation-5-console-ps5/",}
+    "ppgc":"https://prepaidgamercard.com/product/playstation-5-console-ps5/",
+    "shopatsc":"https://prepaidgamercard.com/product/playstation-5-console-ps5/",}
 
 def run_notifications(website_name):
     print(f"Notification Alert! This product is in stock at {website_name}")
@@ -40,28 +41,55 @@ def startup(site):
         scrape_games_the_shop(games_the_shop_link=All_Websites["games_the_shop"])
     elif site == "ppgc" :
         scrape_ppgc(ppgc_link=All_Websites["ppgc"])
+    elif site == "shopatsc" :
+        scrape_shopatsc(shopatsc_link=All_Websites["shopatsc"])
     else:
         print("Unknown site")
         
 
-def get_page_html(url,headers=None):
-    headers = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0',
-    'Accept': 'application/json',
-    'Accept-Language': 'en-US,en;q=0.5',
-    'X-Requested-With': 'XMLHttpRequest',
-    'Content-Type': 'application/json',
-    'Origin': 'https://www.amazon.in/',
-    'DNT': '1',
-    'Connection': 'keep-alive',
-    'Referer': 'https://www.amazon.in/',}
-
+def get_page_html(url,headers={"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36"}):
     page = requests.get(url, headers=headers)
     return page.content,page.status_code
     
 def scrape_amazon(amazon_link):
     while True:
         page_html = str(get_page_html(amazon_link))
+        doc = lxml.html.fromstring(page_html)
+        try:
+            stock=doc.xpath('//*[@id="availability"]/span')[0].text
+            add_to_cart_button=doc.xpath('//*[@id="add-to-cart-button"]')
+            all_buying_options=doc.xpath('//*[@id="buybox-see-all-buying-choices"]/span/a')
+            pre_order_button=doc.xpath('//*[@id="buy-now-button"]')
+        except:
+            stock="Amazon Error"
+        #print(stock)
+        print(add_to_cart_button)
+        print(all_buying_options)
+        print(pre_order_button)
+        
+        if "Currently unavailable." in stock or "We don't know when or if this item will be back in stock." in stock :
+            status="Out of Stock"
+        
+        elif "In stock" in stock:
+            status="In Stock"
+            run_notifications(website_name="amazon")
+       
+        elif "This item will be released on" in stock:
+            status="In Stock"
+            run_notifications(website_name="amazon")
+        
+        elif (len(add_to_cart_button) != 0) or (len(all_buying_options) != 0) or (len(pre_order_button) != 0):
+            status="In Stock"
+            run_notifications(website_name="amazon")
+
+        else:
+            status=f"A different response has been generated: {stock}"
+        time.sleep(2)
+        #print(status)
+        
+def scrape_shopatsc(shopatsc_link):
+    while True:
+        page_html = str(get_page_html(shopatsc_link))
         doc = lxml.html.fromstring(page_html)
         try:
             stock=doc.xpath('//*[@id="availability"]/span')[0].text
@@ -172,6 +200,7 @@ async def scrape_ppgc(ppgc_link):
 #Comment out the websites you are not using
 #To comment a site add "#" in front of it.
 #startup(site="flipkart")
-startup(site="amazon")
+#startup(site="amazon")
 # startup(site="gts")
 # startup(site="ppgc")
+startup(site="shopatsc")
