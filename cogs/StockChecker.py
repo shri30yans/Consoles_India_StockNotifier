@@ -21,6 +21,7 @@ class StockChecker(commands.Cog):
         self.bot = bot
         self.bot.loop.create_task(self.startup())
         self.count={"amazon":0,"flipkart":0,"games_the_shop":0,"ppgc":0}
+        self.error_count={"amazon":0,"flipkart":0,"games_the_shop":0,"ppgc":0}
         self.last_website_notifications=None
 
 
@@ -29,10 +30,10 @@ class StockChecker(commands.Cog):
     @commands.command(name="RunCount", help=f'Shows how many times the StockChecker has ran successfully. \n{config.prefix}runcount')
     async def runcount(self,ctx):
         embed=discord.Embed(Title="Run Count",description="Showing number of times StockChecker has run succesfully on each site.",colour=0x0000FF)
-        embed.add_field(name="Amazon",value=f"{self.count['amazon']} times.",inline=False)
-        embed.add_field(name="Flipkart",value=f"{self.count['flipkart']} times.",inline=False)
-        embed.add_field(name="Games the Shop",value=f"{self.count['games_the_shop']} times.",inline=False)
-        embed.add_field(name="Prepaid Gamer Card",value=f"{self.count['ppgc']} times.",inline=False)
+        embed.add_field(name="Amazon",value=f"{self.count['amazon']} times. \nErrored out: {self.error_count['amazon']} times.",inline=False)
+        embed.add_field(name="Flipkart",value=f"{self.count['flipkart']} times. \nErrored out: {self.error_count['flipkart']} times.",inline=False)
+        embed.add_field(name="Games the Shop",value=f"{self.count['games_the_shop']} times. \nErrored out: {self.error_count['games_the_shop']} times.",inline=False)
+        embed.add_field(name="Prepaid Gamer Card",value=f"{self.count['ppgc']} times. \nErrored out: {self.error_count['ppgc']} times.",inline=False)
         await ctx.send(embed=embed)
 
     async def run_notifications(self,website_name,method):
@@ -69,6 +70,7 @@ class StockChecker(commands.Cog):
 
     
     async def scrape_amazon(self,amazon_link):
+        #these are a list of headers that makes  amazon to think that the requests are coming from real users
         headers_list = [{
             'Connection': 'keep-alive',
             'sec-ch-ua': '^\\^',
@@ -84,9 +86,8 @@ class StockChecker(commands.Cog):
             'Sec-Fetch-Dest': 'empty',
             'Referer': 'https://www.amazon.in/',
             'Accept-Language': 'en-IN,en;q=0.9',
-        },
-        
-        {
+            },      
+            {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0',
             'Accept': 'application/json',
             'Accept-Language': 'en-US,en;q=0.5',
@@ -95,8 +96,9 @@ class StockChecker(commands.Cog):
             'Origin': 'https://www.amazon.in/',
             'DNT': '1',
             'Connection': 'keep-alive',
-            'Referer': 'https://www.amazon.in/',},
-        {
+            'Referer': 'https://www.amazon.in/',
+            },
+            {
             'authority': 'www.amazon.in',
             'x-kl-ajax-request': 'Ajax_Request',
             'dnt': '1',
@@ -113,8 +115,8 @@ class StockChecker(commands.Cog):
             'referer': 'https://www.amazon.in/',
             'accept-language': 'en-US,en;q=0.9',
            
-        },
-        {
+            },
+            {
             'Connection': 'keep-alive',
             'sec-ch-ua': '^^',
             'Accept': 'application/json, text/javascript, /; q=0.01',
@@ -126,8 +128,8 @@ class StockChecker(commands.Cog):
             'Sec-Fetch-Dest': 'empty',
             'Referer': 'https://www.amazon.in/',
             'Accept-Language': 'en-GB,en;q=0.9',
-        },
-        {
+            },
+            {
             'authority': 'www.amazon.in',
             'sec-ch-ua': '^\\^',
             'rtt': '50',
@@ -144,16 +146,14 @@ class StockChecker(commands.Cog):
             'sec-fetch-dest': 'empty',
             'referer': 'https://www.amazon.in/dp/B08FV5GC28',
             'accept-language': 'en-US,en;q=0.9',         
-        },
-        {
+            },
+            {
             'sec-ch-ua': '^^',
             'Referer': 'https://www.amazon.in/',
             'sec-ch-ua-mobile': '?1',
             'User-Agent': 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Mobile Safari/537.36',
-        }
-
-        
-        ]
+            }       
+            ]
         while True:
             page_html = await self.get_page_html(amazon_link,headers_list)
             doc = lxml.html.fromstring(str(page_html))
@@ -165,6 +165,7 @@ class StockChecker(commands.Cog):
             except:
                 print("Amazon Error")
                 status="error"
+                self.error_count["amazon"]+=1
                 await asyncio.sleep(5)
                 continue
             #print(stock)
@@ -212,6 +213,7 @@ class StockChecker(commands.Cog):
                 #print(page_html)
                 print("Flipkart Error")
                 status="error"
+                self.error_count["flipkart"]+=1
                 await asyncio.sleep(5)
                 continue
             # print(stock)
@@ -248,6 +250,7 @@ class StockChecker(commands.Cog):
             except:
                 print("Games the Shop Error")
                 status="error"
+                self.error_count["games_the_shop"]+=1
                 await asyncio.sleep(5)
                 continue
         
@@ -277,6 +280,7 @@ class StockChecker(commands.Cog):
             except:
                 print("Prepaid Gamer Card Error")
                 status="error"
+                self.error_count["ppgc"]+=1
                 await asyncio.sleep(5)
                 continue
         
@@ -294,11 +298,7 @@ class StockChecker(commands.Cog):
             self.count["ppgc"]+=1
             await asyncio.sleep(2)
                         #print(status)
-
-    
-            
-
-
+  
 
 
 def setup(bot):

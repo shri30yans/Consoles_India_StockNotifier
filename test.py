@@ -1,17 +1,36 @@
-import requests
-from itertools import cycle
-import traceback
-#If you are copy pasting proxy ips, put in the list below
-proxies = ['209.40.237.43']
-proxy_pool = cycle(proxies)
-url = 'https://httpbin.org/ip'
-while True:
-    proxy = next(proxy_pool)
-    print("Request" )
-    try:
-        response = requests.get(url,proxies={"http": proxy, "https": proxy})
-        print(response.json())
-    except:
-    #Most free proxies will often get connection errors. You will have retry the entire request using another proxy to work. 
-    #We will just skip retries as its beyond the scope of this tutorial and we are only downloading a single url 
-        print("Skipping. Connnection error")
+import requests,lxml.html,random,time
+from collections import OrderedDict
+
+def get_page_html(url,headers_list=[{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36"}]):
+        ordered_headers_list = []
+        for headers in headers_list:
+            h = OrderedDict()
+            for header,value in headers.items():
+                h[header]=value
+                ordered_headers_list.append(h)
+        headers = random.choice(headers_list)
+
+        page = requests.get(url, headers=headers)
+        return page.content
+
+def scrape_scdigital(scdigital_link):
+    while True:
+        page_html = str(get_page_html(scdigital_link))
+        doc = lxml.html.fromstring(page_html)
+        #print(doc)
+        try:
+            stock = doc.xpath('//*[@id="notify_btn_div"]')                                  
+            add_to_cart_button = doc.xpath('//*[@id="product-add-to-cart"]')
+        except:
+            print("shopatscdigital Error")
+            continue
+        
+        print("Stock",stock)
+        print("Add_to_cart",add_to_cart_button)
+        time.sleep(1)
+
+
+#scrape_scdigital("https://shopatsc.com/collections/playstation-5/products/playstation5-digital-edition")
+scrape_scdigital("https://shopatsc.com/collections/home-audio/products/sony-ht-rt3-sound-bar-type-home-theatre-system-black")
+
+

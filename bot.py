@@ -24,6 +24,11 @@ async def status_update():
     list_of_statuses=[
                         discord.Activity(type = discord.ActivityType.watching, name = f"How to get a PS5?"),
                         discord.Activity(type = discord.ActivityType.playing, name = f"Demon Souls"),
+                        discord.Activity(type = discord.ActivityType.playing, name = f"Astro's Playroom"),
+                        discord.Activity(type = discord.ActivityType.playing, name = f"Bloodbourne"),
+                        discord.Activity(type = discord.ActivityType.playing, name = f"God of War"),
+                        discord.Activity(type = discord.ActivityType.playing, name = f"The Last of Us"),
+                        discord.Activity(type = discord.ActivityType.playing, name = f"Call of Duty: Black Ops - Cold War "),
 
                         ]
 
