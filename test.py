@@ -1,15 +1,7 @@
 import requests,lxml.html,random,time
-from collections import OrderedDict
 
 def get_page_html(url,headers_list=[{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36"}]):
-        ordered_headers_list = []
-        for headers in headers_list:
-            h = OrderedDict()
-            for header,value in headers.items():
-                h[header]=value
-                ordered_headers_list.append(h)
         headers = random.choice(headers_list)
-
         page = requests.get(url, headers=headers)
         return page.content
 
@@ -30,7 +22,7 @@ def scrape_scdigital(scdigital_link):
         time.sleep(1)
 
 
-#scrape_scdigital("https://shopatsc.com/collections/playstation-5/products/playstation5-digital-edition")
-scrape_scdigital("https://shopatsc.com/collections/home-audio/products/sony-ht-rt3-sound-bar-type-home-theatre-system-black")
+scrape_scdigital("https://shopatsc.com/collections/playstation-5/products/playstation5-digital-edition")
+#scrape_scdigital("https://shopatsc.com/collections/home-audio/products/sony-ht-rt3-sound-bar-type-home-theatre-system-black")
 
 
