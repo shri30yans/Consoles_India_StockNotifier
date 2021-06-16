@@ -159,10 +159,10 @@ class Utility(commands.Cog):
             embed.add_field(name="Process",value="The selling party would send the product to the buying party. Meanwhile the buying party can transfer a Game Trade Moderator the money. Once the buyer gets the product and checks the condition, the Game Trade Moderator would send the money to the seller.",inline=False)
             embed.add_field(name="Seller Instructions",value="Confirm the product and its price before proceeding further.",inline=False)
             embed.add_field(name="Buyer Instructions",value="Check with the selling party before transferring the amount to a Game Trade Moderator. Make sure collect the tracking ID to make sure the seller shipped it.",inline=False)      
-            embed.add_field(name="Miscellaneous",value="['Shipping Tips']('https://discord.com/channels/797570077364977696/815188535907975198/815469791032508416')",inline=False)   
+            embed.add_field(name="Miscellaneous",value="[Shipping Tips](https://discord.com/channels/797570077364977696/815188535907975198/815469791032508416)",inline=False)   
             embed.set_footer(icon_url= ctx.author.avatar_url,text=f"Requested by {ctx.message.author} • {self.bot.user.name} ")
             message = await channel.send(embed=embed)
-            message.add_reaction("\U0001f44d")#thumbs up
+            await message.add_reaction("\U0001f44d")#thumbs up
 
         else:
             await ctx.send("You can't use this command in this server. Use this command in a Approved Server.")
