@@ -1,7 +1,8 @@
 ## ***PlayStation Discord Bot***
 ### Functions:
 
-* Track stock notifications (India Only)
+* Stock notifications for PS5 (India Only) (Amazon, Flipkart,Prepaid Gamer Card,Games the Shop)
+* Stock notifications for Xbox Series X and Series S (India Only) (Amazon, Flipkart)
 * Create Trade Channels
 
 

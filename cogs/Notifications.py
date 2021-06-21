@@ -28,18 +28,38 @@ class Notifications(commands.Cog):
 
 
     
-    async def notify(self,website_name,method):
+    async def notify(self,website_name,product,method):
         guild = await self.bot.fetch_guild(config.server_id)
-        role = guild.get_role(config.stock_notifications_role_id)
         channel=await self.bot.fetch_channel(config.stock_notifications_channel_id)
-
         Website_Class=All_Websites[website_name]
-        embed = discord.Embed(title =f"PS5 in stock at {Website_Class.display_name}!",url=Website_Class.PS5_link,color =0x0000FF)
-        embed.add_field(name="Dev:",value=f"`{method}`")
-        embed.set_thumbnail(url="https://i.imgur.com/pmgar66.jpg?1") 
-        #embed.set_image(url="https://i.imgur.com/pmgar66.jpg?1") 
-        Indian_Time = datetime.now(timezone("Asia/Kolkata")).strftime('%d-%m-%y • %H:%M:%S')
-        embed.set_footer(text=f"PS5 Stock Updates • {Indian_Time}")
+        
+        if product == "PS5":
+            role = guild.get_role(config.PS5_stock_notifications_role_id)
+            embed = discord.Embed(title =f"PS5 in stock at {Website_Class.display_name}!",url=Website_Class.PS5_link,color =0x0000FF)
+            embed.add_field(name="Dev Notes:",value=f"`{method}`")
+            embed.set_thumbnail(url="https://i.imgur.com/pmgar66.jpg?1") 
+            Indian_Time = datetime.now(timezone("Asia/Kolkata")).strftime('%d-%m-%y • %H:%M:%S')
+            embed.set_footer(text=f"PS5 Stock Updates • {Indian_Time}")
+        
+        elif product == "XSX":
+            role = guild.get_role(config.XSX_stock_notifications_role_id)
+            embed = discord.Embed(title =f"Xbox Series X in stock at {Website_Class.display_name}!",url=Website_Class.XSX_link,color =0x0000FF)
+            embed.add_field(name="Dev Notes:",value=f"`{method}`")
+            embed.set_thumbnail(url="https://i.imgur.com/WpKbZXR.jpg") 
+            Indian_Time = datetime.now(timezone("Asia/Kolkata")).strftime('%d-%m-%y • %H:%M:%S')
+            embed.set_footer(text=f"Xbox Series X Stock Updates • {Indian_Time}")
+        
+        elif product == "XSS":
+            role = guild.get_role(config.XSS_stock_notifications_role_id)
+            embed = discord.Embed(title =f"Xbox Series S in stock at {Website_Class.display_name}!",url=Website_Class.XSS_link,color =0x0000FF)
+            embed.add_field(name="Dev Notes:",value=f"`{method}`")
+            embed.set_thumbnail(url="https://i.imgur.com/OpInEum.jpg") 
+            Indian_Time = datetime.now(timezone("Asia/Kolkata")).strftime('%d-%m-%y • %H:%M:%S')
+            embed.set_footer(text=f"Xbox Series S Stock Updates • {Indian_Time}")
+
+        else:
+            print('Invalid product setn to Notification')
+
         if role is None:
             await channel.send(embed=embed)
         else:
