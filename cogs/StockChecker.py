@@ -36,7 +36,7 @@ class StockChecker(commands.Cog):
         embed.add_field(name="Prepaid Gamer Card",value=f"{self.count['ppgc']} times. \nErrored out: {self.error_count['ppgc']} times.",inline=False)
         await ctx.send(embed=embed)
 
-    async def run_notifications(self,website_name,method):
+    async def run_notifications(self,website_name,product,method):
         if self.last_website_notifications == website_name:#checks whether already notified about availabilty
             self.last_website_notifications = None
             print(f"Already notified about {website_name}")
@@ -44,16 +44,24 @@ class StockChecker(commands.Cog):
             
         else:
             Notifications = self.bot.get_cog('Notifications')
-            await Notifications.notify(website_name,method)
+            await Notifications.notify(website_name=website_name,product=product,method=method)
             self.last_website_notifications=website_name#makes the last_website that has been notified about this one
    
     
     async def startup(self): 
         await self.bot.wait_until_ready()   
-        self.bot.loop.create_task(self.scrape_flipkart(flipkart_link=All_Websites["flipkart"].PS5_link) )
-        self.bot.loop.create_task(self.scrape_amazon(amazon_link=All_Websites["amazon"].PS5_link))    
-        self.bot.loop.create_task(self.scrape_games_the_shop(games_the_shop_link=All_Websites["games_the_shop"].PS5_link))
-        self.bot.loop.create_task(self.scrape_ppgc(ppgc_link=All_Websites["ppgc"].PS5_link))
+        self.bot.loop.create_task(self.scrape_flipkart(flipkart_link=All_Websites["flipkart"].PS5_link,product="PS5"))
+        self.bot.loop.create_task(self.scrape_flipkart(flipkart_link=All_Websites["flipkart"].XSX_link,product="XSX"))
+        self.bot.loop.create_task(self.scrape_flipkart(flipkart_link=All_Websites["flipkart"].XSS_link,product="XSS"))
+
+
+        self.bot.loop.create_task(self.scrape_amazon(amazon_link=All_Websites["amazon"].PS5_link,product="PS5"))   
+        self.bot.loop.create_task(self.scrape_amazon(amazon_link=All_Websites["amazon"].XSX_link,product="XSX"))
+        self.bot.loop.create_task(self.scrape_amazon(amazon_link=All_Websites["amazon"].XSS_link,product="XSS"))
+
+
+        self.bot.loop.create_task(self.scrape_games_the_shop(games_the_shop_link=All_Websites["games_the_shop"].PS5_link,product="PS5"))
+        self.bot.loop.create_task(self.scrape_ppgc(ppgc_link=All_Websites["ppgc"].PS5_link,product="PS5"))
         
 
     async def get_page_html(self,url,headers_list=[{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36"}]):
@@ -69,7 +77,7 @@ class StockChecker(commands.Cog):
         return page.content
 
     
-    async def scrape_amazon(self,amazon_link):
+    async def scrape_amazon(self,amazon_link,product):
         #these are a list of headers that makes  amazon to think that the requests are coming from real users
         headers_list = [{
             'Connection': 'keep-alive',
@@ -175,7 +183,7 @@ class StockChecker(commands.Cog):
             elif "In stock" in stock:
                 status="In Stock"
                 #print("In stock in availability")
-                await self.run_notifications(website_name="amazon",method="In stock throught availabilty element")                 
+                await self.run_notifications(website_name="amazon",product=product,method="In stock throught availabilty element")                 
             
             # elif "This item will be released on" in stock:
             #     status="In Stock"
@@ -184,25 +192,25 @@ class StockChecker(commands.Cog):
 
             elif len(add_to_cart_button) != 0: 
                 status="In Stock"
-                await self.run_notifications(website_name="amazon",method="Add to Cart button")
+                await self.run_notifications(website_name="amazon",product=product,method="Add to Cart button")
 
             elif len(all_buying_options) != 0:
                 status="In Stock"
-                await self.run_notifications(website_name="amazon",method="All buying options button")
+                await self.run_notifications(website_name="amazon",product=product,method="All buying options button")
 
             elif len(pre_order_button) != 0:
                 status="In Stock"
-                await self.run_notifications(website_name="amazon",method="Pre Order Now button")
+                await self.run_notifications(website_name="amazon",product=product,method="Pre Order Now button")
             
             else:
                 status=f"Amazon: A different response has been generated: {stock}"
             
 
             self.count["amazon"]+=1
-            await asyncio.sleep(5)
+            await asyncio.sleep(10)
             #print(status)
 
-    async def scrape_flipkart(self,flipkart_link):
+    async def scrape_flipkart(self,flipkart_link,product):
         while True:
             page_html =await self.get_page_html(flipkart_link)
             doc = lxml.html.fromstring(str(page_html))
@@ -216,14 +224,12 @@ class StockChecker(commands.Cog):
                 self.error_count["flipkart"]+=1
                 await asyncio.sleep(5)
                 continue
-            # print(stock)
-            # print(add_to_cart_button)
             #stock will show Currently Unavailable when no stock is there
             #Flipkart shows no value for availabilty when an item is Out of Stock.
             #This checks if the Availabilty value is None and the Add to Cart Button Exists
             if stock is None and len(add_to_cart_button) !=0 :
                 status="In Stock"
-                await self.run_notifications(website_name="flipkart",method="Add to Cart exists and Stock element is not shown")
+                await self.run_notifications(website_name="flipkart",product=product,method="Add to Cart exists and Stock element is not shown")
 
             elif stock is None:
                 #No value was retrived, but Add to Cart button doesn't exist
@@ -237,10 +243,10 @@ class StockChecker(commands.Cog):
             
 
             self.count["flipkart"]+=1
-            await asyncio.sleep(5)
+            await asyncio.sleep(10)
             #print(status)
 
-    async def scrape_games_the_shop(self,games_the_shop_link):
+    async def scrape_games_the_shop(self,games_the_shop_link,product):
         while True:
             page_html = await self.get_page_html(games_the_shop_link)
             doc = lxml.html.fromstring(page_html)
@@ -256,7 +262,7 @@ class StockChecker(commands.Cog):
         
             if " ADD TO CART" in stock:
                 status="In Stock"
-                await self.run_notifications(website_name="games_the_shop",method="Add to Cart button")
+                await self.run_notifications(website_name="games_the_shop",product=product,method="Add to Cart button")
 
             elif len(stock) == 0:
                 status="Out of Stock"
@@ -266,11 +272,11 @@ class StockChecker(commands.Cog):
             
 
             self.count["games_the_shop"]+=1
-            await asyncio.sleep(2)
+            await asyncio.sleep(5)
             #print(status)
     
 
-    async def scrape_ppgc(self,ppgc_link):
+    async def scrape_ppgc(self,ppgc_link,product):
         while True:
             page_html = await self.get_page_html(ppgc_link)
             doc = lxml.html.fromstring(page_html)
@@ -286,7 +292,7 @@ class StockChecker(commands.Cog):
         
             if "Add to cart" in stock:
                 status="In Stock"
-                await self.run_notifications(website_name="ppgc",method="Add to Cart Button")
+                await self.run_notifications(website_name="ppgc",product=product,method="Add to Cart Button")
 
             elif len(stock) == 0:
                 status="Out of Stock"
@@ -296,7 +302,7 @@ class StockChecker(commands.Cog):
             
 
             self.count["ppgc"]+=1
-            await asyncio.sleep(2)
+            await asyncio.sleep(5)
                         #print(status)
   
 

@@ -1,30 +1,16 @@
+############################################################################
+#This is test code and will most likely not work
+#For the scrapping code refer to cogs/stockchecker.py
+############################################################################
+
+
 import requests,time,random
 import lxml.html
+from collections import OrderedDict
 
-# How the bot checks for Stock availability?
-# Instead of using selenium to replicate a browser experience it uses the requests library to fetch the HTML code of a URL. The Bot then searches the HTML code and looks for certain keywords in a specified location.
-
-# Keyword Logic:
-# Amazon: Amazon has a seperate divison in it's HTML page called Availabilty which allows me to check if a product is "Currently unavailable." or "In Stock"
-# Flipkart: Flipkart has a seperate element to display Out of Stock. In case the product is available that element gives no value. The bot checks if that element is not displayed and double checks if the Add to Cart Button Exists.
-# Games the Shop: Games the Shop shows the Add to Cart Button when the product is available.
-# Prepaid Gamer Card: Prepaid Gamer Card shows the Add to Cart Button when the product is available.
-# Note: Direct links to Sony Center, Reliance Digital and Vijay Sales are down. Croma requires Pin Code which is currently not possible to implement with Requests library.
-
-# Issues:
-# 1) I wrote the Scraping code in one day and as a result it isn't very efficient or trustworthy since it hasn't been tested extensively.
-# 2) Amazon errors out or gives false information by blocking requests due to which the HTML page cannot be loaded.
-# 3) Flipkart often redirects requests to random pages resulting in errors.
-
-#Change the links to other products to test it out here        
-# All_Websites={
-#     "flipkart":"https://www.flipkart.com/sony-playstation-5-cfi-1008a01r-825-gb-astro-s-playroom/p/itma0201bdea62fa",
-#     "amazon":"https://www.amazon.in/dp/B08FV5GC28",
-#     "games_the_shop":"https://www.gamestheshop.com/PlayStation-5-Console/5111",
-#     "ppgc":"https://prepaidgamercard.com/product/playstation-5-console-ps5/",}
 All_Websites={
-    "flipkart":"https://www.flipkart.com/demon-s-souls/p/itmdnayzmhdehghu?pid=GAMFYTWBYAQJSKYB&lid=LSTGAMFYTWBYAQJSKYBHKUMXO&marketplace=FLIPKART&store=4rr&srno=b_1_2&otracker=clp_banner_1_2.banner.BANNER_gaming-store_2GSQZNPR3D52&fm=neo%2Fmerchandising&iid=a1fc4bdc-c7bf-41aa-bd6a-fd4ea242ba2c.GAMFYTWBYAQJSKYB.SEARCH&ppt=clp&ppn=gaming-store&ssid=546zyh1ua80000001622964859694",
-    "amazon":"https://www.amazon.in/PS5-RATCHET-CLANK-RIFT-APART/dp/B08WK5T3HY/ref=sr_1_1?crid=3ATMVHS5NX4PJ&dchild=1&keywords=rachet+and+clank&qid=1622949015&sprefix=rachet+and%2Caps%2C293&sr=8-1",
+    "flipkart":"https://www.flipkart.com/microsoft-xbox-series-x-1024-gb/p/itm63ff9bd504f27",
+    "amazon":"https://www.amazon.in/Xbox-Series-S/dp/B08J89D6BW/",
     "games_the_shop":"https://www.gamestheshop.com/PlayStation-5-Console/5111",
     "ppgc":"https://prepaidgamercard.com/product/playstation-5-console-ps5/",
     "shopatsc":"https://prepaidgamercard.com/product/playstation-5-console-ps5/",}
@@ -47,13 +33,105 @@ def startup(site):
         print("Unknown site")
         
 
-def get_page_html(url,headers={"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36"}):
+def get_page_html(url,headers_list=[{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36"}]):
+    ordered_headers_list = []
+    for headers in headers_list:
+        h = OrderedDict()
+        for header,value in headers.items():
+            h[header]=value
+            ordered_headers_list.append(h)
+    headers = random.choice(headers_list)
+
     page = requests.get(url, headers=headers)
     return page.content,page.status_code
-    
+
 def scrape_amazon(amazon_link):
+    headers_list = [{
+            'Connection': 'keep-alive',
+            'sec-ch-ua': '^\\^',
+            'Accept': 'application/json',
+            'DNT': '1',
+            'X-Requested-With': 'XMLHttpRequest',
+            'sec-ch-ua-mobile': '?0',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36',
+            'Content-Type': 'application/json',
+            'Origin': 'https://www.amazon.in',
+            'Sec-Fetch-Site': 'cross-site',
+            'Sec-Fetch-Mode': 'cors',
+            'Sec-Fetch-Dest': 'empty',
+            'Referer': 'https://www.amazon.in/',
+            'Accept-Language': 'en-IN,en;q=0.9',
+            },      
+            {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0',
+            'Accept': 'application/json',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json',
+            'Origin': 'https://www.amazon.in/',
+            'DNT': '1',
+            'Connection': 'keep-alive',
+            'Referer': 'https://www.amazon.in/',
+            },
+            {
+            'authority': 'www.amazon.in',
+            'x-kl-ajax-request': 'Ajax_Request',
+            'dnt': '1',
+            'rtt': '200',
+            'sec-ch-ua-mobile': '?0',
+            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36',
+            'accept': 'text/html,/',
+            'ect': '4g',
+            'sec-ch-ua': '^^',
+            'origin': 'https://www.amazon.in/',
+            'sec-fetch-site': 'same-origin',
+            'sec-fetch-mode': 'cors',
+            'sec-fetch-dest': 'empty',
+            'referer': 'https://www.amazon.in/',
+            'accept-language': 'en-US,en;q=0.9',
+           
+            },
+            {
+            'Connection': 'keep-alive',
+            'sec-ch-ua': '^^',
+            'Accept': 'application/json, text/javascript, /; q=0.01',
+            'sec-ch-ua-mobile': '?0',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36',
+            'Origin': 'https://www.amazon.in/',
+            'Sec-Fetch-Site': 'cross-site',
+            'Sec-Fetch-Mode': 'cors',
+            'Sec-Fetch-Dest': 'empty',
+            'Referer': 'https://www.amazon.in/',
+            'Accept-Language': 'en-GB,en;q=0.9',
+            },
+            {
+            'authority': 'www.amazon.in',
+            'sec-ch-ua': '^\\^',
+            'rtt': '50',
+            'sec-ch-ua-mobile': '?0',
+            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36',
+            'content-type': 'application/x-www-form-urlencoded',
+            'accept': 'text/html,*/*',
+            'x-requested-with': 'XMLHttpRequest',
+            'downlink': '10',
+            'ect': '4g',
+            'origin': 'https://www.amazon.in',
+            'sec-fetch-site': 'same-origin',
+            'sec-fetch-mode': 'cors',
+            'sec-fetch-dest': 'empty',
+            'referer': 'https://www.amazon.in/dp/B08FV5GC28',
+            'accept-language': 'en-US,en;q=0.9',         
+            },
+            {
+            'sec-ch-ua': '^^',
+            'Referer': 'https://www.amazon.in/',
+            'sec-ch-ua-mobile': '?1',
+            'User-Agent': 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Mobile Safari/537.36',
+            }       
+            ]
+
     while True:
-        page_html = str(get_page_html(amazon_link))
+        page_html = str(get_page_html(amazon_link,headers_list))
         doc = lxml.html.fromstring(page_html)
         try:
             stock=doc.xpath('//*[@id="availability"]/span')[0].text
@@ -62,6 +140,8 @@ def scrape_amazon(amazon_link):
             pre_order_button=doc.xpath('//*[@id="buy-now-button"]')
         except:
             stock="Amazon Error"
+            print("Error")
+            continue
         #print(stock)
         print(add_to_cart_button)
         print(all_buying_options)
@@ -70,13 +150,13 @@ def scrape_amazon(amazon_link):
         if "Currently unavailable." in stock or "We don't know when or if this item will be back in stock." in stock :
             status="Out of Stock"
         
-        elif "In stock" in stock:
+        elif "In stock".lower() in stock.lower():
             status="In Stock"
             run_notifications(website_name="amazon")
        
-        elif "This item will be released on" in stock:
-            status="In Stock"
-            run_notifications(website_name="amazon")
+        # elif "This item will be released on" in stock:
+        #     status="In Stock"
+        #     run_notifications(website_name="amazon")
         
         elif (len(add_to_cart_button) != 0) or (len(all_buying_options) != 0) or (len(pre_order_button) != 0):
             status="In Stock"
@@ -84,7 +164,7 @@ def scrape_amazon(amazon_link):
 
         else:
             status=f"A different response has been generated: {stock}"
-        time.sleep(2)
+        time.sleep(3)
         #print(status)
         
 def scrape_shopatsc(shopatsc_link):
@@ -148,7 +228,7 @@ def scrape_flipkart(flipkart_link):
         else:
             status=f"A different response has been generated: {stock}"
         time.sleep(2)
-        print(status)
+        #print(status)
 
 async def scrape_games_the_shop(games_the_shop_link):
     while True:
@@ -199,8 +279,8 @@ async def scrape_ppgc(ppgc_link):
 
 #Comment out the websites you are not using
 #To comment a site add "#" in front of it.
-#startup(site="flipkart")
+startup(site="flipkart")
 #startup(site="amazon")
 # startup(site="gts")
 # startup(site="ppgc")
-startup(site="shopatsc")
+#startup(site="shopatsc")
