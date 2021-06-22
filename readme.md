@@ -14,7 +14,7 @@ pip install -r requirements.txt
 ```
 3. Create a .env similiar to the .env sample.
 4. Setup config.py.
-5. Chrome Web Drivers for selenium will also need to be installed from [here](https://ptb.discord.com/developers/applications/) to take the screenshot of webpages.(Beta phase)
+5. Chrome Web Drivers for selenium will also need to be installed from [here](https://www.selenium.dev/downloads/) to take the screenshot of webpages.(Beta phase)
 
 ### Setup for Heroku:
 1. Obtain a Discord bot token from the [Discord developer portal](https://ptb.discord.com/developers/applications/)

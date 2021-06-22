@@ -20,51 +20,34 @@ class StockChecker(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.bot.loop.create_task(self.startup())
-        
-        self.PS5_count={"amazon":0,"flipkart":0,"games_the_shop":0,"ppgc":0}
-        self.PS5_error_count={"amazon":0,"flipkart":0,"games_the_shop":0,"ppgc":0}
-        
-        self.XSX_count={"amazon":0,"flipkart":0,"games_the_shop":0,"ppgc":0}
-        self.XSX_error_count={"amazon":0,"flipkart":0,"games_the_shop":0,"ppgc":0}
-        
-        self.XSS_count={"amazon":0,"flipkart":0,"games_the_shop":0,"ppgc":0}
-        self.XSS_error_count={"amazon":0,"flipkart":0,"games_the_shop":0,"ppgc":0}
+
+        self.count_dict={   
+                            "PS5":{"amazon":0,"flipkart":0,"games_the_shop":0,"ppgc":0},
+                            "XSX":{"amazon":0,"flipkart":0},
+                            "XSS":{"amazon":0,"flipkart":0}}
+       
+        self.error_count_dict={   
+                            "PS5":{"amazon":0,"flipkart":0,"games_the_shop":0,"ppgc":0},
+                            "XSX":{"amazon":0,"flipkart":0},
+                            "XSS":{"amazon":0,"flipkart":0}}
+
         
         self.last_website_notifications=None
 
-    def add_count(self,website_name,product):
-        if product == "PS5":
-            self.PS5_count[website_name]+=1
-        elif product =="XSX":
-            self.XSX_count[website_name]+=1
-        elif product == "XSS":
-            self.XSS_count[website_name]+=1
+    def add_count(self,product,website_name):
+        try:
+            self.count_dict[product][website_name]+=1
+        except:
+            print("Add count exception")
 
-    def add_error(self,website_name,product):
-        if product == "PS5":
-            self.PS5_error_count[website_name]+=1
-        elif product =="XSX":
-            self.XSX_error_count[website_name]+=1
-        elif product == "XSS":
-            self.XSS_error_count[website_name]+=1
-
-
-
-
-
-
-    @commands.cooldown(1, 3, commands.BucketType.user)
-    @commands.command(name="RunCount",aliases=["rc"], help=f'Shows how many times the StockChecker has ran successfully. \n{config.prefix}runcount')
-    async def runcount(self,ctx):
-        embed=discord.Embed(Title="Run Count",description="Showing number of times StockChecker has run succesfully on each site.",colour=0x0000FF)
-        embed.add_field(name="Amazon",value=f"\u2800**PS5**:\n\u2800\u2800{self.PS5_count['amazon']} times. \n\u2800\u2800Errored out: {self.PS5_error_count['amazon']} times.\n\u2800**XSX**:\n\u2800\u2800{self.XSX_count['amazon']} times. \n\u2800\u2800Errored out: {self.XSX_error_count['amazon']} times. \n\u2800**XSS**:\n\u2800\u2800{self.XSS_count['amazon']} times. \n\u2800\u2800Errored out: {self.XSS_error_count['amazon']} times.",inline=False)
-        embed.add_field(name="Flipkart",value=f"\u2800**PS5**:\n\u2800\u2800{self.PS5_count['flipkart']} times. \n\u2800\u2800Errored out: {self.PS5_error_count['flipkart']} times.\n\u2800**XSX**:\n\u2800\u2800{self.XSX_count['flipkart']} times. \n\u2800\u2800Errored out: {self.XSX_error_count['flipkart']} times. \n\u2800**XSS**:\n\u2800\u2800{self.XSS_count['flipkart']} times. \n\u2800\u2800Errored out: {self.XSS_error_count['flipkart']} times.",inline=False)
-        embed.add_field(name="Games the Shop",value=f"\u2800**PS5**:\n\u2800\u2800{self.PS5_count['games_the_shop']} times. \n\u2800\u2800Errored out: {self.PS5_error_count['games_the_shop']} times.",inline=False)
-        embed.add_field(name="Prepaid Gamer Card",value=f"\u2800**PS5**:\n\u2800\u2800{self.PS5_count['ppgc']} times. \n\u2800\u2800Errored out: {self.PS5_error_count['ppgc']} times.",inline=False)
-        await ctx.send(embed=embed)
+    def add_error(self,product,website_name):
+        try:
+            self.error_count_dict[product][website_name]+=1
+        except:
+            print("Add error exception")
 
     async def run_notifications(self,website_name,product,method):
-        if self.last_website_notifications == website_name:#checks whether already notified about availabilty
+        if self.last_website_notifications == website_name+product:#checks whether already notified about availabilty
             self.last_website_notifications = None
             print(f"Already notified about {website_name}")
             await asyncio.sleep(30)
@@ -72,7 +55,21 @@ class StockChecker(commands.Cog):
         else:
             Notifications = self.bot.get_cog('Notifications')
             await Notifications.notify(website_name=website_name,product=product,method=method)
-            self.last_website_notifications=website_name#makes the last_website that has been notified about this one
+            self.last_website_notifications=website_name+product#makes the last_website that has been notified about this one
+
+
+    #Discord bot command
+    @commands.cooldown(1, 3, commands.BucketType.user)
+    @commands.command(name="RunCount",aliases=["rc"], help=f'Shows how many times the StockChecker has ran successfully. \n{config.prefix}runcount')
+    async def runcount(self,ctx):
+        embed=discord.Embed(Title="Run Count",description="Showing number of times StockChecker has run succesfully on each site.",colour=0x0000FF)
+        embed.add_field(name="Amazon",value=f"\u2800{config.PS5_emoji}  **PS5**:\n\u2800\u2800{self.count_dict['PS5']['amazon']} times. \n\u2800\u2800Errored out: {self.error_count_dict['PS5']['amazon']} times.\n\u2800{config.XSX_emoji}  **XSX**:\n\u2800\u2800{self.count_dict['XSX']['amazon']} times. \n\u2800\u2800Errored out: {self.error_count_dict['XSX']['amazon']} times. \n\u2800{config.XSS_emoji}  **XSS**:\n\u2800\u2800{self.count_dict['XSS']['amazon']} times. \n\u2800\u2800Errored out: {self.error_count_dict['XSS']['amazon']} times.",inline=False)
+        embed.add_field(name="Flipkart",value=f"\u2800{config.PS5_emoji}  **PS5**:\n\u2800\u2800{self.count_dict['PS5']['flipkart']} times. \n\u2800\u2800Errored out: {self.error_count_dict['PS5']['flipkart']} times.\n\u2800{config.XSX_emoji}  **XSX**:\n\u2800\u2800{self.count_dict['XSX']['flipkart']} times. \n\u2800\u2800Errored out: {self.error_count_dict['XSX']['flipkart']} times. \n\u2800{config.XSS_emoji}  **XSS**:\n\u2800\u2800{self.count_dict['XSS']['flipkart']} times. \n\u2800\u2800Errored out: {self.error_count_dict['XSS']['flipkart']} times.",inline=False)
+        embed.add_field(name="Games the Shop",value=f"\u2800{config.PS5_emoji}  **PS5**:\n\u2800\u2800{self.count_dict['PS5']['games_the_shop']} times. \n\u2800\u2800Errored out: {self.error_count_dict['PS5']['games_the_shop']} times.",inline=False)
+        embed.add_field(name="Prepaid Gamer Card",value=f"\u2800{config.PS5_emoji}  **PS5**:\n\u2800\u2800{self.count_dict['PS5']['ppgc']} times. \n\u2800\u2800Errored out: {self.error_count_dict['PS5']['ppgc']} times.",inline=False)
+        await ctx.send(embed=embed)
+
+    
    
     
     async def startup(self): 
@@ -202,7 +199,7 @@ class StockChecker(commands.Cog):
                 print("Amazon Error")
                 status="error"
                 self.add_error(website_name="amazon",product=product)
-                await asyncio.sleep(15)
+                await asyncio.sleep(20)
                 continue
             
             if len(stock) > 0:
@@ -238,7 +235,7 @@ class StockChecker(commands.Cog):
                 status=f"Amazon: A different response has been generated: {stock}"
             
             self.add_count(website_name="amazon",product=product)
-            await asyncio.sleep(15)
+            await asyncio.sleep(20)
             #print(status)
 
     async def scrape_flipkart(self,flipkart_link,product):
@@ -253,8 +250,8 @@ class StockChecker(commands.Cog):
                 #print(page_html)
                 print("Flipkart Error")
                 status="error"
-                self.add_error(website_name="flipkart",product=product)
-                await asyncio.sleep(10)
+                self.add_error(product=product,website_name="flipkart")
+                await asyncio.sleep(15)
                 continue
             #stock will show Currently Unavailable when no stock is there
             #Flipkart shows no value for availabilty when an item is Out of Stock.
@@ -275,8 +272,8 @@ class StockChecker(commands.Cog):
                 status=f"Flipkart: A different response has been generated: {stock}"
             
 
-            self.add_count(website_name="flipkart",product=product)
-            await asyncio.sleep(10)
+            self.add_count(product=product,website_name="flipkart")
+            await asyncio.sleep(15)
             #print(status)
 
     async def scrape_games_the_shop(self,games_the_shop_link,product):
@@ -289,8 +286,8 @@ class StockChecker(commands.Cog):
             except:
                 print("Games the Shop Error")
                 status="error"
-                self.add_error(website_name="games_the_shop",product=product)
-                await asyncio.sleep(5)
+                self.add_error(product=product,website_name="games_the_shop")
+                await asyncio.sleep(10)
                 continue
         
             if " ADD TO CART" in stock:
@@ -304,8 +301,8 @@ class StockChecker(commands.Cog):
                 status=f"Games the Shop: A different response has been generated: {stock}"               
             
 
-            self.add_count(website_name="games_the_shop",product=product)
-            await asyncio.sleep(5)
+            self.add_count(product=product,website_name="games_the_shop")
+            await asyncio.sleep(10)
             #print(status)
     
 
@@ -319,8 +316,8 @@ class StockChecker(commands.Cog):
             except:
                 print("Prepaid Gamer Card Error")
                 status="error"
-                self.add_error(website_name="ppgc",product=product)
-                await asyncio.sleep(5)
+                self.add_error(product=product,website_name="ppgc")
+                await asyncio.sleep(10)
                 continue
         
             if "Add to cart" in stock:
@@ -334,8 +331,8 @@ class StockChecker(commands.Cog):
                 status=f"Prepaid Gamer Card: A different response has been generated: {stock}"                
             
 
-            self.add_count(website_name="ppgc",product=product)
-            await asyncio.sleep(5)
+            self.add_count(product=product,website_name="ppgc")
+            await asyncio.sleep(10)
                         #print(status)
   
 
