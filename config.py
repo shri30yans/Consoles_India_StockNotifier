@@ -47,4 +47,8 @@ embed_colours=[0xFFFF00,#yellow
             0xFF00FF,#pink
 ]
 
+#emoji
+XSX_emoji="<:XSX:856448011831738389>"
+XSS_emoji="<:XSS:856448352510148628>"
+PS5_emoji="<:PS5:856448878340210708>"
 
