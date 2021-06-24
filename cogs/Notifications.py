@@ -4,7 +4,7 @@ import config
 from pytz import timezone
 from datetime import datetime
 from utils.links import All_Websites 
-from selenium import webdriver
+#from selenium import webdriver
 
     
 class Notifications(commands.Cog): 
@@ -40,6 +40,14 @@ class Notifications(commands.Cog):
             embed.set_thumbnail(url="https://i.imgur.com/pmgar66.jpg?1") 
             Indian_Time = datetime.now(timezone("Asia/Kolkata")).strftime('%d-%m-%y • %H:%M:%S')
             embed.set_footer(text=f"PS5 Stock Updates • {Indian_Time}")
+
+        elif product == "PS5_DE":
+            role = guild.get_role(config.PS5_DE_stock_notifications_role_id)
+            embed = discord.Embed(title =f"PS5 Digital Edition in stock at {Website_Class.display_name}!",url=Website_Class.PS5_DE_link,color =0x0000FF)
+            embed.add_field(name="Dev Notes:",value=f"`{method}`")
+            embed.set_thumbnail(url="https://i.imgur.com/pmgar66.jpg?1") 
+            Indian_Time = datetime.now(timezone("Asia/Kolkata")).strftime('%d-%m-%y • %H:%M:%S')
+            embed.set_footer(text=f"PS5 DE Stock Updates • {Indian_Time}")
         
         elif product == "XSX":
             role = guild.get_role(config.XSX_stock_notifications_role_id)
@@ -58,7 +66,7 @@ class Notifications(commands.Cog):
             embed.set_footer(text=f"Xbox Series S Stock Updates • {Indian_Time}")
 
         else:
-            print('Invalid product setn to Notification')
+            print('Invalid product set to Notification')
 
         if role is None:
             await channel.send(embed=embed)

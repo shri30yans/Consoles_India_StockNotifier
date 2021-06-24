@@ -17,19 +17,19 @@ class CommandErrorHandler(commands.Cog):
 
         if isinstance(error, commands.MissingRequiredArgument):
             embed=discord.Embed(title="⚠️ | Missing Argument",description="Oops...You missed an argument.",color = random.choice(colourlist))
-            embed.add_field(name="You are missing a required argument.",value=f"Use this format: {ctx.command.help}", inline=False)
+            embed.add_field(name="You are missing a required argument.",value=f"Command help: {ctx.command.help}", inline=False)
             await ctx.send(embed=embed)
 
         elif isinstance(error, commands.MemberNotFound):
             embed=discord.Embed(title="⚠️ | Invalid User",description="Mention a valid user", color = random.choice(colourlist))
-            embed.add_field(name="An incorrect user was mentioned",value="Mention a user or a users user id", inline=False)
+            embed.add_field(name="An incorrect user was mentioned",value="Mention a user or a users user id.\nCommand help: {ctx.command.help}", inline=False)
             await ctx.send(embed=embed)
         
         elif isinstance(error,commands.CommandNotFound):pass
 
         elif isinstance(error,commands.errors.BadArgument):
             embed=discord.Embed(title="⚠️ | Invalid Argument",color = random.choice(colourlist))
-            embed.add_field(name="You passed a incorrect or invalid argument", value=f" Please make sure that you are using the correct format.\n Type \"{config.prefix}help command_name\" to learn how to use a command.", inline=False)
+            embed.add_field(name="You passed a incorrect or invalid argument", value=f" Please make sure that you are using the correct format.\nCommand help: {ctx.command.help}", inline=False)
             await ctx.send(embed=embed)
         
         elif isinstance(error,TypeError):pass
@@ -73,10 +73,8 @@ class CommandErrorHandler(commands.Cog):
         #     return
 
         elif isinstance(error, commands.CommandOnCooldown):
-            if ctx.author.id in [571957935270395925]:
+            if ctx.author.id in [self.bot.owner_id,]:
                 await ctx.reinvoke()
-            #elif ctx.guild.id in [748786284373475358,748754737695948860,774113408378863666]:
-                #await ctx.reinvoke()
             else:
                 embed=discord.Embed(title="⚠️ | Command on Cooldown",color = random.choice(colourlist))
                 embed.add_field(name="You are on cool down mode.", value=" Please wait before using this command again. You can use this command in {:.2f} s'seconds again.".format(error.retry_after), inline=False)
