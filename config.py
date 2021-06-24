@@ -14,7 +14,9 @@ APPROVED_SERVERS=[797570077364977696]
 #BLACKLIST = []
 #List of Cogs to run on startup;
 STARTUP_COGS = [
-    "cogs.UtilityCog","cogs.Notifications","cogs.StockChecker","utils.ErrorHandler","jishaku"
+    #"cogs.UtilityCog","cogs.Notifications","cogs.StockChecker","utils.ErrorHandler","jishaku"
+    "cogs.UtilityCog","cogs.Notifications","cogs.StockChecker","jishaku"
+
     ]
 
 #Channels and Roles
@@ -27,6 +29,7 @@ STARTUP_COGS = [
 server_id=797570077364977696
 stock_notifications_channel_id = 850096085770567700
 PS5_stock_notifications_role_id = 849606173522788352
+PS5_DE_stock_notifications_role_id = 857134006243688458
 XSX_stock_notifications_role_id = 856442409142976542
 XSS_stock_notifications_role_id = 856442480857972745
 #screenshot_sharing_channel_id=850711788144164885

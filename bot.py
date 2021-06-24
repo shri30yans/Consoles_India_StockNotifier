@@ -7,6 +7,7 @@ if not os.path.isfile("config.py"):
 	sys.exit("'config.py' not found! Please add it and try again.")
 else:
 	import config
+
 colourlist=config.embed_colours
 
 
