@@ -110,9 +110,28 @@ class Utility(commands.Cog):
         embed.set_footer(icon_url= author_avatar,text=f"Requested by {ctx.message.author} • {self.bot.user.name} ")
         await ctx.send(embed=embed)
 
+    @commands.has_permissions(manage_messages=True)
+    @commands.bot_has_permissions(manage_messages=True)
+    @commands.command(name="Delete",aliases=['del', 'clear'], help=f'Deletes messages \n {config.prefix}delete <number_of _messages> \n Aliases: clear, del')
+    async def delete(self,ctx,num:int):
+        if num>=50:
+            embed=discord.Embed(color = random.choice(colourlist),timestamp=ctx.message.created_at)
+            embed.add_field(name="Too many messages deleted.",value=f"You can delete a maximum of 50 messages at one go to prevent excessive deleting. ") 
+            author_avatar=ctx.author.avatar_url
+            embed.set_footer(icon_url= author_avatar,text=f"Requested by {ctx.message.author} • {self.bot.user.name} ")
+            await ctx.send(embed=embed,delete_after=4)
+
+        else:
+            await ctx.channel.purge(limit=num+1,bulk=True)
+            embed=discord.Embed(color = random.choice(colourlist),timestamp=ctx.message.created_at)
+            embed.add_field(name="Deleted",value=f"Deleted {num} message(s)") 
+            author_avatar=ctx.author.avatar_url
+            embed.set_footer(icon_url= author_avatar,text=f"Requested by {ctx.message.author} • {self.bot.user.name} ")
+            await ctx.send(embed=embed,delete_after=4)
+           
+
     @commands.has_permissions(manage_channels=True)
     @commands.bot_has_permissions(manage_channels=True)
-    #@commands.cooldown(1, 5, commands.BucketType.user)
     @commands.command(name="CreateTradeChannel",aliases=["ctc"], help=f'Creates a trade channel.  \n{config.prefix}CreateTradeChannel @User1 @User2 @User3 trade_number channel_description \nAliases: ctc',require_var_positional=True)#require_var_positional=True makes sure input is not empty
     async def CreateTicket(self,ctx,members:commands.Greedy[discord.Member],trade_number="",*, description='Trade Channel'):
         if ctx.guild.id in config.APPROVED_SERVERS:
@@ -123,13 +142,14 @@ class Utility(commands.Cog):
             bot_role=ctx.guild.get_role(config.bot_role_id)
 
         
-            overwrites = {  
-                            admin_role: discord.PermissionOverwrite(send_messages=True, read_messages=True,),#read_message_history=True,use_external_emojis=True,attach_files=True,embed_links=True),
+            overwrites = {  admin_role: discord.PermissionOverwrite(send_messages=True, read_messages=True,),#read_message_history=True,use_external_emojis=True,attach_files=True,embed_links=True),
                             head_moderator_role: discord.PermissionOverwrite(send_messages=True, read_messages=True),
                             moderator_role: discord.PermissionOverwrite(send_messages=True, read_messages=True),
                             game_trade_moderator_role: discord.PermissionOverwrite(send_messages=True, read_messages=True),
                             bot_role: discord.PermissionOverwrite(send_messages=True, read_messages=True),
-                            ctx.guild.default_role: discord.PermissionOverwrite(read_messages=False),}
+                            ctx.guild.default_role: discord.PermissionOverwrite(read_messages=False),
+                        }
+
             member_names=""
             for mbr in members:
                 if mbr == ctx.author: pass
@@ -139,29 +159,30 @@ class Utility(commands.Cog):
                 else:
                     overwrites[mbr] = discord.PermissionOverwrite(send_messages=True, read_messages=True)
                     try:
-                        member_names += mbr.mention + ", "
+                        member_names += mbr.mention + " "
                     except:
                         try:
-                            member_names += mbr.name + ", "
+                            member_names += mbr.name + " "
                         except: pass
+
             if member_names == "":
                 member_names="No members were added to this Trade."
             else:
-                member_names="Member's added to trade: " + member_names
+                pass
 
                         
             category = discord.utils.get(ctx.guild.categories, name="Trades")
             channel = await category.create_text_channel(f'trade {trade_number}', overwrites=overwrites,topic=description,reason="Trade Channel")
-            embed=discord.Embed(title=f"Trade channel created.",description=f"{channel.mention} \n{member_names} \nDescription: {description}")        
+            embed=discord.Embed(title=f"Trade channel created.",description=f"{channel.mention} \nMember's added to trade: {member_names} \nDescription: {description}")        
             embed.set_footer(icon_url= ctx.author.avatar_url,text=f"Requested by {ctx.message.author} • {self.bot.user.name} ")
             await ctx.send(embed=embed)
             embed=discord.Embed(title=f"Trade instructions",)
-            embed.add_field(name="Process",value="The selling party would send the product to the buying party. Meanwhile the buying party can transfer a Game Trade Moderator the money. Once the buyer gets the product and checks the condition, the Game Trade Moderator would send the money to the seller.",inline=False)
+            embed.add_field(name="Process",value="""1) The buyer sends the money to a Games Trades Moderator.\n2) The seller will then ship the product and send tracking details to the buyer.\n3) The buyer upon receiving the product checks the conditions of the product.\n4) Once the buyer is satisfied with the product a Games Trades Moderator will transfer money to the seller.""",inline=False)
             embed.add_field(name="Seller Instructions",value="Confirm the product and its price before proceeding further.",inline=False)
-            embed.add_field(name="Buyer Instructions",value="Check with the selling party before transferring the amount to a Game Trade Moderator. Make sure collect the tracking ID to make sure the seller shipped it.",inline=False)      
+            embed.add_field(name="Buyer Instructions",value="Check with the selling party before transferring the amount to a Game Trade Moderator. Make sure to collect the tracking ID after the seller has shipped the product.",inline=False)      
             embed.add_field(name="Miscellaneous",value="[Shipping Tips](https://discord.com/channels/797570077364977696/815188535907975198/815469791032508416)",inline=False)   
             embed.set_footer(icon_url= ctx.author.avatar_url,text=f"Requested by {ctx.message.author} • {self.bot.user.name} ")
-            message = await channel.send(embed=embed)
+            message = await channel.send(embed=embed,content=f"{member_names} Here is the requested channel. A {game_trade_moderator_role.mention} will be here to coordinate with you soon.")
             await message.add_reaction("\U0001f44d")#thumbs up
 
         else:

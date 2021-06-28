@@ -184,47 +184,47 @@ def scrape_shopatsc(shopatsc_link):
         #print(status)
 
 def scrape_flipkart(flipkart_link):
-    headers_list = [{
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36',
-        'Accept': '*/*',
-        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36',
-        'origin': 'https://www.flipkart.com',
-        'referer': 'https://www.flipkart.com/',
-        'accept-language': 'en-IN,en;q=0.9',
-        'Referer': 'https://www.flipkart.com/',
-        }, 
-        {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36 Edg/91.0.864.54',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36 Edg/91.0.864.54',
-        'accept': '*/*',
-        'referer': 'https://www.flipkart.com/',
-        'accept-language': 'en-US,en;q=0.9',
-        'origin': 'https://www.flipkart.com',
-        'Cache-Control': 'max-age=0',
-        'Service-Worker': 'script',
-        'Origin': 'https://www.flipkart.com',
-        },
-        {
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,/;q=0.8,application/signed-exchange;v=b3;q=0.9",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Accept-Language": "en-US,en;q=0.9,ta;q=0.8",
-        "Upgrade-Insecure-Requests": "1",
-        'referer': 'https://www.flipkart.com/',
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36 Edg/91.0.864.54",
-        'origin': 'https://www.flipkart.com',
-        } ,
-        {
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,/;q=0.8,application/signed-exchange;v=b3;q=0.9", 
-        "Accept-Encoding": "gzip, deflate, br", 
-        "Accept-Language": "en-US,en;q=0.9",  
-        'origin': 'https://www.flipkart.com',
-        'referer': 'https://www.flipkart.com/',
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36", 
-        }
-        ]
+    # headers_list = [{
+    #     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36',
+    #     'Accept': '*/*',
+    #     'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36',
+    #     'origin': 'https://www.flipkart.com',
+    #     'referer': 'https://www.flipkart.com/',
+    #     'accept-language': 'en-IN,en;q=0.9',
+    #     'Referer': 'https://www.flipkart.com/',
+    #     }, 
+    #     {
+    #     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36 Edg/91.0.864.54',
+    #     'Accept-Language': 'en-US,en;q=0.9',
+    #     'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36 Edg/91.0.864.54',
+    #     'accept': '*/*',
+    #     'referer': 'https://www.flipkart.com/',
+    #     'accept-language': 'en-US,en;q=0.9',
+    #     'origin': 'https://www.flipkart.com',
+    #     'Cache-Control': 'max-age=0',
+    #     'Service-Worker': 'script',
+    #     'Origin': 'https://www.flipkart.com',
+    #     },
+    #     {
+    #     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,/;q=0.8,application/signed-exchange;v=b3;q=0.9",
+    #     "Accept-Encoding": "gzip, deflate, br",
+    #     "Accept-Language": "en-US,en;q=0.9,ta;q=0.8",
+    #     "Upgrade-Insecure-Requests": "1",
+    #     'referer': 'https://www.flipkart.com/',
+    #     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36 Edg/91.0.864.54",
+    #     'origin': 'https://www.flipkart.com',
+    #     } ,
+    #     {
+    #     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,/;q=0.8,application/signed-exchange;v=b3;q=0.9", 
+    #     "Accept-Encoding": "gzip, deflate, br", 
+    #     "Accept-Language": "en-US,en;q=0.9",  
+    #     'origin': 'https://www.flipkart.com',
+    #     'referer': 'https://www.flipkart.com/',
+    #     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36", 
+    #     }
+    #     ]
     while True:
-        page_html = str(get_page_html(flipkart_link,headers_list=headers_list))
+        page_html = str(get_page_html(flipkart_link))
         doc = lxml.html.fromstring(page_html)
         try:
             sold_out_element=doc.xpath('//*[@id="container"]/div/div[3]/div[1]/div[2]/div[3]/div')[0].text
@@ -240,15 +240,14 @@ def scrape_flipkart(flipkart_link):
         print(buy_now_button)
 
         print("------------")
-
-        if "Sold Out" in sold_out_element or "This item is currently out of stock" in sold_out_sentence:
-            pass #checks for false negatives/makes sure it doesn't show Item is in stock when this is shown
-              
-        elif len(add_to_cart_button) !=0 :
+        # if "Sold Out" in sold_out_element or "This item is currently out of stock" in sold_out_sentence:
+        #     pass #checks for false negatives/makes sure it doesn't show Item is in stock when this is shown
+                
+        if len(buy_now_button) !=0:
             status="In Stock"
             run_notifications(website_name="flipkart")
         
-        elif len(buy_now_button ) !=0:
+        elif len(add_to_cart_button) !=0:
             status="In Stock"
             run_notifications(website_name="flipkart")
         
