@@ -14,9 +14,7 @@ APPROVED_SERVERS=[797570077364977696]
 #BLACKLIST = []
 #List of Cogs to run on startup;
 STARTUP_COGS = [
-    #"cogs.UtilityCog","cogs.Notifications","cogs.StockChecker","utils.ErrorHandler","jishaku"
-    "cogs.UtilityCog","cogs.Notifications","cogs.StockChecker","jishaku"
-
+    "cogs.UtilityCog","cogs.Notifications","cogs.StockChecker","utils.ErrorHandler","jishaku"
     ]
 
 #Channels and Roles
@@ -55,3 +53,7 @@ XSX_emoji="<:XSX:856448011831738389>"
 XSS_emoji="<:XSS:856448352510148628>"
 PS5_emoji="<:PS5:856448878340210708>"
 
+
+#webhook_url="https://discord.com/api/webhooks/858323481296240680/HrsIIfo93fUouPvKR6WE8lwiWDkm2cV6Yd9X22AQ1zbOWyIXEzMzbjEnj77Y6DniLNgF"
+
+webhook_url="https://discord.com/api/webhooks/858329509677498386/dIyMtB0S7-WdDIS2t-AlgWeh14Y5MJ6lXJN_R_r3s0LFhe4uJvX1r8Kmkv6Jz_xlu2OT"

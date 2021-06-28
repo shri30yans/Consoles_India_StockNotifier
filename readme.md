@@ -10,7 +10,7 @@
 1. Obtain a Discord bot token from the [Discord developer portal](https://ptb.discord.com/developers/applications/)
 2. Install all the required modules with:
 ```
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 ```
 3. Create a .env similiar to the .env sample.
 4. Setup config.py.

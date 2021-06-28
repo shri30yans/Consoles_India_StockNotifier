@@ -1,4 +1,2 @@
-if "lol" in "lol":
-    print("lol")
-else:
-    print("else")
+l=[1,2,3]
+print(l[::-1])

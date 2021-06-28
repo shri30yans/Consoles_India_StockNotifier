@@ -8,3 +8,4 @@ asyncpg #database wrapper
 requests
 #selenium
 beautifulsoup4
+aiohttp
