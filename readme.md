@@ -6,16 +6,16 @@
 * Create Trade Channels
 
 ### Pictures:
-![PS5 Stock](https://github.com/shri30yans/YeetBot/blob/main/Images/PS5.jpg)   
+![PS5 Stock](https://github.com/shri30yans/PS5_DiscordBot/blob/main/Images/PS5.jpg)   
 *PS5 Stock Alert* 
 
-![XSS Stock](https://github.com/shri30yans/YeetBot/blob/main/Images/XSS.jpg)   
+![XSS Stock](https://github.com/shri30yans/PS5_DiscordBot/blob/main/Images/XSS.jpg)   
 *Xbox Series S Stock Alert*   
  
-![Trade Channel](https://github.com/shri30yans/YeetBot/blob/main/Images/Create_a_trade_channel.jpg)   
+![Trade Channel](https://github.com/shri30yans/PS5_DiscordBot/blob/main/Images/Create_a_trade_channel.jpg)   
 *Creating a Trade Channel*
      
-![Instructions](https://github.com/shri30yans/YeetBot/blob/main/Images/instructions.jpg)   
+![Instructions](https://github.com/shri30yans/PS5_DiscordBot/blob/main/Images/instructions.jpg)   
 *Auto-message in Trade Channel*  
 
 
