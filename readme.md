@@ -12,7 +12,7 @@
 ![XSS Stock](https://github.com/shri30yans/PS5_DiscordBot/blob/main/Images/XSS.jpg)   
 *Xbox Series S Stock Alert*   
  
-![Trade Channel](https://github.com/shri30yans/PS5_DiscordBot/blob/main/Images/Create_a_trade_channel.jpg)   
+![Trade Channel](https://github.com/shri30yans/PS5_DiscordBot/blob/main/Images/Create_trade_channel.jpg)   
 *Creating a Trade Channel*
      
 ![Instructions](https://github.com/shri30yans/PS5_DiscordBot/blob/main/Images/instructions.jpg)   
