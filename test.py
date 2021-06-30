@@ -1,2 +1,6 @@
-l=[1,2,3]
-print(l[::-1])
+buy_now_button="PREORDER NOW"
+for x in ['NOW','BUY','ORDER',]:
+    if x in buy_now_button:
+        print("e")
+else:
+    print("F")

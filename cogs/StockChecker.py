@@ -4,6 +4,7 @@ import lxml.html
 import config
 from utils.links import All_Websites
 from collections import OrderedDict
+from bs4 import BeautifulSoup
 
 
 # How the bot checks for Stock availability?
@@ -80,18 +81,18 @@ class StockChecker(commands.Cog):
     
     async def startup(self): 
         await self.bot.wait_until_ready()   
-        # self.bot.loop.create_task(self.scrape_amazon(amazon_link=All_Websites["amazon"].PS5_link,product="PS5")) 
-        # self.bot.loop.create_task(self.scrape_amazon(amazon_link=All_Websites["amazon"].PS5_DE_link,product="PS5_DE")) 
-        # self.bot.loop.create_task(self.scrape_amazon(amazon_link=All_Websites["amazon"].XSX_link,product="XSX"))
-        # self.bot.loop.create_task(self.scrape_amazon(amazon_link=All_Websites["amazon"].XSS_link,product="XSS"))
+        self.bot.loop.create_task(self.scrape_amazon(amazon_link=All_Websites["amazon"].PS5_link,product="PS5")) 
+        self.bot.loop.create_task(self.scrape_amazon(amazon_link=All_Websites["amazon"].PS5_DE_link,product="PS5_DE")) 
+        self.bot.loop.create_task(self.scrape_amazon(amazon_link=All_Websites["amazon"].XSX_link,product="XSX"))
+        self.bot.loop.create_task(self.scrape_amazon(amazon_link=All_Websites["amazon"].XSS_link,product="XSS"))
 
         self.bot.loop.create_task(self.scrape_flipkart(flipkart_link=All_Websites["flipkart"].PS5_link,product="PS5"))
         self.bot.loop.create_task(self.scrape_flipkart(flipkart_link=All_Websites["flipkart"].PS5_DE_link,product="PS5_DE"))
         self.bot.loop.create_task(self.scrape_flipkart(flipkart_link=All_Websites["flipkart"].XSX_link,product="XSX"))
         self.bot.loop.create_task(self.scrape_flipkart(flipkart_link=All_Websites["flipkart"].XSS_link,product="XSS"))
 
-        # self.bot.loop.create_task(self.scrape_games_the_shop(games_the_shop_link=All_Websites["games_the_shop"].PS5_link,product="PS5"))
-        # self.bot.loop.create_task(self.scrape_ppgc(ppgc_link=All_Websites["ppgc"].PS5_link,product="PS5"))
+        self.bot.loop.create_task(self.scrape_games_the_shop(games_the_shop_link=All_Websites["games_the_shop"].PS5_link,product="PS5"))
+        self.bot.loop.create_task(self.scrape_ppgc(ppgc_link=All_Websites["ppgc"].PS5_link,product="PS5"))
         
 
     async def get_page_html(self,link,headers_list=[{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36"}]):
@@ -273,35 +274,65 @@ class StockChecker(commands.Cog):
         #         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36", 
         #         }
         #         ]
-        
+
+
         while True:
-            page_html =await self.get_page_html(link=flipkart_link)
-            doc = lxml.html.fromstring(str(page_html))
+            page_html = await self.get_page_html(flipkart_link)
+            soup = BeautifulSoup(str(page_html), 'html.parser')
             try:
-                sold_out_element=doc.xpath('//*[@id="container"]/div/div[3]/div[1]/div[2]/div[3]/div')[0].text
-                sold_out_sentence=doc.xpath('//*[@id="container"]/div/div[3]/div[1]/div[2]/div[3]/div[2]')[0].text
-                add_to_cart_button=doc.xpath('//*[@id="container"]/div/div[3]/div[1]/div[1]/div[2]/div/ul/li[1]/button')
-                buy_now_button=doc.xpath('//*[@id="container"]/div/div[3]/div[1]/div[1]/div[2]/div/ul/li[2]/form/button')
+                notify_me_button=soup.find('button', class_ = '_2KpZ6l _2uS5ZX _2Dfasx').text#notify me button
             except:
-                print("Flipkart Error")
-                self.add_error(product=product,website_name="flipkart")
-                await asyncio.sleep(15)
-                continue
-            
-            if len(add_to_cart_button) !=0 :
-                await self.run_notifications(website_name="flipkart",product=product,method="Add to Cart button")
-            
-            elif len(buy_now_button) !=0:
-                await self.run_notifications(website_name="flipkart",product=product,method="Pre Order Now/ Buy Now button")
-            
-            elif sold_out_element is None and sold_out_sentence is None:
-                await self.run_notifications(website_name="flipkart",product=product,method="\"Sold out\" is not shown. \n This method may result in false positive's. Contact the mod's if it is so.")
+                try:
+                    add_to_cart_button=soup.find('button', class_ = '_2KpZ6l _2U9uOA _3v1-ww').text#add to cart
+                    buy_now_button=soup.find('button', class_ = '_2KpZ6l _2U9uOA ihZ75k _3AWRsL').text#buy now/preorder now
+                    
+                    if add_to_cart_button in [' ADD TO CART']:
+                        await self.run_notifications(website_name="flipkart",product=product,method="Add to Cart button")
 
-            else:
-                pass
+                    elif buy_now_button in [' BUY NOW',' PROCEED TO BUY',' ORDER IT',' PREORDER NOW',' PRE ORDER']:
+                        await self.run_notifications(website_name="flipkart",product=product,method="Pre Order Now/ Buy Now button")
+                        
+                    else: 
+                        for x in ['NOW','BUY','ORDER',]:
+                            if x in buy_now_button:
+                                await self.run_notifications(website_name="flipkart",product=product,method="Buy Now/ Pre Order Now has 'NOW','BUY','ORDER' in it.")
 
+                except:
+                    print("Flipkart Error")
+                    self.add_error(product=product,website_name="flipkart")
+                    await asyncio.sleep(15)
+                    continue
+           
             self.add_count(product=product,website_name="flipkart")
-            await asyncio.sleep(5)
+            await asyncio.sleep(15)
+        
+        # while True:
+        #     page_html =await self.get_page_html(link=flipkart_link)
+        #     doc = lxml.html.fromstring(str(page_html))
+        #     try:
+        #         sold_out_element=doc.xpath('//*[@id="container"]/div/div[3]/div[1]/div[2]/div[3]/div')[0].text
+        #         sold_out_sentence=doc.xpath('//*[@id="container"]/div/div[3]/div[1]/div[2]/div[3]/div[2]')[0].text
+        #         add_to_cart_button=doc.xpath('//*[@id="container"]/div/div[3]/div[1]/div[1]/div[2]/div/ul/li[1]/button')
+        #         buy_now_button=doc.xpath('//*[@id="container"]/div/div[3]/div[1]/div[1]/div[2]/div/ul/li[2]/form/button')
+        #     except:
+        #         print("Flipkart Error")
+        #         self.add_error(product=product,website_name="flipkart")
+        #         await asyncio.sleep(15)
+        #         continue
+            
+        #     if len(add_to_cart_button) !=0 :
+        #         await self.run_notifications(website_name="flipkart",product=product,method="Add to Cart button")
+            
+        #     elif len(buy_now_button) !=0:
+        #         await self.run_notifications(website_name="flipkart",product=product,method="Pre Order Now/ Buy Now button")
+            
+        #     # elif sold_out_element is None and sold_out_sentence is None:
+        #     #     await self.run_notifications(website_name="flipkart",product=product,method="\"Sold out\" is not shown. \n This method may result in false positive's. Contact the mod's if it is so.")
+
+        #     else:
+        #         pass
+
+
 
     async def scrape_games_the_shop(self,games_the_shop_link,product):
         while True:
