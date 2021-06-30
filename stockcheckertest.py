@@ -2,13 +2,13 @@
 #This is test code and will most likely not work
 #For the scrapping code refer to cogs/stockchecker.py
 ############################################################################
-
+from bs4 import BeautifulSoup
 import requests,time,random
 import lxml.html
 from collections import OrderedDict
 
 All_Websites={
-    "flipkart":"https://www.flipkart.com/sony-playstation-5-cfi-1008a01r-825-gb-astro-s-playroom/p/itma0201bdea62fa",
+    "flipkart":"https://www.flipkart.com/annapurna-devi/p/itmef55de4cd57da",
     "amazon":"https://www.amazon.in/Xbox-Series-S/dp/B08J89D6BW/",
     "games_the_shop":"https://www.gamestheshop.com/PlayStation-5-Console/5111",
     "ppgc":"https://prepaidgamercard.com/product/playstation-5-console-ps5/",
@@ -145,6 +145,9 @@ def scrape_amazon(amazon_link):
         print(add_to_cart_button)
         print(all_buying_options)
         print(pre_order_button)
+        price=doc.xpath('//*[@id="buy-now-button"]')
+
+
         
         if "Currently unavailable." in stock or "We don't know when or if this item will be back in stock." in stock :
             status="Out of Stock"
@@ -225,39 +228,57 @@ def scrape_flipkart(flipkart_link):
     #     ]
     while True:
         page_html = str(get_page_html(flipkart_link))
-        doc = lxml.html.fromstring(page_html)
+        soup = BeautifulSoup(page_html, 'html.parser')
         try:
-            sold_out_element=doc.xpath('//*[@id="container"]/div/div[3]/div[1]/div[2]/div[3]/div')[0].text
-            sold_out_sentence=doc.xpath('//*[@id="container"]/div/div[3]/div[1]/div[2]/div[3]/div[2]')[0].text
-            add_to_cart_button=doc.xpath('//*[@id="container"]/div/div[3]/div[1]/div[1]/div[2]/div/ul/li[1]/button')
-            buy_now_button=doc.xpath('//*[@id="container"]/div/div[3]/div[1]/div[1]/div[2]/div/ul/li[2]/form/button')
-        except:
-            print("Flipkart Error")
+            notify_me_button=soup.find('button', class_ = '_2KpZ6l _2uS5ZX _2Dfasx').text#notify me button
+            print(notify_me_button)
             continue
-        print(sold_out_element)
-        print(sold_out_sentence)
-        print(add_to_cart_button)
-        print(buy_now_button)
+        except:
+            try:
+                add_to_cart_button=soup.find('button', class_ = '_2KpZ6l _2U9uOA _3v1-ww').text#add to cart
+                buy_now_button=soup.find('button', class_ = '_2KpZ6l _2U9uOA ihZ75k _3AWRsL').text#buy now/preorder now
+                print(buy_now_button)
+                print(add_to_cart_button)
+            except:
+                print("Flipkart Error")
+                continue
+
+
+        if add_to_cart_button in [' ADD TO CART']:
+            print("add")
+            run_notifications(website_name="flipkart")
+
+        elif buy_now_button in [' BUY NOW',' PROCEED TO BUY',' ORDER IT',' PREORDER NOW',' PRE ORDER']:
+            run_notifications(website_name="flipkart")
+
+        else: 
+            for x in ['NOW','BUY','ORDER',]:
+                if x in buy_now_button:
+                    run_notifications(website_name="flipkart")
+            
+
+
+
 
         print("------------")
         # if "Sold Out" in sold_out_element or "This item is currently out of stock" in sold_out_sentence:
         #     pass #checks for false negatives/makes sure it doesn't show Item is in stock when this is shown
                 
-        if len(buy_now_button) !=0:
-            status="In Stock"
-            run_notifications(website_name="flipkart")
+        # if len(buy_now_button) !=0:
+        #     status="In Stock"
+        #     run_notifications(website_name="flipkart")
         
-        elif len(add_to_cart_button) !=0:
-            status="In Stock"
-            run_notifications(website_name="flipkart")
+        # elif len(add_to_cart_button) !=0:
+        #     status="In Stock"
+        #     run_notifications(website_name="flipkart")
         
-        elif sold_out_element is None and sold_out_sentence is None:
-            status="In Stock"
-            run_notifications(website_name="flipkart")
+        # elif sold_out_element is None and sold_out_sentence is None:
+        #     status="In Stock"
+        #     run_notifications(website_name="flipkart")
 
-        else:
-            pass
-            #print("Not in stock")
+        # else:
+        #     pass
+        #     #print("Not in stock")
 
 
             #stock=doc.xpath('//*[@id="container"]/div/div[3]/div[1]/div[2]/div[3]/div')[0].text
@@ -331,8 +352,8 @@ def scrape_ppgc(ppgc_link):
 
 #Comment out the websites you are not using
 #To comment a site add "#" in front of it.
-startup(site="flipkart")
-#startup(site="amazon")
+#startup(site="flipkart")
+startup(site="amazon")
 # startup(site="gts")
 # startup(site="ppgc")
 #startup(site="shopatsc")
