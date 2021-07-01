@@ -1,6 +1,5 @@
-buy_now_button="PREORDER NOW"
-for x in ['NOW','BUY','ORDER',]:
-    if x in buy_now_button:
-        print("e")
+x={"loal":1}
+if "lol" in x.keys():
+    print("exist")
 else:
-    print("F")
+    print("else")
