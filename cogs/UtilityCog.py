@@ -1,6 +1,7 @@
 import discord,random,platform,os
 from discord.ext import commands
 import config
+from io import BytesIO
 
 colourlist=config.embed_colours
 
@@ -133,7 +134,7 @@ class Utility(commands.Cog):
     @commands.has_permissions(manage_channels=True)
     @commands.bot_has_permissions(manage_channels=True)
     @commands.command(name="CreateTradeChannel",aliases=["ctc"], help=f'Creates a trade channel.  \n{config.prefix}CreateTradeChannel @User1 @User2 @User3 trade_number channel_description \nAliases: ctc',require_var_positional=True)#require_var_positional=True makes sure input is not empty
-    async def CreateTicket(self,ctx,members:commands.Greedy[discord.Member],trade_number="",*, description='Trade Channel'):
+    async def CreateTradeChannel(self,ctx,members:commands.Greedy[discord.Member],trade_number="",*, description='Trade Channel'):
         if ctx.guild.id in config.APPROVED_SERVERS:
             admin_role=ctx.guild.get_role(config.admin_role_id)
             head_moderator_role=ctx.guild.get_role(config.head_moderator_role_id)
@@ -188,6 +189,57 @@ class Utility(commands.Cog):
         else:
             await ctx.send("You can't use this command in this server. Use this command in a Approved Server.")
     
+    @commands.has_permissions(manage_messages=True)
+    @commands.bot_has_permissions(manage_channels=True)
+    @commands.command(name="CloseTradeChannel",aliases=["close"], help=f'Closes a trade channel and creates a log. \n{config.prefix}CloseTradeChannel \nAliases: close')#require_var_positional=True makes sure input is not empty
+    async def CloseTradeChannel(self,ctx):
+        if ctx.guild.id in config.APPROVED_SERVERS:
+            #guild = await self.bot.fetch_guild(config.server_id)
+            if "trade" in ctx.channel.name:
+                channel=self.bot.get_channel(config.mod_logs_channel_id)
+                embed=discord.Embed(Title="Fetching messages...",description="Fetching messages to create a transcript. Please wait.")
+                message=await ctx.send(embed=embed)
+                messages=await ctx.channel.history(limit=1000).flatten()        
+                text=f'''<html><head><title>Page Title</title></head><div class=header"><img src="{ctx.guild.icon_url}" alt="{ctx.guild.name} logo" height="200px" width ="200px"/><h2><b>Server:</b> {ctx.guild.name} ({ctx.guild.id})<br><b>Channel:</b> {ctx.channel.name} <br><b>Messages:</b> {len(messages)} \n</h2></div><br><body>''' 
+                #users={}   
+                for msg in messages[::-1]:
+                    if msg.author.bot:#bot messages will not come in the transcript
+                        pass
+                    else:
+                        text+=f"<b>{msg.author.name}</b>: {msg.content}<br>"
+                        # if msg.author.id in users.keys():
+                        #     users[msg.author.id]+=1
+                        # else:
+                        #     users[msg.author.id]=1
+                
+                #People who spoke in transcript
+                # user_string,user_transcript_string="",""
+                # for user_id in users:
+                #     user=self.bot.get_user(user_id)
+                #     user_string+=f"{user.mention} : {users[user]} Messages \n"
+                #     user_transcript_string+=f"{user.name} : {users[user]} Messages <br>"
+
+                #text+=f"<h2>Users: <br> {user_transcript_string}</h2>" + "</body></html>"
+                text+="</body></html>"
+                buffer = BytesIO(text.encode("utf8"))  # change encoding as necessary
+                await channel.send(content=f"Trade transcript of {ctx.channel.name}",file=discord.File(fp=buffer, filename=f"{ctx.channel.name}_transcript.html"))
+
+                embed=discord.Embed(Title="Transcript created.",description=f"A transcript has been sent to {channel.mention}.\n This channel can now be deleted.")      
+                #embed.add_field(name="Users",value=user_string)
+                await message.edit(embed=embed)
+            else:
+                await ctx.send("You can't use this command in this channel. Use this command in a trade channel.")
+
+        else:
+            await ctx.send("You can't use this command in this server. Use this command in a Approved Server.")
+                
+        # print(messages)
+        # text = open("template.html","r",encoding='utf-8').read()
+        # #print(text)
+        # newfile = open("ticketlog.html","w")
+        # newfile.write(text)
+
+
     @commands.cooldown(1, 3, commands.BucketType.user)
     @commands.command(name="PFP",aliases=['dp', 'avatar','av'], help=f'Shows the avatar of a user \n {config.prefix}pfp @User\n Aliases: DP, Avatar ')
     async def pfp(self,ctx,user:discord.Member=None):

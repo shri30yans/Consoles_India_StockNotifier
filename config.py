@@ -23,23 +23,24 @@ STARTUP_COGS = [
 # stock_notifications_channel_id=849310570821713927
 # stock_notifications_role_id=849561150684659732
 
-#playstation India Server
+#Playstation India Server
+#Channels
 server_id=797570077364977696
 stock_notifications_channel_id = 850096085770567700
+mod_logs_channel_id=860121260369379328
+
+#Roles
 PS5_stock_notifications_role_id = 849606173522788352
 PS5_DE_stock_notifications_role_id = 857134006243688458
 XSX_stock_notifications_role_id = 856442409142976542
 XSS_stock_notifications_role_id = 856442480857972745
-#screenshot_sharing_channel_id=850711788144164885
 
+#Mod roles
 head_moderator_role_id=798978668403753000
 moderator_role_id=803139873078771713
 game_trade_moderator_role_id=815165934338965504
 admin_role_id=797840269109624862
 bot_role_id=797840270028701756
-#member_count_channel_id=850221909227995137
-
-
 
 embed_colours=[0xFFFF00,#yellow
             0xFF0000,#red
