@@ -1,4 +1,4 @@
-import os, sys, discord, platform, random, aiohttp, json, time, asyncio,traceback,asyncpg
+import os, sys, discord, platform, random # aiohttp, json, time, asyncio,traceback,asyncpg
 from discord.ext import commands,tasks
 #from discord.ext.commands.cooldowns import BucketType
 from utils.help import EmbedHelpCommand

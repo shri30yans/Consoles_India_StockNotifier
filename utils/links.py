@@ -21,6 +21,10 @@ All_Websites={
         XSX_link="https://www.flipkart.com/microsoft-xbox-series-x-1024-gb/p/itm63ff9bd504f27",
         XSS_link="https://www.flipkart.com/microsoft-xbox-series-s-512-gb/p/itm13c51f9047da8"),
     
+    "shopatsc":Website(display_name="ShopAtSC",common_name="shopatsc",
+        PS5_link="https://shopatsc.com/products/playstation-5-console",
+        PS5_DE_link="https://shopatsc.com/collections/playstation-5/products/playstation5-digital-edition",),
+    
     "games_the_shop":Website(display_name="Games the Shop",common_name="games_the_shop",
         PS5_link="https://www.gamestheshop.com/PlayStation-5-Console/5111"),
     

@@ -1,7 +1,7 @@
 import discord,random,platform,os
 from discord.ext import commands
 import config
-from io import BytesIO
+
 
 colourlist=config.embed_colours
 
@@ -9,7 +9,7 @@ class Utility(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(name="Prefix", help=f'Shows the current prefix \n {config.prefix}prefix')
+    @commands.command(name="Prefix", help=f'Shows the current prefix \nFormat: `{config.prefix}prefix`')
     async def prefix(self,ctx):
         embed=discord.Embed(title="Current Prefix",color = random.choice(colourlist),timestamp=ctx.message.created_at)
         embed.add_field(name=f"{self.bot.user.name} Prefix",value=f"{config.prefix}",inline=False)
@@ -17,7 +17,7 @@ class Utility(commands.Cog):
         embed.set_footer(icon_url= ctx.author.avatar_url,text=f"Requested by {ctx.message.author} • {self.bot.user.name} ")
         await ctx.send(embed=embed)
     
-    @commands.command(name="Info",aliases=['botinfo'], help=f'Returns bot information \n {config.prefix}Info \nAliases: serverstats ')
+    @commands.command(name="Info",aliases=['botinfo'], help=f'Returns bot information \nFormat: `{config.prefix}Info` \nAliases: serverstats ')
     async def info(self,ctx):
         embed=discord.Embed(title="Bot Info",color = random.choice(colourlist),timestamp=ctx.message.created_at)
         #embed.add_field(name="Created by:",value=f"Shri30yans",inline=False)
@@ -37,7 +37,7 @@ class Utility(commands.Cog):
 
     
     @commands.cooldown(1, 3, commands.BucketType.user)
-    @commands.command(name="Ping", help=f'Tells the Ping of a server \n{config.prefix}ping')
+    @commands.command(name="Ping", help=f'Tells the Ping of a server \nFormat: `{config.prefix}ping`')
     async def ping(self,ctx):
         """ Pong! """
         message = await ctx.send(embed=discord.Embed(title="Ping",description=":Pong!  :ping_pong:",color = random.choice(colourlist),timestamp=ctx.message.created_at))
@@ -47,7 +47,7 @@ class Utility(commands.Cog):
         await message.edit(embed=embed)
     
     @commands.cooldown(1, 3, commands.BucketType.user)
-    @commands.command(name="ServerInfo",aliases=['serverstats','server'], help=f'Finds server stats \n{config.prefix}stats \nAliases: serverstats ')
+    @commands.command(name="ServerInfo",aliases=['serverstats','server'], help=f'Finds server stats \nFormat: `{config.prefix}stats` \nAliases: serverstats ')
     async def stats(self,ctx):
             #f-strings
             guild_owner=str(ctx.guild.owner)
@@ -81,7 +81,7 @@ class Utility(commands.Cog):
             await ctx.send(embed=embed) 
 
     @commands.cooldown(1, 5, commands.BucketType.user)
-    @commands.command(name="Whois",aliases=["userinfo"], help=f'Shows information of a user \n{config.prefix}whois @User')
+    @commands.command(name="Whois",aliases=["userinfo"], help=f'Shows information of a user \nFormat: `{config.prefix}whois @User`')
     async def whois(self,ctx,user:discord.Member=None):
         if (user == None):
             user_mention= ctx.author
@@ -113,11 +113,11 @@ class Utility(commands.Cog):
 
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True)
-    @commands.command(name="Delete",aliases=['del', 'clear'], help=f'Deletes messages \n {config.prefix}delete <number_of _messages> \n Aliases: clear, del')
+    @commands.command(name="Delete",aliases=['del', 'clear'], help=f'Deletes messages \nFormat: `{config.prefix}delete <number_of _messages>` \n Aliases: clear, del')
     async def delete(self,ctx,num:int):
-        if num>=50:
+        if num>100:
             embed=discord.Embed(color = random.choice(colourlist),timestamp=ctx.message.created_at)
-            embed.add_field(name="Too many messages deleted.",value=f"You can delete a maximum of 50 messages at one go to prevent excessive deleting. ") 
+            embed.add_field(name="Too many messages deleted.",value=f"You can delete a maximum of 100 messages at one go to prevent excessive deleting. ") 
             author_avatar=ctx.author.avatar_url
             embed.set_footer(icon_url= author_avatar,text=f"Requested by {ctx.message.author} • {self.bot.user.name} ")
             await ctx.send(embed=embed,delete_after=4)
@@ -131,117 +131,10 @@ class Utility(commands.Cog):
             await ctx.send(embed=embed,delete_after=4)
            
 
-    @commands.has_permissions(manage_channels=True)
-    @commands.bot_has_permissions(manage_channels=True)
-    @commands.command(name="CreateTradeChannel",aliases=["ctc"], help=f'Creates a trade channel.  \n{config.prefix}CreateTradeChannel @User1 @User2 @User3 trade_number channel_description \nAliases: ctc',require_var_positional=True)#require_var_positional=True makes sure input is not empty
-    async def CreateTradeChannel(self,ctx,members:commands.Greedy[discord.Member],trade_number="",*, description='Trade Channel'):
-        if ctx.guild.id in config.APPROVED_SERVERS:
-            admin_role=ctx.guild.get_role(config.admin_role_id)
-            head_moderator_role=ctx.guild.get_role(config.head_moderator_role_id)
-            moderator_role=ctx.guild.get_role(config.moderator_role_id)
-            game_trade_moderator_role=ctx.guild.get_role(config.game_trade_moderator_role_id)
-            bot_role=ctx.guild.get_role(config.bot_role_id)
-
-        
-            overwrites = {  admin_role: discord.PermissionOverwrite(send_messages=True, read_messages=True,),#read_message_history=True,use_external_emojis=True,attach_files=True,embed_links=True),
-                            head_moderator_role: discord.PermissionOverwrite(send_messages=True, read_messages=True),
-                            moderator_role: discord.PermissionOverwrite(send_messages=True, read_messages=True),
-                            game_trade_moderator_role: discord.PermissionOverwrite(send_messages=True, read_messages=True),
-                            bot_role: discord.PermissionOverwrite(send_messages=True, read_messages=True),
-                            ctx.guild.default_role: discord.PermissionOverwrite(read_messages=False),
-                        }
-
-            member_names=""
-            for mbr in members:
-                if mbr == ctx.author: pass
-                
-                elif mbr.bot: pass
-                
-                else:
-                    overwrites[mbr] = discord.PermissionOverwrite(send_messages=True, read_messages=True)
-                    try:
-                        member_names += mbr.mention + " "
-                    except:
-                        try:
-                            member_names += mbr.name + " "
-                        except: pass
-
-            if member_names == "":
-                member_names="No members were added to this Trade."
-            else:
-                pass
-
-                        
-            category = discord.utils.get(ctx.guild.categories, name="Trades")
-            channel = await category.create_text_channel(f'trade {trade_number}', overwrites=overwrites,topic=description,reason="Trade Channel")
-            embed=discord.Embed(title=f"Trade channel created.",description=f"{channel.mention} \nMember's added to trade: {member_names} \nDescription: {description}")        
-            embed.set_footer(icon_url= ctx.author.avatar_url,text=f"Requested by {ctx.message.author} • {self.bot.user.name} ")
-            await ctx.send(embed=embed)
-            embed=discord.Embed(title=f"Trade instructions",)
-            embed.add_field(name="Process",value="""1) The buyer sends the money to a Games Trades Moderator.\n2) The seller will then ship the product and send tracking details to the buyer.\n3) The buyer upon receiving the product checks the conditions of the product.\n4) Once the buyer is satisfied with the product a Games Trades Moderator will transfer money to the seller.""",inline=False)
-            embed.add_field(name="Seller Instructions",value="Confirm the product and its price before proceeding further.",inline=False)
-            embed.add_field(name="Buyer Instructions",value="Check with the selling party before transferring the amount to a Game Trade Moderator. Make sure to collect the tracking ID after the seller has shipped the product.",inline=False)      
-            embed.add_field(name="Miscellaneous",value="[Shipping Tips](https://discord.com/channels/797570077364977696/815188535907975198/815469791032508416)",inline=False)   
-            embed.set_footer(icon_url= ctx.author.avatar_url,text=f"Requested by {ctx.message.author} • {self.bot.user.name} ")
-            message = await channel.send(embed=embed,content=f"{member_names} Here is the requested channel. A {game_trade_moderator_role.mention} will be here to coordinate with you soon.")
-            await message.add_reaction("\U0001f44d")#thumbs up
-
-        else:
-            await ctx.send("You can't use this command in this server. Use this command in a Approved Server.")
-    
-    @commands.has_permissions(manage_messages=True)
-    @commands.bot_has_permissions(manage_channels=True)
-    @commands.command(name="CloseTradeChannel",aliases=["close"], help=f'Closes a trade channel and creates a log. \n{config.prefix}CloseTradeChannel \nAliases: close')#require_var_positional=True makes sure input is not empty
-    async def CloseTradeChannel(self,ctx):
-        if ctx.guild.id in config.APPROVED_SERVERS:
-            #guild = await self.bot.fetch_guild(config.server_id)
-            if "trade" in ctx.channel.name:
-                channel=self.bot.get_channel(config.mod_logs_channel_id)
-                embed=discord.Embed(Title="Fetching messages...",description="Fetching messages to create a transcript. Please wait.")
-                message=await ctx.send(embed=embed)
-                messages=await ctx.channel.history(limit=1000).flatten()        
-                text=f'''<html><head><title>Page Title</title></head><div class=header"><img src="{ctx.guild.icon_url}" alt="{ctx.guild.name} logo" height="200px" width ="200px"/><h2><b>Server:</b> {ctx.guild.name} ({ctx.guild.id})<br><b>Channel:</b> {ctx.channel.name} <br><b>Messages:</b> {len(messages)} \n</h2></div><br><body>''' 
-                #users={}   
-                for msg in messages[::-1]:
-                    if msg.author.bot:#bot messages will not come in the transcript
-                        pass
-                    else:
-                        text+=f"<b>{msg.author.name}</b>: {msg.content}<br>"
-                        # if msg.author.id in users.keys():
-                        #     users[msg.author.id]+=1
-                        # else:
-                        #     users[msg.author.id]=1
-                
-                #People who spoke in transcript
-                # user_string,user_transcript_string="",""
-                # for user_id in users:
-                #     user=self.bot.get_user(user_id)
-                #     user_string+=f"{user.mention} : {users[user]} Messages \n"
-                #     user_transcript_string+=f"{user.name} : {users[user]} Messages <br>"
-
-                #text+=f"<h2>Users: <br> {user_transcript_string}</h2>" + "</body></html>"
-                text+="</body></html>"
-                buffer = BytesIO(text.encode("utf8"))  # change encoding as necessary
-                await channel.send(content=f"Trade transcript of {ctx.channel.name}",file=discord.File(fp=buffer, filename=f"{ctx.channel.name}_transcript.html"))
-
-                embed=discord.Embed(Title="Transcript created.",description=f"A transcript has been sent to {channel.mention}.\n This channel can now be deleted.")      
-                #embed.add_field(name="Users",value=user_string)
-                await message.edit(embed=embed)
-            else:
-                await ctx.send("You can't use this command in this channel. Use this command in a trade channel.")
-
-        else:
-            await ctx.send("You can't use this command in this server. Use this command in a Approved Server.")
-                
-        # print(messages)
-        # text = open("template.html","r",encoding='utf-8').read()
-        # #print(text)
-        # newfile = open("ticketlog.html","w")
-        # newfile.write(text)
 
 
     @commands.cooldown(1, 3, commands.BucketType.user)
-    @commands.command(name="PFP",aliases=['dp', 'avatar','av'], help=f'Shows the avatar of a user \n {config.prefix}pfp @User\n Aliases: DP, Avatar ')
+    @commands.command(name="PFP",aliases=['dp', 'avatar','av'], help=f'Shows the avatar of a user \nFormat: `{config.prefix}pfp @User`\n Aliases: DP, Avatar ')
     async def pfp(self,ctx,user:discord.Member=None):
         if (user == None):
             user_mention= ctx.author
@@ -252,7 +145,8 @@ class Utility(commands.Cog):
         author_avatar=ctx.author.avatar_url
         embed.set_footer(icon_url= author_avatar,text=f"Requested by {ctx.message.author} • {self.bot.user.name} ")
         await ctx.send(embed=embed)    
-    
+
+
     def time_format_function(self,time):
         time_inputted = time
         time_inputted.strftime("%Y")

@@ -6,13 +6,15 @@ from bs4 import BeautifulSoup
 import requests,time,random
 import lxml.html
 from collections import OrderedDict
+import re
 
 All_Websites={
     "flipkart":"https://www.flipkart.com/annapurna-devi/p/itmef55de4cd57da",
     "amazon":"https://www.amazon.in/Xbox-Series-S/dp/B08J89D6BW/",
     "games_the_shop":"https://www.gamestheshop.com/PlayStation-5-Console/5111",
     "ppgc":"https://prepaidgamercard.com/product/playstation-5-console-ps5/",
-    "shopatsc":"https://shopatsc.com/collections/personal-audio/products/sony-wh-1000xm4-industry-leading-wireless-noise-cancelling-headphones-bluetooth-headset-with-mic-for-phone-calls-30-hours-battery-life-quick-charge-touch-control-alexa-voice-control-black?variant=34225365942411",}
+    #"shopatsc":"https://shopatsc.com/products/playstation-5-console-store",
+    "shopatsc":"https://shopatsc.com/products/playstation-5-console-store",}
 
 def run_notifications(website_name):
     print(f"Notification Alert! This product is in stock at {website_name}")
@@ -133,7 +135,7 @@ def scrape_amazon(amazon_link):
         page_html = str(get_page_html(amazon_link,headers_list))
         doc = lxml.html.fromstring(page_html)
         try:
-            stock=doc.xpath('//*[@id="availability"]/span')[0].text
+            stock=doc.xpath('//*[@id="availability"]/span')
             add_to_cart_button=doc.xpath('//*[@id="add-to-cart-button"]')
             all_buying_options=doc.xpath('//*[@id="buybox-see-all-buying-choices"]/span/a')
             pre_order_button=doc.xpath('//*[@id="buy-now-button"]')
@@ -149,7 +151,7 @@ def scrape_amazon(amazon_link):
 
 
         
-        if "Currently unavailable." in stock or "We don't know when or if this item will be back in stock." in stock :
+        if "Currently unavailable." in stock[0] or "We don't know when or if this item will be back in stock." in stock :
             status="Out of Stock"
         
         elif "In stock".lower() in stock.lower():
@@ -170,20 +172,41 @@ def scrape_amazon(amazon_link):
         #print(status)
         
 def scrape_shopatsc(shopatsc_link):
+    # while True:
+    #     page_html = str(get_page_html(shopatsc_link))
+    #     doc = lxml.html.fromstring(page_html)
+    #     try:
+    #         notify_button = doc.xpath('//*[@id="notify_btn_div"]')                                  
+    #         add_to_cart_button = doc.xpath('//*[@id="product-add-to-cart"]')
+    #     except:
+    #         print("shopatscdigital Error")
+    #         continue
+        
+    #     print("Notify",notify_button)
+    #     print("Add_to_cart",add_to_cart_button)
+    #     time.sleep(2)
     while True:
         page_html = str(get_page_html(shopatsc_link))
-        doc = lxml.html.fromstring(page_html)
+        soup = BeautifulSoup(page_html, 'html.parser')
         try:
-            stock = doc.xpath('//*[@id="notify_btn_div"]')                                  
-            add_to_cart_button = doc.xpath('//*[@id="product-add-to-cart"]')
+            notify_me_button = soup.find(id='notify_btn_div')
         except:
-            print("shopatscdigital Error")
+            print("except")
             continue
+        notify_me_button_style = notify_me_button.get('style')
+        if notify_me_button_style is None:
+            pass
+        else:
+            text_match = re.search('display:none;',notify_me_button_style, re.IGNORECASE)
+            #print(text_match)
+            if text_match is not None:
+                run_notifications(website_name="shopatsc")
+    
         
-        print("Stock",stock)
-        print("Add_to_cart",add_to_cart_button)
+        print("Notify",notify_me_button)
+        print("Notify style",notify_me_button_style)
+        print("---------------------")
         time.sleep(2)
-
         #print(status)
 
 def scrape_flipkart(flipkart_link):
@@ -353,7 +376,7 @@ def scrape_ppgc(ppgc_link):
 #Comment out the websites you are not using
 #To comment a site add "#" in front of it.
 #startup(site="flipkart")
-startup(site="amazon")
+#startup(site="amazon")
 # startup(site="gts")
 # startup(site="ppgc")
-#startup(site="shopatsc")
+startup(site="shopatsc")
