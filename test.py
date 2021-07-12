@@ -1,5 +1,2 @@
-x={"loal":1}
-if "lol" in x.keys():
-    print("exist")
-else:
-    print("else")
+a=[1,2,3,4,5]
+print(a[0:-1:-1])

@@ -1,3 +1,4 @@
+import re
 import discord,random,asyncio,time,aiohttp
 from discord.ext import commands,tasks
 import lxml.html
@@ -23,14 +24,14 @@ class StockChecker(commands.Cog):
         self.bot.loop.create_task(self.startup())
 
         self.count_dict={   
-                        "PS5":{"amazon":0,"flipkart":0,"games_the_shop":0,"ppgc":0},
-                        "PS5_DE":{"amazon":0,"flipkart":0,"games_the_shop":0,"ppgc":0},
+                        "PS5":{"amazon":0,"flipkart":0,"games_the_shop":0,"ppgc":0,"shopatsc":0},
+                        "PS5_DE":{"amazon":0,"flipkart":0,"games_the_shop":0,"ppgc":0,"shopatsc":0},
                         "XSX":{"amazon":0,"flipkart":0},
                         "XSS":{"amazon":0,"flipkart":0}}
        
         self.error_count_dict={   
-                            "PS5":{"amazon":0,"flipkart":0,"games_the_shop":0,"ppgc":0},
-                            "PS5_DE":{"amazon":0,"flipkart":0,"games_the_shop":0,"ppgc":0},
+                            "PS5":{"amazon":0,"flipkart":0,"games_the_shop":0,"ppgc":0,"shopatsc":0},
+                            "PS5_DE":{"amazon":0,"flipkart":0,"games_the_shop":0,"ppgc":0,"shopatsc":0},
                             "XSX":{"amazon":0,"flipkart":0},
                             "XSS":{"amazon":0,"flipkart":0}}
 
@@ -72,6 +73,7 @@ class StockChecker(commands.Cog):
         embed=discord.Embed(Title="Run Count",description="Showing number of times StockChecker has run succesfully on each site.",colour=0x0000FF)
         embed.add_field(name="Amazon",value=f"""\u2800{config.PS5_emoji}  **PS5**:\n\u2800\u2800{self.count_dict['PS5']['amazon']} times. \n\u2800\u2800Errored out: {self.error_count_dict['PS5']['amazon']} times.\n\u2800{config.PS5_emoji}  **PS5 DE**:\n\u2800\u2800{self.count_dict['PS5_DE']['amazon']} times. \n\u2800\u2800Errored out: {self.error_count_dict['PS5_DE']['amazon']} times.\n\u2800{config.XSX_emoji}  **XSX**:\n\u2800\u2800{self.count_dict['XSX']['amazon']} times. \n\u2800\u2800Errored out: {self.error_count_dict['XSX']['amazon']} times. \n\u2800{config.XSS_emoji}  **XSS**:\n\u2800\u2800{self.count_dict['XSS']['amazon']} times. \n\u2800\u2800Errored out: {self.error_count_dict['XSS']['amazon']} times.""",inline=False)
         embed.add_field(name="Flipkart",value=f"""\u2800{config.PS5_emoji}  **PS5**:\n\u2800\u2800{self.count_dict['PS5']['flipkart']} times. \n\u2800\u2800Errored out: {self.error_count_dict['PS5']['flipkart']} times.\n\u2800{config.PS5_emoji}  **PS5 DE**:\n\u2800\u2800{self.count_dict['PS5_DE']['flipkart']} times. \n\u2800\u2800Errored out: {self.error_count_dict['PS5_DE']['flipkart']} times.\n\u2800{config.XSX_emoji}  **XSX**:\n\u2800\u2800{self.count_dict['XSX']['flipkart']} times. \n\u2800\u2800Errored out: {self.error_count_dict['XSX']['flipkart']} times. \n\u2800{config.XSS_emoji}  **XSS**:\n\u2800\u2800{self.count_dict['XSS']['flipkart']} times. \n\u2800\u2800Errored out: {self.error_count_dict['XSS']['flipkart']} times.""",inline=False)
+        embed.add_field(name="ShopAtSC",value=f"""\u2800{config.PS5_emoji}  **PS5**:\n\u2800\u2800{self.count_dict['PS5']['shopatsc']} times. \n\u2800\u2800Errored out: {self.error_count_dict['PS5']['shopatsc']} times.\n\u2800{config.PS5_emoji}  **PS5 DE**:\n\u2800\u2800{self.count_dict['PS5_DE']['shopatsc']} times. \n\u2800\u2800Errored out: {self.error_count_dict['PS5_DE']['shopatsc']} times.""",inline=False)
         embed.add_field(name="Games the Shop",value=f"""\u2800{config.PS5_emoji}  **PS5**:\n\u2800\u2800{self.count_dict['PS5']['games_the_shop']} times. \n\u2800\u2800Errored out: {self.error_count_dict['PS5']['games_the_shop']} times.""",inline=False)
         embed.add_field(name="Prepaid Gamer Card",value=f"""\u2800{config.PS5_emoji}  **PS5**:\n\u2800\u2800{self.count_dict['PS5']['ppgc']} times. \n\u2800\u2800Errored out: {self.error_count_dict['PS5']['ppgc']} times.""",inline=False)
         await ctx.send(embed=embed)
@@ -91,11 +93,15 @@ class StockChecker(commands.Cog):
         self.bot.loop.create_task(self.scrape_flipkart(flipkart_link=All_Websites["flipkart"].XSX_link,product="XSX"))
         self.bot.loop.create_task(self.scrape_flipkart(flipkart_link=All_Websites["flipkart"].XSS_link,product="XSS"))
 
+        self.bot.loop.create_task(self.scrape_shopatsc(shopatsc_link=All_Websites["shopatsc"].PS5_link,product="PS5"))
+        self.bot.loop.create_task(self.scrape_shopatsc(shopatsc_link=All_Websites["shopatsc"].PS5_DE_link,product="PS5_DE"))
+
         self.bot.loop.create_task(self.scrape_games_the_shop(games_the_shop_link=All_Websites["games_the_shop"].PS5_link,product="PS5"))
         self.bot.loop.create_task(self.scrape_ppgc(ppgc_link=All_Websites["ppgc"].PS5_link,product="PS5"))
         
 
-    async def get_page_html(self,link,headers_list=[{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36"}]):
+    #async def get_page_html(self,link,headers_list=[{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36"}]):
+    async def get_page_html(self,link,headers_list=[{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36"},{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"},{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36"},{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.157 Safari/537.36"}]):
         ordered_headers_list = []
         for headers in headers_list:
             h = OrderedDict()
@@ -103,7 +109,7 @@ class StockChecker(commands.Cog):
                 h[header]=value
                 ordered_headers_list.append(h)
         headers = random.choice(headers_list)
-        async with aiohttp.ClientSession(headers=headers) as session:
+        async with aiohttp.ClientSession(headers=headers,trust_env=True) as session:
             async with session.get(url=link) as response:
                 html = await response.text()
                 return html
@@ -332,7 +338,32 @@ class StockChecker(commands.Cog):
         #     else:
         #         pass
 
+    async def scrape_shopatsc(self,shopatsc_link,product):
+        while True:
+            page_html = await self.get_page_html(link=shopatsc_link)
+            soup = BeautifulSoup(page_html, 'html.parser')
+            try:
+                notify_me_button = soup.find(id='notify_btn_div')
+            except:
+                print("ShopAtSC Error")
+                self.add_error(product=product,website_name="shopatsc")
+                await asyncio.sleep(15)
+                continue
+            
+            if notify_me_button is None:
+                pass
+            else:
+                notify_me_button_style = notify_me_button.get('style')
+                if notify_me_button_style is None:
+                    pass
+                else:
+                    text_match = re.search('display:none;',notify_me_button_style, re.IGNORECASE)
+                    print(text_match)
+                    if text_match is not None:
+                        await self.run_notifications(website_name="shopatsc",product=product,method="Notify Me button is not visible.")
 
+            self.add_count(product=product,website_name="shopatsc")
+            await asyncio.sleep(15)
 
     async def scrape_games_the_shop(self,games_the_shop_link,product):
         while True:
@@ -343,7 +374,7 @@ class StockChecker(commands.Cog):
             except:
                 print("Games the Shop Error")
                 self.add_error(product=product,website_name="games_the_shop")
-                await asyncio.sleep(10)
+                await asyncio.sleep(15)
                 continue
         
             if " ADD TO CART" in stock:
@@ -357,7 +388,7 @@ class StockChecker(commands.Cog):
             
 
             self.add_count(product=product,website_name="games_the_shop")
-            await asyncio.sleep(10)
+            await asyncio.sleep(15)
 
     async def scrape_ppgc(self,ppgc_link,product):
         while True:
@@ -368,7 +399,7 @@ class StockChecker(commands.Cog):
             except:
                 print("Prepaid Gamer Card Error")
                 self.add_error(product=product,website_name="ppgc")
-                await asyncio.sleep(10)
+                await asyncio.sleep(15)
                 continue
         
             if "Add to cart" in stock:
@@ -383,7 +414,7 @@ class StockChecker(commands.Cog):
             
 
             self.add_count(product=product,website_name="ppgc")
-            await asyncio.sleep(10)
+            await asyncio.sleep(15)
   
 
 
