@@ -27,13 +27,17 @@ class StockChecker(commands.Cog):
                         "PS5":{"amazon":0,"flipkart":0,"games_the_shop":0,"ppgc":0,"shopatsc":0},
                         "PS5_DE":{"amazon":0,"flipkart":0,"games_the_shop":0,"ppgc":0,"shopatsc":0},
                         "XSX":{"amazon":0,"flipkart":0},
-                        "XSS":{"amazon":0,"flipkart":0}}
+                        "XSS":{"amazon":0,"flipkart":0},
+                        "RED_DS":{"amazon":0,"flipkart":0,"shopatsc":0},
+                        "BLACK_DS":{"amazon":0,"flipkart":0,"shopatsc":0},}
        
         self.error_count_dict={   
                             "PS5":{"amazon":0,"flipkart":0,"games_the_shop":0,"ppgc":0,"shopatsc":0},
                             "PS5_DE":{"amazon":0,"flipkart":0,"games_the_shop":0,"ppgc":0,"shopatsc":0},
                             "XSX":{"amazon":0,"flipkart":0},
-                            "XSS":{"amazon":0,"flipkart":0}}
+                            "XSS":{"amazon":0,"flipkart":0},
+                            "RED_DS":{"amazon":0,"shopatsc":0},
+                            "BLACK_DS":{"amazon":0,"shopatsc":0},}
 
         
         self.last_website_notifications=None
@@ -71,9 +75,9 @@ class StockChecker(commands.Cog):
     @commands.command(name="RunCount",aliases=["rc"], help=f'Shows how many times the StockChecker has ran successfully. \n{config.prefix}runcount')
     async def runcount(self,ctx):
         embed=discord.Embed(Title="Run Count",description="Showing number of times StockChecker has run succesfully on each site.",colour=0x0000FF)
-        embed.add_field(name="Amazon",value=f"""\u2800{config.PS5_emoji}  **PS5**:\n\u2800\u2800{self.count_dict['PS5']['amazon']} times. \n\u2800\u2800Errored out: {self.error_count_dict['PS5']['amazon']} times.\n\u2800{config.PS5_emoji}  **PS5 DE**:\n\u2800\u2800{self.count_dict['PS5_DE']['amazon']} times. \n\u2800\u2800Errored out: {self.error_count_dict['PS5_DE']['amazon']} times.\n\u2800{config.XSX_emoji}  **XSX**:\n\u2800\u2800{self.count_dict['XSX']['amazon']} times. \n\u2800\u2800Errored out: {self.error_count_dict['XSX']['amazon']} times. \n\u2800{config.XSS_emoji}  **XSS**:\n\u2800\u2800{self.count_dict['XSS']['amazon']} times. \n\u2800\u2800Errored out: {self.error_count_dict['XSS']['amazon']} times.""",inline=False)
+        embed.add_field(name="Amazon",value=f"""\u2800{config.PS5_emoji}  **PS5**:\n\u2800\u2800{self.count_dict['PS5']['amazon']} times. \n\u2800\u2800Errored out: {self.error_count_dict['PS5']['amazon']} times.\n\u2800{config.PS5_emoji}  **PS5 DE**:\n\u2800\u2800{self.count_dict['PS5_DE']['amazon']} times. \n\u2800\u2800Errored out: {self.error_count_dict['PS5_DE']['amazon']} times.\n\u2800{config.XSX_emoji}  **XSX**:\n\u2800\u2800{self.count_dict['XSX']['amazon']} times. \n\u2800\u2800Errored out: {self.error_count_dict['XSX']['amazon']} times. \n\u2800{config.XSS_emoji}  **XSS**:\n\u2800\u2800{self.count_dict['XSS']['amazon']} times. \n\u2800\u2800Errored out: {self.error_count_dict['XSS']['amazon']} times.\n\u2800{config.RED_DS_emoji}  **RED DS**:\n\u2800\u2800{self.count_dict['RED_DS']['amazon']} times. \n\u2800\u2800Errored out: {self.error_count_dict['RED_DS']['amazon']} times.\n\u2800{config.BLACK_DS_emoji}  **BLACK DS**:\n\u2800\u2800{self.count_dict['BLACK_DS']['amazon']} times. \n\u2800\u2800Errored out: {self.error_count_dict['BLACK_DS']['amazon']} times.""",inline=False)
         embed.add_field(name="Flipkart",value=f"""\u2800{config.PS5_emoji}  **PS5**:\n\u2800\u2800{self.count_dict['PS5']['flipkart']} times. \n\u2800\u2800Errored out: {self.error_count_dict['PS5']['flipkart']} times.\n\u2800{config.PS5_emoji}  **PS5 DE**:\n\u2800\u2800{self.count_dict['PS5_DE']['flipkart']} times. \n\u2800\u2800Errored out: {self.error_count_dict['PS5_DE']['flipkart']} times.\n\u2800{config.XSX_emoji}  **XSX**:\n\u2800\u2800{self.count_dict['XSX']['flipkart']} times. \n\u2800\u2800Errored out: {self.error_count_dict['XSX']['flipkart']} times. \n\u2800{config.XSS_emoji}  **XSS**:\n\u2800\u2800{self.count_dict['XSS']['flipkart']} times. \n\u2800\u2800Errored out: {self.error_count_dict['XSS']['flipkart']} times.""",inline=False)
-        embed.add_field(name="ShopAtSC",value=f"""\u2800{config.PS5_emoji}  **PS5**:\n\u2800\u2800{self.count_dict['PS5']['shopatsc']} times. \n\u2800\u2800Errored out: {self.error_count_dict['PS5']['shopatsc']} times.\n\u2800{config.PS5_emoji}  **PS5 DE**:\n\u2800\u2800{self.count_dict['PS5_DE']['shopatsc']} times. \n\u2800\u2800Errored out: {self.error_count_dict['PS5_DE']['shopatsc']} times.""",inline=False)
+        embed.add_field(name="ShopAtSC",value=f"""\u2800{config.PS5_emoji}  **PS5**:\n\u2800\u2800{self.count_dict['PS5']['shopatsc']} times. \n\u2800\u2800Errored out: {self.error_count_dict['PS5']['shopatsc']} times.\n\u2800{config.PS5_emoji}  **PS5 DE**:\n\u2800\u2800{self.count_dict['PS5_DE']['shopatsc']} times. \n\u2800\u2800Errored out: {self.error_count_dict['PS5_DE']['shopatsc']} times.\n\u2800{config.RED_DS_emoji}  **RED DS**:\n\u2800\u2800{self.count_dict['RED_DS']['shopatsc']} times. \n\u2800\u2800Errored out: {self.error_count_dict['RED_DS']['shopatsc']} times.\n\u2800{config.BLACK_DS_emoji}  **BLACK DS**:\n\u2800\u2800{self.count_dict['BLACK_DS']['shopatsc']} times. \n\u2800\u2800Errored out: {self.error_count_dict['BLACK_DS']['shopatsc']} times.""",inline=False)
         embed.add_field(name="Games the Shop",value=f"""\u2800{config.PS5_emoji}  **PS5**:\n\u2800\u2800{self.count_dict['PS5']['games_the_shop']} times. \n\u2800\u2800Errored out: {self.error_count_dict['PS5']['games_the_shop']} times.""",inline=False)
         embed.add_field(name="Prepaid Gamer Card",value=f"""\u2800{config.PS5_emoji}  **PS5**:\n\u2800\u2800{self.count_dict['PS5']['ppgc']} times. \n\u2800\u2800Errored out: {self.error_count_dict['PS5']['ppgc']} times.""",inline=False)
         await ctx.send(embed=embed)
@@ -87,6 +91,8 @@ class StockChecker(commands.Cog):
         self.bot.loop.create_task(self.scrape_amazon(amazon_link=All_Websites["amazon"].PS5_DE_link,product="PS5_DE")) 
         self.bot.loop.create_task(self.scrape_amazon(amazon_link=All_Websites["amazon"].XSX_link,product="XSX"))
         self.bot.loop.create_task(self.scrape_amazon(amazon_link=All_Websites["amazon"].XSS_link,product="XSS"))
+        self.bot.loop.create_task(self.scrape_amazon(amazon_link=All_Websites["amazon"].RED_DS_LINK,product="RED_DS"))
+        self.bot.loop.create_task(self.scrape_amazon(amazon_link=All_Websites["amazon"].BLACK_DS_LINK,product="BLACK_DS"))
 
         self.bot.loop.create_task(self.scrape_flipkart(flipkart_link=All_Websites["flipkart"].PS5_link,product="PS5"))
         self.bot.loop.create_task(self.scrape_flipkart(flipkart_link=All_Websites["flipkart"].PS5_DE_link,product="PS5_DE"))
@@ -95,6 +101,8 @@ class StockChecker(commands.Cog):
 
         self.bot.loop.create_task(self.scrape_shopatsc(shopatsc_link=All_Websites["shopatsc"].PS5_link,product="PS5"))
         self.bot.loop.create_task(self.scrape_shopatsc(shopatsc_link=All_Websites["shopatsc"].PS5_DE_link,product="PS5_DE"))
+        self.bot.loop.create_task(self.scrape_shopatsc(shopatsc_link=All_Websites["shopatsc"].RED_DS_LINK,product="RED_DS"))
+        self.bot.loop.create_task(self.scrape_shopatsc(shopatsc_link=All_Websites["shopatsc"].BLACK_DS_LINK,product="BLACK_DS"))
 
         self.bot.loop.create_task(self.scrape_games_the_shop(games_the_shop_link=All_Websites["games_the_shop"].PS5_link,product="PS5"))
         self.bot.loop.create_task(self.scrape_ppgc(ppgc_link=All_Websites["ppgc"].PS5_link,product="PS5"))

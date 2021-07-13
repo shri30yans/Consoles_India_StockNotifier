@@ -64,6 +64,22 @@ class Notifications(commands.Cog):
             embed.set_thumbnail(url="https://i.imgur.com/OpInEum.jpg") 
             Indian_Time = datetime.now(timezone("Asia/Kolkata")).strftime('%d-%m-%y • %H:%M:%S')
             embed.set_footer(text=f"Xbox Series S Stock Updates • {Indian_Time}")
+        
+        elif product == "BLACK_DS":
+            role = guild.get_role(config.BLACK_DS_stock_notifications_role_id)
+            embed = discord.Embed(title =f"Black Dualsense in stock at {Website_Class.display_name}!",url=Website_Class.XSS_link,color =0x0000FF)
+            embed.add_field(name="Dev Notes:",value=f"`{method}`")
+            embed.set_thumbnail(url="https://i.imgur.com/25S4UKg.png") 
+            Indian_Time = datetime.now(timezone("Asia/Kolkata")).strftime('%d-%m-%y • %H:%M:%S')
+            embed.set_footer(text=f"Dualsense Stock Updates • {Indian_Time}")
+        
+        elif product == "RED_DS":
+            role = guild.get_role(config.RED_DS_stock_notifications_role_id)
+            embed = discord.Embed(title =f"Red Dualsense in stock at {Website_Class.display_name}!",url=Website_Class.XSS_link,color =0x0000FF)
+            embed.add_field(name="Dev Notes:",value=f"`{method}`")
+            embed.set_thumbnail(url="https://i.imgur.com/Z6nsHlN.png?1") 
+            Indian_Time = datetime.now(timezone("Asia/Kolkata")).strftime('%d-%m-%y • %H:%M:%S')
+            embed.set_footer(text=f"Dualsense Stock Updates • {Indian_Time}")
 
         else:
             print('Invalid product set to Notification')
