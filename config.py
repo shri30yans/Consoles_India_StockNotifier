@@ -24,6 +24,8 @@ PS5_stock_notifications_role_id = 849606173522788352
 PS5_DE_stock_notifications_role_id = 857134006243688458
 XSX_stock_notifications_role_id = 856442409142976542
 XSS_stock_notifications_role_id = 856442480857972745
+RED_DS_stock_notifications_role_id=864353737739993098
+BLACK_DS_stock_notifications_role_id=864353912589254656
 
 #Mod roles
 head_moderator_role_id=798978668403753000
@@ -45,6 +47,8 @@ embed_colours=[0xFFFF00,#yellow
 XSX_emoji="<:XSX:856448011831738389>"
 XSS_emoji="<:XSS:856448352510148628>"
 PS5_emoji="<:PS5:856448878340210708>"
+RED_DS_emoji="<:Red_Dualsense:864361711183593472>"
+BLACK_DS_emoji="<:Black_Dualsense:864361710532952064>"
 
 
 #webhook_url="https://discord.com/api/webhooks/858323481296240680/HrsIIfo93fUouPvKR6WE8lwiWDkm2cV6Yd9X22AQ1zbOWyIXEzMzbjEnj77Y6DniLNgF"
