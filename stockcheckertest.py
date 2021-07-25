@@ -10,13 +10,13 @@ import re
 
 All_Websites={
     "flipkart":"https://www.flipkart.com/annapurna-devi/p/itmef55de4cd57da",
-    "amazon":"https://www.amazon.in/Xbox-Series-S/dp/B08J89D6BW/",
+    "amazon":"?smid=AT95IG9ONZD7S",
     "games_the_shop":"https://www.gamestheshop.com/PlayStation-5-Console/5111",
     "ppgc":"https://prepaidgamercard.com/product/playstation-5-console-ps5/",
     #"shopatsc":"https://shopatsc.com/products/playstation-5-console-store",
     "shopatsc":"https://shopatsc.com/products/playstation-5-console-store",}
 
-def run_notifications(website_name):
+def run_notifications(website_name,product=None,method=None):
     print(f"Notification Alert! This product is in stock at {website_name}")
 
 def startup(site):  
@@ -46,13 +46,15 @@ def get_page_html(url,headers_list=[{"User-Agent":"Mozilla/5.0 (Windows NT 10.0;
     page = requests.get(url, headers=headers)
     return page.content,page.status_code
 
-def scrape_amazon(amazon_link):
-    headers_list = [{
-            'Connection': 'keep-alive',
+
+def scrape_amazon(amazon_link,product="lol"):
+        delay=25
+        #print("amazon",product)
+        #these are a list of headers that makes  amazon to think that the requests are coming from real users
+        headers_list = [{       
             'sec-ch-ua': '^\\^',
             'Accept': 'application/json',
             'DNT': '1',
-            'X-Requested-With': 'XMLHttpRequest',
             'sec-ch-ua-mobile': '?0',
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36',
             'Content-Type': 'application/json',
@@ -67,7 +69,6 @@ def scrape_amazon(amazon_link):
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0',
             'Accept': 'application/json',
             'Accept-Language': 'en-US,en;q=0.5',
-            'X-Requested-With': 'XMLHttpRequest',
             'Content-Type': 'application/json',
             'Origin': 'https://www.amazon.in/',
             'DNT': '1',
@@ -76,7 +77,6 @@ def scrape_amazon(amazon_link):
             },
             {
             'authority': 'www.amazon.in',
-            'x-kl-ajax-request': 'Ajax_Request',
             'dnt': '1',
             'rtt': '200',
             'sec-ch-ua-mobile': '?0',
@@ -107,14 +107,9 @@ def scrape_amazon(amazon_link):
             },
             {
             'authority': 'www.amazon.in',
-            'sec-ch-ua': '^\\^',
-            'rtt': '50',
-            'sec-ch-ua-mobile': '?0',
             'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36',
             'content-type': 'application/x-www-form-urlencoded',
             'accept': 'text/html,*/*',
-            'x-requested-with': 'XMLHttpRequest',
-            'downlink': '10',
             'ect': '4g',
             'origin': 'https://www.amazon.in',
             'sec-fetch-site': 'same-origin',
@@ -130,61 +125,175 @@ def scrape_amazon(amazon_link):
             'User-Agent': 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Mobile Safari/537.36',
             }       
             ]
+        while True:
+            page_html = get_page_html(url=amazon_link,headers_list=headers_list)
+            if page_html == False:
+                time.sleep(delay)
+                continue
 
-    while True:
-        page_html = str(get_page_html(amazon_link,headers_list))
-        doc = lxml.html.fromstring(page_html)
-        try:
-            stock=doc.xpath('//*[@id="availability"]/span')
-            add_to_cart_button=doc.xpath('//*[@id="add-to-cart-button"]')
-            all_buying_options=doc.xpath('//*[@id="buybox-see-all-buying-choices"]/span/a')
-            pre_order_button=doc.xpath('//*[@id="buy-now-button"]')
-        except:
-            stock="Amazon Error"
-            print("Error")
-            continue
-        #print(stock)
-        print(add_to_cart_button)
-        print(all_buying_options)
-        print(pre_order_button)
-        price=doc.xpath('//*[@id="buy-now-button"]')
+            doc = lxml.html.fromstring(str(page_html))
+            try:
+                stock=doc.xpath('//*[@id="availability"]/span')#Fetches Stock element
+                add_to_cart_button=doc.xpath('//*[@id="add-to-cart-button"]')#Fetches the Add to Cart Button
+                all_buying_options=doc.xpath('//*[@id="buybox-see-all-buying-choices"]/span/a')#Fetches the button with All Buying Options
+                pre_order_button=doc.xpath('//*[@id="buy-now-button"]')#Fetches Pre Order button
+            except:
+                print("Amazon Error")
+                time.sleep(delay)
+                continue
+            if len(stock) > 0:
+                if "Currently unavailable." in stock or "We don't know when or if this item will be back in stock." in stock:
+                    status="Out of Stock"
+                
+                elif "In stock" in stock:
+                    status="In Stock"
+                    run_notifications(website_name="amazon",product=product,method="In stock throught availabilty element")                 
+                
+                # elif "This item will be released on" in stock:
+                #     status="In Stock"
+                #     #print("This item will be released on")
+                #     await self.run_notifications(website_name="amazon",method="This item will be released on")
 
+                elif len(add_to_cart_button) != 0: 
+                    status="In Stock"
+                    run_notifications(website_name="amazon",product=product,method="Add to Cart button")
+
+                elif len(all_buying_options) != 0:
+                    status="In Stock"
+                    run_notifications(website_name="amazon",product=product,method="All buying options button")
+
+                elif len(pre_order_button) != 0:
+                    status="In Stock"
+                    run_notifications(website_name="amazon",product=product,method="Pre Order Now button")
+                
+                else:
+                    status=f"Amazon: A different response has been generated: {stock}"
+            
+            time.sleep(delay)
+# def scrape_amazon(amazon_link):
+#     headers_list = [{
+#             'Connection': 'keep-alive',
+#             'sec-ch-ua': '^\\^',
+#             'Accept': 'application/json',
+#             'DNT': '1',
+#             'X-Requested-With': 'XMLHttpRequest',
+#             'sec-ch-ua-mobile': '?0',
+#             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36',
+#             'Content-Type': 'application/json',
+#             'Origin': 'https://www.amazon.in',
+#             'Sec-Fetch-Site': 'cross-site',
+#             'Sec-Fetch-Mode': 'cors',
+#             'Sec-Fetch-Dest': 'empty',
+#             'Referer': 'https://www.amazon.in/',
+#             'Accept-Language': 'en-IN,en;q=0.9',
+#             },      
+#             {
+#             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0',
+#             'Accept': 'application/json',
+#             'Accept-Language': 'en-US,en;q=0.5',
+#             'X-Requested-With': 'XMLHttpRequest',
+#             'Content-Type': 'application/json',
+#             'Origin': 'https://www.amazon.in/',
+#             'DNT': '1',
+#             'Connection': 'keep-alive',
+#             'Referer': 'https://www.amazon.in/',
+#             },
+#             {
+#             'authority': 'www.amazon.in',
+#             'x-kl-ajax-request': 'Ajax_Request',
+#             'dnt': '1',
+#             'rtt': '200',
+#             'sec-ch-ua-mobile': '?0',
+#             'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36',
+#             'accept': 'text/html,/',
+#             'ect': '4g',
+#             'sec-ch-ua': '^^',
+#             'origin': 'https://www.amazon.in/',
+#             'sec-fetch-site': 'same-origin',
+#             'sec-fetch-mode': 'cors',
+#             'sec-fetch-dest': 'empty',
+#             'referer': 'https://www.amazon.in/',
+#             'accept-language': 'en-US,en;q=0.9',
+           
+#             },
+#             {
+#             'Connection': 'keep-alive',
+#             'sec-ch-ua': '^^',
+#             'Accept': 'application/json, text/javascript, /; q=0.01',
+#             'sec-ch-ua-mobile': '?0',
+#             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36',
+#             'Origin': 'https://www.amazon.in/',
+#             'Sec-Fetch-Site': 'cross-site',
+#             'Sec-Fetch-Mode': 'cors',
+#             'Sec-Fetch-Dest': 'empty',
+#             'Referer': 'https://www.amazon.in/',
+#             'Accept-Language': 'en-GB,en;q=0.9',
+#             },
+#             {
+#             'authority': 'www.amazon.in',
+#             'sec-ch-ua': '^\\^',
+#             'rtt': '50',
+#             'sec-ch-ua-mobile': '?0',
+#             'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36',
+#             'content-type': 'application/x-www-form-urlencoded',
+#             'accept': 'text/html,*/*',
+#             'x-requested-with': 'XMLHttpRequest',
+#             'downlink': '10',
+#             'ect': '4g',
+#             'origin': 'https://www.amazon.in',
+#             'sec-fetch-site': 'same-origin',
+#             'sec-fetch-mode': 'cors',
+#             'sec-fetch-dest': 'empty',
+#             'referer': 'https://www.amazon.in/dp/B08FV5GC28',
+#             'accept-language': 'en-US,en;q=0.9',         
+#             },
+#             {
+#             'sec-ch-ua': '^^',
+#             'Referer': 'https://www.amazon.in/',
+#             'sec-ch-ua-mobile': '?1',
+#             'User-Agent': 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Mobile Safari/537.36',
+#             }       
+#             ]
+
+#     while True:
+#         page_html = str(get_page_html(amazon_link,headers_list))
+#         doc = lxml.html.fromstring(page_html)
+#         try:
+#             stock=doc.xpath('//*[@id="availability"]/span')
+#             add_to_cart_button=doc.xpath('//*[@id="add-to-cart-button"]')
+#             all_buying_options=doc.xpath('//*[@id="buybox-see-all-buying-choices"]/span/a')
+#             pre_order_button=doc.xpath('//*[@id="buy-now-button"]')
+#         except:
+#             stock="Amazon Error"
+#             print("Error")
+#             continue
+#         #print(stock)
+#         print(add_to_cart_button)
+#         print(all_buying_options)
+#         print(pre_order_button)
 
         
-        if "Currently unavailable." in stock[0] or "We don't know when or if this item will be back in stock." in stock :
-            status="Out of Stock"
+#         if "Currently unavailable." in stock[0] or "We don't know when or if this item will be back in stock." in stock :
+#             status="Out of Stock"
         
-        elif "In stock".lower() in stock.lower():
-            status="In Stock"
-            run_notifications(website_name="amazon")
+#         elif "In stock".lower() in stock.lower():
+#             status="In Stock"
+#             run_notifications(website_name="amazon")
        
-        # elif "This item will be released on" in stock:
-        #     status="In Stock"
-        #     run_notifications(website_name="amazon")
+#         # elif "This item will be released on" in stock:
+#         #     status="In Stock"
+#         #     run_notifications(website_name="amazon")
         
-        elif (len(add_to_cart_button) != 0) or (len(all_buying_options) != 0) or (len(pre_order_button) != 0):
-            status="In Stock"
-            run_notifications(website_name="amazon")
+#         elif (len(add_to_cart_button) != 0) or (len(all_buying_options) != 0) or (len(pre_order_button) != 0):
+#             status="In Stock"
+#             run_notifications(website_name="amazon")
 
-        else:
-            status=f"A different response has been generated: {stock}"
-        time.sleep(3)
-        #print(status)
+#         else:
+#             status=f"A different response has been generated: {stock}"
+#         time.sleep(3)
+#         #print(status)
         
 def scrape_shopatsc(shopatsc_link):
-    # while True:
-    #     page_html = str(get_page_html(shopatsc_link))
-    #     doc = lxml.html.fromstring(page_html)
-    #     try:
-    #         notify_button = doc.xpath('//*[@id="notify_btn_div"]')                                  
-    #         add_to_cart_button = doc.xpath('//*[@id="product-add-to-cart"]')
-    #     except:
-    #         print("shopatscdigital Error")
-    #         continue
-        
-    #     print("Notify",notify_button)
-    #     print("Add_to_cart",add_to_cart_button)
-    #     time.sleep(2)
     while True:
         page_html = str(get_page_html(shopatsc_link))
         soup = BeautifulSoup(page_html, 'html.parser')
@@ -376,7 +485,7 @@ def scrape_ppgc(ppgc_link):
 #Comment out the websites you are not using
 #To comment a site add "#" in front of it.
 #startup(site="flipkart")
-#startup(site="amazon")
+startup(site="amazon")
 # startup(site="gts")
 # startup(site="ppgc")
-startup(site="shopatsc")
+#startup(site="shopatsc")

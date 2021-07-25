@@ -58,7 +58,7 @@ class TradeChannel(commands.Cog):
                 pass
 
                         
-            category = discord.utils.get(ctx.guild.categories, name="Trades")
+            category = self.bot.get_channel(config.trade_category_id)
             channel = await category.create_text_channel(f'trade {trade_number}', overwrites=overwrites,topic=description,reason="Trade Channel")
             embed=discord.Embed(title=f"Trade channel created.",description=f"{channel.mention} \nMember's added to trade: {member_names} \nDescription: {description}")        
             embed.set_footer(icon_url= ctx.author.avatar_url,text=f"Requested by {ctx.message.author} • {self.bot.user.name} ")

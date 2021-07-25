@@ -18,6 +18,7 @@ STARTUP_COGS = [
 server_id=797570077364977696
 stock_notifications_channel_id = 850096085770567700
 mod_logs_channel_id=860121260369379328
+trade_category_id=844087063405395999
 
 #Roles
 PS5_stock_notifications_role_id = 849606173522788352
