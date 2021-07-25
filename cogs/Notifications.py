@@ -67,7 +67,7 @@ class Notifications(commands.Cog):
         
         elif product == "BLACK_DS":
             role = guild.get_role(config.BLACK_DS_stock_notifications_role_id)
-            embed = discord.Embed(title =f"Black Dualsense in stock at {Website_Class.display_name}!",url=Website_Class.XSS_link,color =0x0000FF)
+            embed = discord.Embed(title =f"Black Dualsense in stock at {Website_Class.display_name}!",url=Website_Class.BLACK_DS_LINK,color =0x0000FF)
             embed.add_field(name="Dev Notes:",value=f"`{method}`")
             embed.set_thumbnail(url="https://i.imgur.com/25S4UKg.png") 
             Indian_Time = datetime.now(timezone("Asia/Kolkata")).strftime('%d-%m-%y • %H:%M:%S')
@@ -75,7 +75,7 @@ class Notifications(commands.Cog):
         
         elif product == "RED_DS":
             role = guild.get_role(config.RED_DS_stock_notifications_role_id)
-            embed = discord.Embed(title =f"Red Dualsense in stock at {Website_Class.display_name}!",url=Website_Class.XSS_link,color =0x0000FF)
+            embed = discord.Embed(title =f"Red Dualsense in stock at {Website_Class.display_name}!",url=Website_Class.RED_DS_LINK,color =0x0000FF)
             embed.add_field(name="Dev Notes:",value=f"`{method}`")
             embed.set_thumbnail(url="https://i.imgur.com/Z6nsHlN.png?1") 
             Indian_Time = datetime.now(timezone("Asia/Kolkata")).strftime('%d-%m-%y • %H:%M:%S')

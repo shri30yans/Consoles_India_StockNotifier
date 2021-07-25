@@ -1,11 +1,22 @@
 import re
 import discord,random,asyncio,time,aiohttp
-from discord.ext import commands,tasks
+from discord.ext import commands
 import lxml.html
 import config
 from utils.links import All_Websites
 from collections import OrderedDict
 from bs4 import BeautifulSoup
+import logging
+# Gets or creates a logger
+logger = logging.getLogger(__name__)  
+
+# define file handler and set formatter
+file_handler = logging.FileHandler('logs/StockChecker.log')
+formatter    = logging.Formatter('%(asctime)s : %(levelname)s : %(name)s : %(message)s')
+file_handler.setFormatter(formatter)
+# add file handler to logger
+logger.addHandler(file_handler)
+
 
 
 # How the bot checks for Stock availability?
@@ -42,7 +53,29 @@ class StockChecker(commands.Cog):
         
         self.last_website_notifications=None
 
-    def add_count(self,product,website_name):
+    #async def get_page_html(self,link,headers_list=[{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36"}]):
+    async def get_page_html(self,link,headers_list=[{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36"},{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"},{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36"},{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.157 Safari/537.36"}],):
+        ordered_headers_list = []
+        for headers in headers_list:
+            h = OrderedDict()
+            for header,value in headers.items():
+                h[header]=value
+                ordered_headers_list.append(h)
+        headers = random.choice(headers_list)
+        try:
+            async with aiohttp.ClientSession(headers=headers,trust_env=True) as session:
+                async with session.get(url=link) as response:
+                    if response.status != 200:
+                        logger.error(f'Server returned {response.status} URL:{link}')
+                        #print("Error:", f"Server returned {response.status}",f"\nURL:{link}")
+                        return False
+                    else:
+                        html = await response.text()
+                        return html
+        except asyncio.TimeoutError:
+            return False
+
+    async def add_count(self,product,website_name):
         if  self.count_dict[product][website_name] > 10000:
             self.count_dict[product][website_name] = 0
         try:
@@ -50,7 +83,7 @@ class StockChecker(commands.Cog):
         except:
             print("Add count exception")
 
-    def add_error(self,product,website_name):
+    async def add_error(self,product,website_name):
         if  self.error_count_dict[product][website_name] > 10000:
             self.error_count_dict[product][website_name] = 0
         try:
@@ -59,15 +92,19 @@ class StockChecker(commands.Cog):
             print("Add error exception")
 
     async def run_notifications(self,website_name,product,method):
+        print("stock",website_name,product,method)
         if self.last_website_notifications == website_name+product:#checks whether already notified about availabilty
             self.last_website_notifications = None
-            print(f"Already notified about {website_name}")
+            logger.info(f'Already notified {product} stock in {website_name}')
+            #print(f"Already notified about {website_name}")
             await asyncio.sleep(30)
             
         else:
             Notifications = self.bot.get_cog('Notifications')
             await Notifications.notify(website_name=website_name,product=product,method=method)
+            logger.info(f'Notified for {product} stock in {website_name}')
             self.last_website_notifications=website_name+product#makes the last_website that has been notified about this one
+
 
 
     #Discord bot command
@@ -80,51 +117,37 @@ class StockChecker(commands.Cog):
         embed.add_field(name="ShopAtSC",value=f"""\u2800{config.PS5_emoji}  **PS5**:\n\u2800\u2800{self.count_dict['PS5']['shopatsc']} times. \n\u2800\u2800Errored out: {self.error_count_dict['PS5']['shopatsc']} times.\n\u2800{config.PS5_emoji}  **PS5 DE**:\n\u2800\u2800{self.count_dict['PS5_DE']['shopatsc']} times. \n\u2800\u2800Errored out: {self.error_count_dict['PS5_DE']['shopatsc']} times.\n\u2800{config.RED_DS_emoji}  **RED DS**:\n\u2800\u2800{self.count_dict['RED_DS']['shopatsc']} times. \n\u2800\u2800Errored out: {self.error_count_dict['RED_DS']['shopatsc']} times.\n\u2800{config.BLACK_DS_emoji}  **BLACK DS**:\n\u2800\u2800{self.count_dict['BLACK_DS']['shopatsc']} times. \n\u2800\u2800Errored out: {self.error_count_dict['BLACK_DS']['shopatsc']} times.""",inline=False)
         embed.add_field(name="Games the Shop",value=f"""\u2800{config.PS5_emoji}  **PS5**:\n\u2800\u2800{self.count_dict['PS5']['games_the_shop']} times. \n\u2800\u2800Errored out: {self.error_count_dict['PS5']['games_the_shop']} times.""",inline=False)
         embed.add_field(name="Prepaid Gamer Card",value=f"""\u2800{config.PS5_emoji}  **PS5**:\n\u2800\u2800{self.count_dict['PS5']['ppgc']} times. \n\u2800\u2800Errored out: {self.error_count_dict['PS5']['ppgc']} times.""",inline=False)
-        await ctx.send(embed=embed)
-
-    
-   
+        await ctx.send(embed=embed) 
     
     async def startup(self): 
         await self.bot.wait_until_ready()   
-        self.bot.loop.create_task(self.scrape_amazon(amazon_link=All_Websites["amazon"].PS5_link,product="PS5")) 
-        self.bot.loop.create_task(self.scrape_amazon(amazon_link=All_Websites["amazon"].PS5_DE_link,product="PS5_DE")) 
-        self.bot.loop.create_task(self.scrape_amazon(amazon_link=All_Websites["amazon"].XSX_link,product="XSX"))
-        self.bot.loop.create_task(self.scrape_amazon(amazon_link=All_Websites["amazon"].XSS_link,product="XSS"))
-        self.bot.loop.create_task(self.scrape_amazon(amazon_link=All_Websites["amazon"].RED_DS_LINK,product="RED_DS"))
-        self.bot.loop.create_task(self.scrape_amazon(amazon_link=All_Websites["amazon"].BLACK_DS_LINK,product="BLACK_DS"))
+        self.bot.loop.create_task(self.scrape_amazon(amazon_link=All_Websites["amazon"].PS5_link,product="PS5",delay=10)) 
+        self.bot.loop.create_task(self.scrape_amazon(amazon_link=All_Websites["amazon"].PS5_DE_link,product="PS5_DE",delay=10)) 
+        self.bot.loop.create_task(self.scrape_amazon(amazon_link=All_Websites["amazon"].XSX_link,product="XSX",delay=25))
+        self.bot.loop.create_task(self.scrape_amazon(amazon_link=All_Websites["amazon"].XSS_link,product="XSS",delay=25))
+        #self.bot.loop.create_task(self.scrape_amazon(amazon_link=All_Websites["amazon"].RED_DS_LINK,product="RED_DS"))
+        # self.bot.loop.create_task(self.scrape_amazon(amazon_link=All_Websites["amazon"].BLACK_DS_LINK,product="BLACK_DS"))
 
-        self.bot.loop.create_task(self.scrape_flipkart(flipkart_link=All_Websites["flipkart"].PS5_link,product="PS5"))
-        self.bot.loop.create_task(self.scrape_flipkart(flipkart_link=All_Websites["flipkart"].PS5_DE_link,product="PS5_DE"))
-        self.bot.loop.create_task(self.scrape_flipkart(flipkart_link=All_Websites["flipkart"].XSX_link,product="XSX"))
-        self.bot.loop.create_task(self.scrape_flipkart(flipkart_link=All_Websites["flipkart"].XSS_link,product="XSS"))
+        self.bot.loop.create_task(self.scrape_flipkart(flipkart_link=All_Websites["flipkart"].PS5_link,product="PS5",delay=25))
+        self.bot.loop.create_task(self.scrape_flipkart(flipkart_link=All_Websites["flipkart"].PS5_DE_link,product="PS5_DE",delay=25))
+        self.bot.loop.create_task(self.scrape_flipkart(flipkart_link=All_Websites["flipkart"].XSX_link,product="XSX",delay=25))
+        self.bot.loop.create_task(self.scrape_flipkart(flipkart_link=All_Websites["flipkart"].XSS_link,product="XSS",delay=25))
 
-        self.bot.loop.create_task(self.scrape_shopatsc(shopatsc_link=All_Websites["shopatsc"].PS5_link,product="PS5"))
-        self.bot.loop.create_task(self.scrape_shopatsc(shopatsc_link=All_Websites["shopatsc"].PS5_DE_link,product="PS5_DE"))
-        self.bot.loop.create_task(self.scrape_shopatsc(shopatsc_link=All_Websites["shopatsc"].RED_DS_LINK,product="RED_DS"))
-        self.bot.loop.create_task(self.scrape_shopatsc(shopatsc_link=All_Websites["shopatsc"].BLACK_DS_LINK,product="BLACK_DS"))
+        self.bot.loop.create_task(self.scrape_shopatsc(shopatsc_link=All_Websites["shopatsc"].PS5_link,product="PS5",delay=20))
+        self.bot.loop.create_task(self.scrape_shopatsc(shopatsc_link=All_Websites["shopatsc"].PS5_DE_link,product="PS5_DE",delay=20))
+        #self.bot.loop.create_task(self.scrape_shopatsc(shopatsc_link=All_Websites["shopatsc"].RED_DS_LINK,product="RED_DS"))
+        # self.bot.loop.create_task(self.scrape_shopatsc(shopatsc_link=All_Websites["shopatsc"].BLACK_DS_LINK,product="BLACK_DS"))
 
-        self.bot.loop.create_task(self.scrape_games_the_shop(games_the_shop_link=All_Websites["games_the_shop"].PS5_link,product="PS5"))
-        self.bot.loop.create_task(self.scrape_ppgc(ppgc_link=All_Websites["ppgc"].PS5_link,product="PS5"))
+        self.bot.loop.create_task(self.scrape_games_the_shop(games_the_shop_link=All_Websites["games_the_shop"].PS5_link,product="PS5",delay=20))
+        self.bot.loop.create_task(self.scrape_ppgc(ppgc_link=All_Websites["ppgc"].PS5_link,product="PS5",delay=20))
         
 
-    #async def get_page_html(self,link,headers_list=[{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36"}]):
-    async def get_page_html(self,link,headers_list=[{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36"},{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"},{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36"},{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.157 Safari/537.36"}]):
-        ordered_headers_list = []
-        for headers in headers_list:
-            h = OrderedDict()
-            for header,value in headers.items():
-                h[header]=value
-                ordered_headers_list.append(h)
-        headers = random.choice(headers_list)
-        async with aiohttp.ClientSession(headers=headers,trust_env=True) as session:
-            async with session.get(url=link) as response:
-                html = await response.text()
-                return html
+   
+
+
 
     
-    async def scrape_amazon(self,amazon_link,product):
-        #print("amazon",product)
+    async def scrape_amazon(self,amazon_link,product,delay):
         #these are a list of headers that makes  amazon to think that the requests are coming from real users
         headers_list = [{       
             'sec-ch-ua': '^\\^',
@@ -202,96 +225,99 @@ class StockChecker(commands.Cog):
             ]
         while True:
             page_html = await self.get_page_html(link=amazon_link,headers_list=headers_list)
+            if page_html == False:
+                await self.add_error(product=product,website_name="amazon")
+                await asyncio.sleep(delay)
+                continue
+                
+            #print("Gave valid response:",product)
             doc = lxml.html.fromstring(str(page_html))
             try:
                 stock=doc.xpath('//*[@id="availability"]/span')#Fetches Stock element
                 add_to_cart_button=doc.xpath('//*[@id="add-to-cart-button"]')#Fetches the Add to Cart Button
-                all_buying_options=doc.xpath('//*[@id="buybox-see-all-buying-choices"]/span/a')#Fetches the button with All Buying Options
+                #all_buying_options=doc.xpath('//*[@id="buybox-see-all-buying-choices"]/span/a')#Fetches the button with All Buying Options
                 pre_order_button=doc.xpath('//*[@id="buy-now-button"]')#Fetches Pre Order button
             except:
                 print("Amazon Error")
-                self.add_error(website_name="amazon",product=product)
-                await asyncio.sleep(15)
+                logger.error(f'Amazon Error Product: {product}')
+                await self.add_error(product=product,website_name="amazon")
+                await asyncio.sleep(delay)
                 continue
-            
+            #checks if the availabilty element shows anything, if there are no elements pass
             if len(stock) > 0:
                 stock=stock[0].text
-            else:
-                continue
-            
-            if "Currently unavailable." in stock or "We don't know when or if this item will be back in stock." in stock:
-                status="Out of Stock"
-            
-            elif "In stock" in stock:
-                status="In Stock"
-                await self.run_notifications(website_name="amazon",product=product,method="In stock throught availabilty element")                 
-            
-            # elif "This item will be released on" in stock:
-            #     status="In Stock"
-            #     #print("This item will be released on")
-            #     await self.run_notifications(website_name="amazon",method="This item will be released on")
+                if "Currently unavailable" in stock or "We don't know when or if this item will be back in stock." in stock:
+                    #status="Out of Stock"
+                    pass
+                
+                elif "In stock" in stock:
+                    await self.run_notifications(website_name="amazon",product=product,method="In stock throught availabilty element")                 
+                
+                # elif "This item will be released on" in stock:
+                #     status="In Stock"
+                #     #print("This item will be released on")
+                #     await self.run_notifications(website_name="amazon",method="This item will be released on")
 
-            elif len(add_to_cart_button) != 0: 
-                status="In Stock"
-                await self.run_notifications(website_name="amazon",product=product,method="Add to Cart button")
+                elif len(add_to_cart_button) != 0: 
+                    await self.run_notifications(website_name="amazon",product=product,method="Add to Cart button")
 
-            elif len(all_buying_options) != 0:
-                status="In Stock"
-                await self.run_notifications(website_name="amazon",product=product,method="All buying options button")
+                #elif len(all_buying_options) != 0:
+                    #await self.run_notifications(website_name="amazon",product=product,method="All buying options button")
 
-            elif len(pre_order_button) != 0:
-                status="In Stock"
-                await self.run_notifications(website_name="amazon",product=product,method="Pre Order Now button")
-            
-            else:
-                status=f"Amazon: A different response has been generated: {stock}"
-            
-            self.add_count(website_name="amazon",product=product)
-            await asyncio.sleep(15)
+                elif len(pre_order_button) != 0:
+                    await self.run_notifications(website_name="amazon",product=product,method="Pre Order Now button")
+                
+                else:
+                    print(f"Amazon: A different response has been generated: {stock}")
 
-    async def scrape_flipkart(self,flipkart_link,product):
-        # headers_list = [{
-        #         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36',
-        #         'Accept': '*/*',
-        #         'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36',
-        #         'origin': 'https://www.flipkart.com',
-        #         'referer': 'https://www.flipkart.com/',
-        #         'accept-language': 'en-IN,en;q=0.9',
-        #         'Referer': 'https://www.flipkart.com/',
-        #         }, 
-        #         {
-        #         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36 Edg/91.0.864.54',
-        #         'Accept-Language': 'en-US,en;q=0.9',
-        #         'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36 Edg/91.0.864.54',
-        #         'accept': '*/*',
-        #         'referer': 'https://www.flipkart.com/',
-        #         'accept-language': 'en-US,en;q=0.9',
-        #         'origin': 'https://www.flipkart.com',
-        #         'Cache-Control': 'max-age=0',
-        #         'Service-Worker': 'script',
-        #         },
-        #         {
-        #         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,/;q=0.8,application/signed-exchange;v=b3;q=0.9",
-        #         "Accept-Encoding": "gzip, deflate, br",
-        #         "Accept-Language": "en-US,en;q=0.9,ta;q=0.8",
-        #         "Upgrade-Insecure-Requests": "1",
-        #         'referer': 'https://www.flipkart.com/',
-        #         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36 Edg/91.0.864.54",
-        #         'origin': 'https://www.flipkart.com',
-        #         } ,
-        #         {
-        #         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,/;q=0.8,application/signed-exchange;v=b3;q=0.9", 
-        #         "Accept-Encoding": "gzip, deflate, br", 
-        #         "Accept-Language": "en-US,en;q=0.9",  
-        #         'origin': 'https://www.flipkart.com',
-        #         'referer': 'https://www.flipkart.com/',
-        #         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36", 
-        #         }
-        #         ]
+            await self.add_count(website_name="amazon",product=product)
+            await asyncio.sleep(delay)
 
-
+    async def scrape_flipkart(self,flipkart_link,product,delay):
+        headers_list = [{
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36',
+                'Accept': '*/*',
+                'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36',
+                'origin': 'https://www.flipkart.com',
+                'referer': 'https://www.flipkart.com/',
+                'accept-language': 'en-IN,en;q=0.9',
+                'Referer': 'https://www.flipkart.com/',
+                }, 
+                {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36 Edg/91.0.864.54',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36 Edg/91.0.864.54',
+                'accept': '*/*',
+                'referer': 'https://www.flipkart.com/',
+                'accept-language': 'en-US,en;q=0.9',
+                'origin': 'https://www.flipkart.com',
+                'Cache-Control': 'max-age=0',
+                'Service-Worker': 'script',
+                },
+                {
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,/;q=0.8,application/signed-exchange;v=b3;q=0.9",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Accept-Language": "en-US,en;q=0.9,ta;q=0.8",
+                "Upgrade-Insecure-Requests": "1",
+                'referer': 'https://www.flipkart.com/',
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36 Edg/91.0.864.54",
+                'origin': 'https://www.flipkart.com',
+                } ,
+                {
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,/;q=0.8,application/signed-exchange;v=b3;q=0.9", 
+                "Accept-Encoding": "gzip, deflate, br", 
+                "Accept-Language": "en-US,en;q=0.9",  
+                'origin': 'https://www.flipkart.com',
+                'referer': 'https://www.flipkart.com/',
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36", 
+                }
+                ]
         while True:
-            page_html = await self.get_page_html(flipkart_link)
+            page_html = await self.get_page_html(flipkart_link,headers_list=headers_list)
+            if page_html == False:
+                await self.add_error(product=product,website_name="flipkart")
+                await asyncio.sleep(delay)
+                continue
             soup = BeautifulSoup(str(page_html), 'html.parser')
             try:
                 notify_me_button=soup.find('button', class_ = '_2KpZ6l _2uS5ZX _2Dfasx').text#notify me button
@@ -313,12 +339,13 @@ class StockChecker(commands.Cog):
 
                 except:
                     print("Flipkart Error")
-                    self.add_error(product=product,website_name="flipkart")
-                    await asyncio.sleep(15)
+                    logger.error(f'Flipkart Error Product: {product}')
+                    await self.add_error(product=product,website_name="flipkart")
+                    await asyncio.sleep(delay)
                     continue
            
-            self.add_count(product=product,website_name="flipkart")
-            await asyncio.sleep(15)
+            await self.add_count(product=product,website_name="flipkart")
+            await asyncio.sleep(delay)
         
         # while True:
         #     page_html =await self.get_page_html(link=flipkart_link)
@@ -346,15 +373,20 @@ class StockChecker(commands.Cog):
         #     else:
         #         pass
 
-    async def scrape_shopatsc(self,shopatsc_link,product):
+    async def scrape_shopatsc(self,shopatsc_link,product,delay):
         while True:
             page_html = await self.get_page_html(link=shopatsc_link)
+            if page_html == False:
+                await self.add_error(product=product,website_name="shopatsc")
+                await asyncio.sleep(delay)
+                continue
             soup = BeautifulSoup(page_html, 'html.parser')
             try:
                 notify_me_button = soup.find(id='notify_btn_div')
             except:
                 print("ShopAtSC Error")
-                self.add_error(product=product,website_name="shopatsc")
+                logger.error(f'ShopAtSC Error Product: {product}')
+                await self.add_error(product=product,website_name="shopatsc")
                 await asyncio.sleep(15)
                 continue
             
@@ -370,19 +402,24 @@ class StockChecker(commands.Cog):
                     if text_match is not None:
                         await self.run_notifications(website_name="shopatsc",product=product,method="Notify Me button is not visible.")
 
-            self.add_count(product=product,website_name="shopatsc")
+            await self.add_count(product=product,website_name="shopatsc")
             await asyncio.sleep(15)
 
-    async def scrape_games_the_shop(self,games_the_shop_link,product):
+    async def scrape_games_the_shop(self,games_the_shop_link,product,delay):
         while True:
             page_html = await self.get_page_html(link=games_the_shop_link)
+            if page_html == False:
+                await self.add_error(product=product,website_name="games_the_shop")
+                await asyncio.sleep(delay)
+                continue
             doc = lxml.html.fromstring(page_html)
             try:
                 stock=doc.xpath('//*[@id="ctl00_ContentPlaceHolder1_divOfferDetails"]/div/div[2]/div/div[2]/div[1]/text()')
             except:
                 print("Games the Shop Error")
-                self.add_error(product=product,website_name="games_the_shop")
-                await asyncio.sleep(15)
+                logger.error(f'Games the Shop Error Product: {product}')
+                await self.add_error(product=product,website_name="games_the_shop")
+                await asyncio.sleep(delay)
                 continue
         
             if " ADD TO CART" in stock:
@@ -392,37 +429,43 @@ class StockChecker(commands.Cog):
                 pass
 
             else:
-                status=f"Games the Shop: A different response has been generated: {stock}"               
+                pass
+                #print(f"Games the Shop: A different response has been generated: {stock}"     )          
             
 
-            self.add_count(product=product,website_name="games_the_shop")
-            await asyncio.sleep(15)
+            await self.add_count(product=product,website_name="games_the_shop")
+            await asyncio.sleep(delay)
 
-    async def scrape_ppgc(self,ppgc_link,product):
+    async def scrape_ppgc(self,ppgc_link,product,delay):
         while True:
             page_html = await self.get_page_html(link=ppgc_link)
+            if page_html == False:
+                await self.add_error(product=product,website_name="ppgc")
+                await asyncio.sleep(delay)
+                continue
             doc = lxml.html.fromstring(page_html)
             try:
                 stock=doc.xpath('//*[@id="product-7990"]/div/div[1]/div/div[2]/form/button/text()')#[0].strip()
             except:
                 print("Prepaid Gamer Card Error")
-                self.add_error(product=product,website_name="ppgc")
-                await asyncio.sleep(15)
+                logger.error(f'Prepaid Gamer Card Error Product: {product}')
+                await self.add_error(product=product,website_name="ppgc")
+                await asyncio.sleep(delay)
                 continue
         
             if "Add to cart" in stock:
-                status="In Stock"
                 await self.run_notifications(website_name="ppgc",product=product,method="Add to Cart Button")
 
             elif len(stock) == 0:
                 pass
 
             else:
-                status=f"Prepaid Gamer Card: A different response has been generated: {stock}"                
+                pass
+                #print(f"Prepaid Gamer Card: A different response has been generated: {stock}"   )             
             
 
-            self.add_count(product=product,website_name="ppgc")
-            await asyncio.sleep(15)
+            await self.add_count(product=product,website_name="ppgc")
+            await asyncio.sleep(delay)
   
 
 
