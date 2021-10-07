@@ -5,7 +5,7 @@
 * Stock notifications for Xbox Series X and Series S (India Only) (Amazon, Flipkart)
 * Create Trade Channels
 
-[Join the Console Stock Notification India Server.](https://discord.gg/Fpx8bkbrJ2)
+[Join the Console Stock Notification India Server.](https://discord.gg/NXUuNuusJM)
 
 ### Pictures:
 ![PS5 Stock](https://github.com/shri30yans/PS5_DiscordBot/blob/main/readme_images/PS5.jpg)   
