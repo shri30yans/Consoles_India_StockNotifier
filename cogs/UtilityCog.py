@@ -1,13 +1,37 @@
 import discord,random,platform,os
 from discord.ext import commands
 import config
-
+import datetime
 
 colourlist=config.embed_colours
 
 class Utility(commands.Cog): 
     def __init__(self, bot):
         self.bot = bot
+        self.bot.launch_time = datetime.datetime.utcnow()
+
+    # @commands.guild_only()
+    # @commands.has_permissions(manage_roles=True)
+    # @commands.bot_has_permissions(manage_roles=True)
+    # @commands.cooldown(1, 10, commands.BucketType.user)
+    # @commands.command(name="stuff")
+    # async def createmuterole(self,ctx):
+    #     embed=discord.Embed(title='Doing stuff',description="Startup")
+    #     embed.set_footer(icon_url= ctx.author.avatar_url,text=f"Requested by {ctx.message.author} • {self.bot.user.name}")   
+    #     message=await ctx.send(embed=embed)
+    #     mute_role = ctx.guild.get_role(889937465832525885)
+    #     embed=discord.Embed(title='stuff',description="Setting permissions...")
+    #     embed.set_footer(icon_url= ctx.author.avatar_url,text=f"Requested by {ctx.message.author} • {self.bot.user.name}")   
+    #     await message.edit(embed=embed)
+    #     # for x in [801069934041497631]:
+    #     #     category = self.bot.get_channel(x)
+    #     for channel in ctx.guild.channels:
+    #         await channel.set_permissions(mute_role, view_channel = False)
+    #     embed=discord.Embed(title='Stuff',description=f"Done stuff")
+    #     embed.set_footer(icon_url= ctx.author.avatar_url,text=f"Requested by {ctx.message.author} • {self.bot.user.name}")   
+    #     await message.edit(embed=embed)
+
+
 
     @commands.command(name="Prefix", help=f'Shows the current prefix \nFormat: `{config.prefix}prefix`')
     async def prefix(self,ctx):
@@ -46,70 +70,127 @@ class Utility(commands.Cog):
         embed.set_footer(icon_url=ctx.author.avatar_url,text=f"Requested by {ctx.message.author} • {self.bot.user.name} ")
         await message.edit(embed=embed)
     
-    @commands.cooldown(1, 3, commands.BucketType.user)
-    @commands.command(name="ServerInfo",aliases=['serverstats','server'], help=f'Finds server stats \nFormat: `{config.prefix}stats` \nAliases: serverstats ')
+    @commands.guild_only()
+    @commands.cooldown(1,10, commands.BucketType.user)
+    @commands.command(name="ServerInfo",aliases=['serverstats','server'], help=f'Finds server stats')
     async def stats(self,ctx):
-            #f-strings
-            guild_owner=str(ctx.guild.owner)
-            embed=discord.Embed(title="Server Stats",color = random.choice(colourlist),timestamp=ctx.message.created_at)
+            embed=discord.Embed(title=f"{ctx.guild.name}",color = random.choice(colourlist),timestamp=ctx.message.created_at)
             embed.add_field(name="Name",value=f"{ctx.guild.name}",inline=False)
-            if (ctx.message.author.id == ctx.guild.owner_id):
-                embed.add_field(name="Owner",value="You are the owner of this server.",inline=False)
-            else:
-                embed.add_field(name="Owner",value=f"{guild_owner}, is the owner of this server.")
-            #Region Convert
-            region=str(ctx.guild.region)    
-            
+            embed.add_field(name="Region",value =f"{str(ctx.guild.region).capitalize()}" ,inline=False)
+            embed.add_field(name="Owner",value =f" {str(ctx.guild.owner)}" ,inline=False)
+            embed.add_field(name="ID",value =f"{ctx.guild.id}",inline=False)
+            embed.add_field(name="Roles",value=f"{len(ctx.guild.roles)}",inline=False)
+            embed.add_field(name="Features" ,value= f"{(', '.join(x.lower().capitalize().replace('_',' ') for y, x in enumerate(ctx.guild.features))) or 'None'} ",inline=False)
+
+
+
             #Member calculator
-            no_of_members=0
+            members_offline = 0
+            members_online= 0
+            members_idle=0
+            members_dnd=0
+
             no_of_bots=0
             for member in ctx.guild.members:
                 if member.bot:
                     no_of_bots=no_of_bots+1
                 else:
-                    no_of_members=no_of_members+1
+                    if str(member.status) == "online":
+                        members_online+=1
+                    elif str(member.status) == "dnd":
+                        members_dnd+=1
+                    elif str(member.status) == "idle":
+                        members_idle+=1
+                    elif str(member.status) == "offline": 
+                        members_offline+=1
 
-            embed.add_field(name="Region",value=f"{region.capitalize() }",inline=False)
-            embed.add_field(name="Members",value=f"Members in server: {no_of_members}")
-            embed.add_field(name="Bots",value=f"Bots in server: {no_of_bots}",inline=False)
-            embed.add_field(name="Roles",value=f"Number of roles: {len(ctx.guild.roles)}")
-            created_at_time=self.time_format_function(ctx.guild.created_at)
-            embed.add_field(name="Creation date",value=f"{created_at_time}",inline=False) 
+                    
+                    #created_at_time=await self.time_format_function()
+                    time_ago=await self.find_time_difference(ctx.guild.created_at)
+            total_members= members_online+ members_offline + members_idle + members_dnd
+
+            embed.add_field(name="Member",value =f"``` 😀 Total members  {total_members}\n 🟢 Online         {members_online}\n 🔴 Dnd            {members_dnd}\n 🟠 Idle           {members_idle}\n ⚫ Offline        {members_offline}\n 🤖 Bots           {no_of_bots}```",inline=False)
+            embed.add_field(name="Created" ,value= f"{time_ago} ago",inline=False)
             embed.set_thumbnail(url=str(ctx.guild.icon_url)) 
-            author_avatar=ctx.author.avatar_url
-            embed.set_footer(icon_url= author_avatar,text=f"Requested by {ctx.message.author} • {self.bot.user.name} ")
-            await ctx.send(embed=embed) 
+            embed.set_footer(icon_url=ctx.author.avatar_url,text=f"Requested by {ctx.message.author} • {self.bot.user.name} ")
+            await ctx.reply(embed=embed)
 
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    @commands.command(name="Whois",aliases=["userinfo"], help=f'Shows information of a user \nFormat: `{config.prefix}whois @User`')
+    @commands.cooldown(1,10, commands.BucketType.user)
+    @commands.command(name="Uptime",help=f"Shows the amount of time the bot has been up.")
+    async def uptime(self,ctx):
+        time = await self.find_time_difference(self.bot.launch_time)
+        await ctx.reply("I have been up from", time)
+
+    @commands.cooldown(1,10, commands.BucketType.user)
+    @commands.command(name="Whois",aliases=["userinfo"], help=f'Shows information of a user')
     async def whois(self,ctx,user:discord.Member=None):
-        if (user == None):
-            user_mention= ctx.author
-        else:
-            user_mention=user
-        embed=discord.Embed(title = f"{user_mention.name}",color =random.choice(colourlist), timestamp=ctx.message.created_at)
-        embed.add_field(name="Status:",value=f"{user_mention.raw_status.capitalize()}")
-        joined_on_time=self.time_format_function(user_mention.joined_at)
-        embed.add_field(name="Joined server at:",value=f"{joined_on_time}")
-        embed.add_field(name="Nickname:",value=f"{user_mention.nick}")
+        user_mention = user or ctx.author
+        embed=discord.Embed(title = f"{user_mention}",color = random.choice(colourlist), timestamp=ctx.message.created_at)
+        embed.add_field(name="Status:",value=f"{user_mention.raw_status.capitalize()}",inline=True)
+        embed.add_field(name="Nickname:",value=f"{str(user_mention.nick)}",inline=True)
+        embed.add_field(name="User ID:",value=f"{user_mention.id}",inline=False)
+
+        status_string=""
         
-        roles_mention_form=[]
-        #roles_mention_form.append(role.mention for role in user_mention.roles)
-        for role in user_mention.roles:
-            roles_mention_form.append(role.mention)
-        #del roles_mention_form[0 :1] 
-        roles_mention_form.pop(0)
-        roles_mention_form.reverse()
-        roles_mention_string =  ' '.join(roles_mention_form)
-        embed.add_field(name="Roles:",value=f"{roles_mention_string}")
-        made_on_time=self.time_format_function(user_mention.created_at)
-        embed.add_field(name="Account made on:",value=f"{made_on_time}")
-        embed.add_field(name="User ID:",value=f"{user_mention.id}")
+        if str(user_mention.mobile_status) != "offline":
+            status_string+="`📱` Mobile\n"
+        
+        if str(user_mention.desktop_status) != "offline":
+            status_string+="`💻` Desktop\n"
+        
+        if str(user_mention.web_status) != "offline":
+            status_string+="`🖥️` Web\n"
+        
+        if status_string == "":
+            status_string = "Offline"
+
+        embed.add_field(name="Device:",value=f"{status_string}",inline=True)
+        join_time_ago=await self.find_time_difference(user_mention.joined_at)
+        embed.add_field(name="Joined server:",value=f"{join_time_ago}",inline=False)
+        create_time_ago=await self.find_time_difference(user_mention.created_at)
+        embed.add_field(name="Account made:",value=f"{create_time_ago} ago",inline=False)
+        top_role = user_mention.top_role
+        if str(top_role) == "@everyone":
+            pass
+        else:
+            top_role = top_role.mention
+
+        embed.add_field(name="Top Role:",value=f"{top_role}",inline=False)
+        #embed.add_field(name="",value=f"{user_mention.}")
         embed.set_thumbnail(url=str(user_mention.avatar_url)) 
 
         author_avatar=ctx.author.avatar_url
         embed.set_footer(icon_url= author_avatar,text=f"Requested by {ctx.message.author} • {self.bot.user.name} ")
-        await ctx.send(embed=embed)
+        await ctx.reply(embed=embed)
+    
+    async def find_time_difference(self,datetime_object):
+        time_difference = (datetime.datetime.utcnow() - datetime_object)
+        td = datetime.timedelta(seconds=time_difference.total_seconds())
+        years,remainder = divmod(td.days,365)   
+        months,days = divmod(remainder,30)
+        hours, remainder = divmod(td.seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        d={"years":years,"months":months,"days":days,"hours":hours,"minutes":minutes}
+        
+        revised_d={}
+        string=""
+        for unit in list(d):
+            if d[unit] != 0:
+                revised_d[unit] = d[unit]
+        
+        #Units and conjuctions
+        for unit in list(revised_d):
+            string += f"{revised_d[unit]} {unit}"
+            if len(revised_d) > 1:
+                if list(revised_d)[-2] == unit:
+                    string += " and "
+                elif list(revised_d)[-1] == unit:
+                    pass
+                else:
+                    string += ", "
+        if string == "":
+            string = "1 second"
+        return string
 
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True)
@@ -145,6 +226,12 @@ class Utility(commands.Cog):
         author_avatar=ctx.author.avatar_url
         embed.set_footer(icon_url= author_avatar,text=f"Requested by {ctx.message.author} • {self.bot.user.name} ")
         await ctx.send(embed=embed)    
+
+    # @commands.command(name="sendmsg")
+    # async def send_embed(self,ctx,msg_id):
+    #     await ctx.message.delete()
+    #     message=await ctx.channel.fetch_message(msg_id)
+    #     await message.reply(content="https://media1.tenor.com/images/11f97eab72fb4056bdfe7922ba7af723/tenor.gif")
 
 
     def time_format_function(self,time):

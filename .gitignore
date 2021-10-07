@@ -1,5 +1,4 @@
 *.env
-stockcheckertest.py
-test.py
 .vscode/
 __pycache__/
+Test/

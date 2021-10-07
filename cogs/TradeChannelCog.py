@@ -1,5 +1,5 @@
-import os,sys,discord,platform,random,aiohttp,json,time,asyncio,textwrap
-from discord.ext import commands,tasks
+import discord
+from discord.ext import commands
 import config   
 from io import BytesIO
 
@@ -16,12 +16,11 @@ class TradeChannel(commands.Cog):
     #     emoji=payload.emoji 
     #     if message.id == config.ticket
 
-
     @commands.has_permissions(manage_channels=True)
     @commands.bot_has_permissions(manage_channels=True)
     @commands.command(name="CreateTradeChannel",aliases=["ctc"], help=f'Creates a trade channel.  \nFormat: `{config.prefix}CreateTradeChannel @User1 @User2 @User3 trade_number channel_description` \nAliases: ctc',require_var_positional=True)#require_var_positional=True makes sure input is not empty
     async def CreateTradeChannel(self,ctx,members:commands.Greedy[discord.Member],trade_number="",*, description='Trade Channel'):
-        if ctx.guild.id in config.APPROVED_SERVERS:
+        if ctx.guild.id == config.playstation_server_id:
             admin_role=ctx.guild.get_role(config.admin_role_id)
             head_moderator_role=ctx.guild.get_role(config.head_moderator_role_id)
             moderator_role=ctx.guild.get_role(config.moderator_role_id)
@@ -79,7 +78,7 @@ class TradeChannel(commands.Cog):
     @commands.bot_has_permissions(manage_channels=True)
     @commands.command(name="CloseTradeChannel",aliases=["close","closetrade"], help=f'Closes a trade channel and creates a log. Can be in `.html` or `.txt` .  \nFormat: `{config.prefix}CloseTradeChannel format` \nFormat can be HTML or TXT.\nAliases: close, closetrade')#require_var_positional=True makes sure input is not empty
     async def CloseTradeChannel(self,ctx,type:str="txt"):
-        if ctx.guild.id in config.APPROVED_SERVERS:
+        if ctx.guild.id == config.playstation_server_id:
             if "trade" in ctx.channel.name:
 
                 if type.lower() in ["text","txt",".txt"]:
@@ -89,17 +88,37 @@ class TradeChannel(commands.Cog):
                     messages=await ctx.channel.history(limit=1000).flatten() 
                     text="▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬" 
                     text+=f'''\n{channel.name.title()} transcript\nServer: {ctx.guild.name} ({ctx.guild.id})\nChannel: {ctx.channel.name} \nMessages: {len(messages)} \n''' 
-                    text+="▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n" 
+                    messages_string = ""
+                    users_in_channel = ""
+                    # admin_role=ctx.guild.get_role(config.admin_role_id)
+                    # head_moderator_role=ctx.guild.get_role(config.head_moderator_role_id)
+                    # moderator_role=ctx.guild.get_role(config.moderator_role_id)
+                    # game_trade_moderator_role=ctx.guild.get_role(config.game_trade_moderator_role_id)
+                    # async def if_moderator(member):
+                    #     for x in member.roles:
+                    #         if x in [admin_role,head_moderator_role,moderator_role,game_trade_moderator_role]:
+                    #             return True
+                    #         else:
+                    #             return False
+
+                        
                     for msg in messages[::-1]:
-                        if msg.author.bot:#bot messages will not come in the transcript
+                        if msg.author.bot:
+                            #bot messages will not come in the transcript
                             pass                 
                         else:
-                            text+=f"{msg.author.name}: {msg.content} \n"
+                            messages_string+=f"{msg.author.name}: {msg.content} \n"
+                        
+                        if str(msg.author.id) not in users_in_channel and not(msg.author.bot):
+                            users_in_channel+=f"\u2800\u2800{msg.author.name} ({msg.author.id})\n" 
+                    
+                    text+="User's in this channel:\n" + users_in_channel
+                    text+="▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n" 
+                    text+= messages_string
 
                     buffer = BytesIO(text.encode("utf8"))  # change encoding as necessary
                     await channel.send(content=f"Trade transcript of {ctx.channel.name}",file=discord.File(fp=buffer, filename=f"{ctx.channel.name.upper()}_transcript.txt"))
-
-                    embed=discord.Embed(title="Transcript created.",description=f"A `.txt` transcript has been sent to {channel.mention}.\n This channel can now be deleted.")      
+                    embed=discord.Embed(title="Transcript created.",description=f"A `.txt` transcript has been sent to {channel.mention}.\nThis channel can now be deleted.")      
                     #embed.add_field(name="Users",value=user_string)
                     await message.edit(embed=embed)
                 
@@ -139,8 +158,8 @@ class TradeChannel(commands.Cog):
             else:
                 await ctx.send("You can't use this command in this channel. Use this command in a trade channel.")
 
-        # else:
-        #     await ctx.send("You can't use this command in this server. Use this command in a Approved Server.")
+        else:
+            await ctx.send("You can't use this command in this channel. Use this command in a trade channel.")
 
        
                 
@@ -150,16 +169,6 @@ class TradeChannel(commands.Cog):
         # newfile = open("ticketlog.html","w")
         # newfile.write(text)
 
-    
-    
-    
-    
-    # @commands.cooldown(1, 3, commands.BucketType.user)
-    # @commands.command(name="CreateTradeReactionMessage",aliases=['ctrm'], help=f'Creates a message to which user\'s can react to create a Trade Channel \n {config.prefix}pfp @User\n Aliases: ctrm ')
-    # async def CreateTradeReactionMessage(self,ctx,user:discord.Member=None):
-    #     embed=discord.Embed(title="Create A Trade Channel",description="To create a trade channel react with :cd:",colour=self.bot.user.colour)
-    #     message = await ctx.send(embed=embed)
-    #     await message.add_reaction("\U0001f4bf")
 
 
 

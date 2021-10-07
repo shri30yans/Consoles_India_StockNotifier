@@ -1,2 +1,8 @@
 #.env
-DISCORD_TOKEN=YOUR_DISCORD_TOKEN
+DISCORD_TOKEN= ''
+
+# Twitter info
+consumer_key = ''
+consumer_secret = ''
+access_token = ''
+access_token_secret = ''
