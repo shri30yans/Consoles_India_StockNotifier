@@ -4,29 +4,46 @@ import os
 #Fetch details from .env file
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
-#Fetching database details is shifted to main.py
-#DATABASE_DICT = dict(eval(os.getenv("DISCORD_DATABASE_DETAILS")))
+consumer_key = os.getenv("consumer_key")
+consumer_secret = os.getenv("consumer_secret")
+access_token = os.getenv("access_token")
+access_token_secret = os.getenv("access_token_secret")
+
 prefix="?"
 
-APPROVED_SERVERS=[797570077364977696]
 #List of Cogs to run on startup
 STARTUP_COGS = [
-    "cogs.UtilityCog","cogs.TradeChannelCog","cogs.Notifications","cogs.StockChecker","utils.ErrorHandler","jishaku"]
+    "cogs.UtilityCog","cogs.TradeChannelCog","utils.ErrorHandler","jishaku",
+    "StockChecker.scrapper","StockChecker.RequestsStockChecker","StockChecker.Notifications",#"StockChecker.PlaywrightStockChecker"
+    ]
 
-#Playstation India Server
+my_server_id = 893734056720740352
+playstation_server_id=797570077364977696
+
+
 #Channels
-server_id=797570077364977696
-stock_notifications_channel_id = 850096085770567700
+PS_stock_notification_channel = 892795445112369183
+XBOX_stock_notification_channel = 893754612547481630
+PS_India_stock_notification_channel = 850096085770567700
+
 mod_logs_channel_id=860121260369379328
 trade_category_id=844087063405395999
 
+
 #Roles
-PS5_stock_notifications_role_id = 849606173522788352
-PS5_DE_stock_notifications_role_id = 857134006243688458
-XSX_stock_notifications_role_id = 856442409142976542
-XSS_stock_notifications_role_id = 856442480857972745
-RED_DS_stock_notifications_role_id=864353737739993098
-BLACK_DS_stock_notifications_role_id=864353912589254656
+stock_notification_roles = {
+    "PS5" : {playstation_server_id:849606173522788352,my_server_id:893734056720740352},
+    "PS5_DE" :  {playstation_server_id:857134006243688458,my_server_id:893734151428132894},
+    "XSX" : {my_server_id:893734236392144926},
+    "XSS" : {my_server_id:893734365476057119},
+    "RED_DS" : {my_server_id:893734512255701035},
+    "BLACK_DS" : {my_server_id:893734593621000232}}
+
+
+#Notification channel configurations
+both_playstation_channels = {my_server_id:PS_stock_notification_channel,playstation_server_id:PS_India_stock_notification_channel}
+xbox_channel = {my_server_id:XBOX_stock_notification_channel}
+playstation_channel = {my_server_id:PS_stock_notification_channel}
 
 #Mod roles
 head_moderator_role_id=798978668403753000
@@ -37,21 +54,14 @@ bot_role_id=797840270028701756
 
 #Reaction Messages
 #ticket_reaction_message_id=
-embed_colours=[0xFFFF00,#yellow
-            0xFF0000,#red
-            0xFF0000,#green
-            0x00FFFF,#blue
-            0xFF00FF,#pink
-]
+embed_colours=[0x00FFFF]#blue
 
 #emoji
-XSX_emoji="<:XSX:856448011831738389>"
-XSS_emoji="<:XSS:856448352510148628>"
-PS5_emoji="<:PS5:856448878340210708>"
+XSX_emoji="<:XSX:893792926574972929>"
+XSS_emoji="<:XSS:893792927090884628>"
+PS5_emoji="<:PS5:893792926050684929>"
+PS5_DE_emoji = "<:PS5_DE:893792926705020960>"
 RED_DS_emoji="<:Red_Dualsense:864361711183593472>"
 BLACK_DS_emoji="<:Black_Dualsense:864361710532952064>"
 
-
-#webhook_url="https://discord.com/api/webhooks/858323481296240680/HrsIIfo93fUouPvKR6WE8lwiWDkm2cV6Yd9X22AQ1zbOWyIXEzMzbjEnj77Y6DniLNgF"
-
-webhook_url="https://discord.com/api/webhooks/858329509677498386/dIyMtB0S7-WdDIS2t-AlgWeh14Y5MJ6lXJN_R_r3s0LFhe4uJvX1r8Kmkv6Jz_xlu2OT"
+cog_emojis={}

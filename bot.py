@@ -14,8 +14,6 @@ colourlist=config.embed_colours
 
 #bot
 intents = discord.Intents.all()
-#intents.members = True
-#intents.presences = True
 bot = commands.Bot(command_prefix=commands.when_mentioned_or(config.prefix),case_insensitive = True,intents = intents,help_command=EmbedHelpCommand())
 TOKEN = config.TOKEN
 
@@ -26,11 +24,10 @@ async def status_update():
                         discord.Activity(type = discord.ActivityType.watching, name = f"How to get a PS5?"),
                         discord.Activity(type = discord.ActivityType.playing, name = f"Demon Souls"),
                         discord.Activity(type = discord.ActivityType.playing, name = f"Astro's Playroom"),
-                        discord.Activity(type = discord.ActivityType.playing, name = f"Bloodbourne"),
+                        discord.Activity(type = discord.ActivityType.playing, name = f"Bloodborne"),
                         discord.Activity(type = discord.ActivityType.playing, name = f"God of War"),
                         discord.Activity(type = discord.ActivityType.playing, name = f"The Last of Us"),
                         discord.Activity(type = discord.ActivityType.playing, name = f"Call of Duty: Black Ops - Cold War "),
-
                         ]
 
     activity=random.choice(list_of_statuses)

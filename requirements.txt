@@ -6,7 +6,7 @@ pytz
 lxml
 asyncpg #database wrapper
 requests
-#selenium
 beautifulsoup4
 aiohttp
-dominate
+playwright
+tweepy
