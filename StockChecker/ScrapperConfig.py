@@ -5,6 +5,9 @@ import config
 #Default is 30 seconds
 notifications_delay={   
             "XSS":60*60*2,
+            "XSX":60*1,
+            "PS5":60*1,
+            "PS5_DE":60*1,
             "RED_DS":60*60*3,
             "BLACK_DS":60*60*3}
 
@@ -20,7 +23,7 @@ class Product:
 All_Products = {
             "PS5":Product(name="PS5",notification_channels = config.both_playstation_channels,twitter_hashtags="#RestockPS5India #PS5",thumbnail_link="https://i.imgur.com/pmgar66.jpg?1",colour =0x2100ff,emoji = config.PS5_emoji),
             "PS5_DE":Product(name="PS5 DE",notification_channels = config.both_playstation_channels,twitter_hashtags="#RestockPS5India #PS5Digital",thumbnail_link="https://i.imgur.com/pmgar66.jpg?1",colour =0x008eff,emoji = config.PS5_DE_emoji),
-            "XSX":Product(name="XSX",notification_channels = config.xbox_channel,twitter_hashtags="RestockXSXIndia #XSX",thumbnail_link="https://i.imgur.com/WpKbZXR.jpg",colour =0x3e8806,emoji = config.XSX_emoji),
+            "XSX":Product(name="XSX",notification_channels = config.xbox_channel,twitter_hashtags="#RestockXSXIndia #XSX",thumbnail_link="https://i.imgur.com/WpKbZXR.jpg",colour =0x3e8806,emoji = config.XSX_emoji),
             "XSS":Product(name="XSS",notification_channels = config.xbox_channel,twitter_hashtags="#XSS",thumbnail_link="https://i.imgur.com/OpInEum.jpg",colour =0x5dd35d,emoji = config.XSS_emoji),
             
             "RED_DS":Product(name="RED_DS",notification_channels = config.playstation_channel,colour =0xff0000,emoji = config.RED_DS_emoji),
