@@ -9,8 +9,6 @@ else:
     import config
 
 colourlist = config.embed_colours
-
-
 async def get_prefix(bot, message):
     if message.guild:
         prefixes_list = (config.server_prefixes.get(message.guild.id) or config.default_prefixes[0])

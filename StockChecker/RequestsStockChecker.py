@@ -50,21 +50,16 @@ class RequestsCog(commands.Cog):
         #         h[header]=value
         #         ordered_headers_list.append(h)
         try:
-            async with aiohttp.ClientSession(
-                headers=headers, trust_env=True
-            ) as session:
+            async with aiohttp.ClientSession(headers=headers, trust_env=True) as session:
                 async with session.get(url=link) as response:
-                    if response.status not in [
-                        200,
-                        304,
-                    ]:  # 200 > OK , 304 > Sending cached data because data didn't change
+                    # 200 - OK , 304 - Sending cached data because data didn't change
+                    if response.status not in [200,304]:
                         logger.error(f"Server returned {response.status} URL:{link}")
                         await self.add_count(
                             dictionary=self.error_count_dict,
                             product_name=product_name,
-                            website_name=website_name,
-                        )
-                        if response.status == 404:
+                            website_name=website_name)
+                        if response.status in [404]:
                             await asyncio.sleep(60)
                     else:
                         html = await response.text()
@@ -80,7 +75,15 @@ class RequestsCog(commands.Cog):
         await self.bot.wait_until_ready()
         self.bot.loop.create_task(
             self.requests_scrapper(
-                product_name="WISHLIST",
+                product_name="PS5_WISHLIST",
+                website_name="amazon",
+                scrapper_function=self.ScrapperCog.scrape_amazon_wishlist,
+                delay=20,
+            )
+        )
+        self.bot.loop.create_task(
+            self.requests_scrapper(
+                product_name="XBOX_WISHLIST",
                 website_name="amazon",
                 scrapper_function=self.ScrapperCog.scrape_amazon_wishlist,
                 delay=20,
@@ -98,6 +101,14 @@ class RequestsCog(commands.Cog):
         self.bot.loop.create_task(
             self.requests_scrapper(
                 product_name="PS5_DE",
+                website_name="flipkart",
+                scrapper_function=self.ScrapperCog.scrape_flipkart,
+                delay=20,
+            )
+        )
+        self.bot.loop.create_task(
+            self.requests_scrapper(
+                product_name="WHITE_PULSE_3D",
                 website_name="flipkart",
                 scrapper_function=self.ScrapperCog.scrape_flipkart,
                 delay=20,
@@ -136,6 +147,14 @@ class RequestsCog(commands.Cog):
                 delay=20,
             )
         )
+        # self.bot.loop.create_task(
+        #     self.requests_scrapper(
+        #         product_name="BLACK_PULSE_3D",
+        #         website_name="shopatsc",
+        #         scrapper_function=self.ScrapperCog.scrape_shopatsc,
+        #         delay=20,
+        #     )
+        # )
         # self.bot.loop.create_task(
         #     self.requests_scrapper(
         #         product_name="RED_DS",
@@ -177,30 +196,30 @@ class RequestsCog(commands.Cog):
             )
         )
 
-        self.bot.loop.create_task(
-            self.requests_scrapper(
-                product_name="PS5",
-                website_name="ppgc",
-                scrapper_function=self.ScrapperCog.scrape_ppgc,
-                delay=20,
-            )
-        )
-        self.bot.loop.create_task(
-            self.requests_scrapper(
-                product_name="PS5_DE",
-                website_name="ppgc",
-                scrapper_function=self.ScrapperCog.scrape_ppgc,
-                delay=20,
-            )
-        )
-        self.bot.loop.create_task(
-            self.requests_scrapper(
-                product_name="XSX",
-                website_name="ppgc",
-                scrapper_function=self.ScrapperCog.scrape_ppgc,
-                delay=20,
-            )
-        )
+        # self.bot.loop.create_task(
+        #     self.requests_scrapper(
+        #         product_name="PS5",
+        #         website_name="ppgc",
+        #         scrapper_function=self.ScrapperCog.scrape_ppgc,
+        #         delay=20,
+        #     )
+        # )
+        # self.bot.loop.create_task(
+        #     self.requests_scrapper(
+        #         product_name="PS5_DE",
+        #         website_name="ppgc",
+        #         scrapper_function=self.ScrapperCog.scrape_ppgc,
+        #         delay=20,
+        #     )
+        # )
+        # self.bot.loop.create_task(
+        #     self.requests_scrapper(
+        #         product_name="XSX",
+        #         website_name="ppgc",
+        #         scrapper_function=self.ScrapperCog.scrape_ppgc,
+        #         delay=20,
+        #     )
+        # )
 
         # self.bot.loop.create_task(
         #     self.requests_scrapper(

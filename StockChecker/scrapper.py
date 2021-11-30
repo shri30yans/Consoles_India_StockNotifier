@@ -81,67 +81,53 @@ class Scrapper(commands.Cog):
         await self.change_countinous_stock(product, website_name=website_name, value=True)
 
     async def scrape_amazon_wishlist(
-        self, page_html, product_name="WISHLIST", page=None
+        self, page_html, product_name=None, page=None
     ):
+        #print(product_name)
         soup = BeautifulSoup(page_html, "html.parser")
         wishlist_products = All_Websites["amazon"].wishlist_products
-        # Method 1: Checks for Add to Cart button
         for item in list(wishlist_products.values()):
-            id_regex = re.compile(item.item_id)
-            add_to_cart_button = soup.find_all("span", {"class": re.compile("add_to_cart"), "id": id_regex})
-            all_buying_options_button = soup.find_all("span", {"class" : re.compile('buying_options'),"id": id_regex})
-            if len(add_to_cart_button) > 0:
-                await self.run_notifications(
-                    website_name="amazon",
-                    product=item.name,
-                    method="Wishlist",
-                    page=page,
-                )
-            # elif len(all_buying_options_button) < 0:
-            # #If there is no buying options button
-            #     print("No Buying options orr Add to cart button ")
-                # #return False
+            ASIN_regex = re.compile(item.ASIN)
+            all_list_elements=soup.find_all('li',{"data-reposition-action-params": ASIN_regex})
+            for list_element in all_list_elements:
+                add_to_cart_button = list_element.find_all("span", {"class": re.compile("add_to_cart")})
+                all_buying_options_button = list_element.find_all("span", {"class" : re.compile('buying_options')})
+                
+                # #To cross-check if item-id is correct
+                # if len(all_buying_options_button) > 0 or len(add_to_cart_button) > 0:
+                #     print(item.name,"There")
+                # else:
+                #     pass
+                #     print(item.name,"Not there")
+                
+                async def check_price():
+                    '''To check if price is in a certain in range.
+                    If the price is "-Infinity" it means the product is out of stock.'''
 
-            # #To cross-check if item-id is correct
-            # elif len(all_buying_options_button) > 0:
-            #     print(item.name," is there in the Wishlist.")
-            else:
-                await self.change_countinous_stock(
-                    product=item.name, website_name="amazon", value=False
+                    if list_element.has_attr("data-price"):
+                        if item.max_cost:
+                            if float(list_element["data-price"]) <= item.max_cost and float(list_element["data-price"]) > 0:
+                                return True
+                        else:
+                            return True
+                    else:
+                        return True
+
+                if len(add_to_cart_button) > 0 and await check_price():
+                    await self.run_notifications(
+                        website_name="amazon",
+                        product=item.name,
+                        method="Wishlist",
+                        page=page,
+                    )
+                else:
+                    await self.change_countinous_stock(
+                        product=item.name, website_name="amazon", value=False
                 )
+        #print("----------------")
+        
         return True
-
-        # Method 2: Check list elements/ Whole product listing for prices
-        # all_list_elements=soup.find_all('li')
-        # if len(all_list_elements) > 0:
-        #     for elem in all_list_elements:
-        #         for item in list(wishlist_products):
-
-        #             #If the list element has a price
-        #             if elem.has_attr("data-price"):
-        #                 obj = wishlist_products[item]
-
-        #                 async def check_price():
-        #                     '''To check if price is in a certain in range.
-        #                     If the price is "-Infinity" it means the product is out of stock.'''
-        #                     if float(elem["data-price"]) <= obj.max_cost and float(elem["data-price"]) > 0:
-        #                         await self.run_notifications(website_name="amazon",product=item,method="Wishlist",page=page)
-
-        #                 if elem.has_attr("data-itemid"):
-        #                     if obj.item_id in elem["data-itemid"]:
-        #                         await check_price()
-
-        #                 elif elem.has_attr("id"):
-        #                     if obj.item_id in elem["id"]:
-        #                         return "pause"
-        #                         #await check_price()
-
-        #                 else:
-        #                     logger.error(f'Amazon Error Wishlist: Both attributes do not exist.')
-
-        # else:
-        #     return False
-
+        
     async def scrape_amazon(self, page_html, product, page=None):
         doc = lxml.html.fromstring(str(page_html))
         try:
