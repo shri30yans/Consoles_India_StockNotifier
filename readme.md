@@ -8,16 +8,16 @@
 [Join the Console Stock Notification India Server.](https://discord.gg/NXUuNuusJM)
 
 ### Pictures:
-![PS5 Stock](https://github.com/shri30yans/PS5_DiscordBot/blob/main/readme_images/PS5.jpg)   
+![PS5 Stock](images/PS5.png)   
 *PS5 Stock Alert* 
 
-![XSS Stock](https://github.com/shri30yans/PS5_DiscordBot/blob/main/readme_images/XSS.jpg)   
+![XSS Stock](images/XSS.pmg)   
 *Xbox Series S Stock Alert*   
  
-![Trade Channel](https://github.com/shri30yans/PS5_DiscordBot/blob/main/readme_images/Create_trade_channel.jpg)   
+![Trade Channel](images/Create_trade_channel.jpg)   
 *Creating a Trade Channel*
      
-![Instructions](https://github.com/shri30yans/PS5_DiscordBot/blob/main/readme_images/instructions.jpg)   
+![Instructions](images/instructions.jpg)   
 *Auto-message in Trade Channel*  
 
 

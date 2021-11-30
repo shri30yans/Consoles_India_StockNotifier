@@ -29,7 +29,7 @@ STARTUP_COGS = [
     "StockChecker.Notifications",
     ]
 
-my_server_id = 893734056720740352
+my_server_id = 889437492477046785
 playstation_server_id = 797570077364977696
 
 amazon_affiliate_tag = "shri30yans00-21"
@@ -38,28 +38,12 @@ amazon_affiliate_tag = "shri30yans00-21"
 PS_stock_notification_channel = 892795445112369183
 XBOX_stock_notification_channel = 893754612547481630
 PS_India_stock_notification_channel = 850096085770567700
+
+
 mod_logs_channel_id = 860121260369379328
 trade_category_id = 844087063405395999
 suggestions_channel_id = 898472126602948608
 meme_channel_id = 892798621458776074
-
-
-# Roles
-stock_notification_roles = {
-    "PS5": {
-        playstation_server_id: 849606173522788352,
-        my_server_id: 893734056720740352,
-    },
-    "PS5_DE": {
-        playstation_server_id: 857134006243688458,
-        my_server_id: 893734151428132894,
-    },
-    "XSX": {my_server_id: 893734236392144926},
-    "XSS": {my_server_id: 893734365476057119},
-    "RED_DS": {my_server_id: 893734512255701035},
-    "BLACK_DS": {my_server_id: 893734593621000232},
-}
-
 
 # Notification channel configurations
 both_playstation_channels = {

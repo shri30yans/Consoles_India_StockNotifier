@@ -1,4 +1,6 @@
 import config
+PS5_wishlist = "https://www.amazon.in/hz/wishlist/ls/K5HVAMY70DJ5/?viewType=list"
+XBOX_wishlist= "https://www.amazon.in/hz/wishlist/ls/18WU5P3MXFWL0/?viewType=list"
 
 class Product:
     def __init__(
@@ -6,9 +8,11 @@ class Product:
         name,
         display_name,
         links,
+        notification_roles=None,
+        notification_channels=None,
         affiliate_links=None,
         add_to_cart_links=None,
-        notification_channels=None,
+        wishlist=None,
         twitter_hashtags="",
         thumbnail_link=None,
         colour=0x000000,
@@ -17,12 +21,15 @@ class Product:
         self.name = name
         self.display_name = display_name
         self.links = links
+        
+        self.notification_roles = notification_roles
+        self.notification_channels = notification_channels
 
         self.affiliate_links = affiliate_links
         self.add_to_cart_links = add_to_cart_links
+        self.wishlist = wishlist
 
         self.twitter_hashtags = twitter_hashtags
-        self.notification_channels = notification_channels
         self.thumbnail_link = thumbnail_link
         self.emoji = emoji
         self.colour = colour
@@ -47,6 +54,11 @@ All_Products = {
         affiliate_links={
             "amazon": f"https://www.amazon.in/dp/B08FV5GC28/?tag={config.amazon_affiliate_tag}",
         },
+        wishlist = PS5_wishlist,
+        notification_roles = {
+            config.playstation_server_id: 849606173522788352,
+            config.my_server_id: 893734056720740352,
+        },
         notification_channels=config.both_playstation_channels,
         twitter_hashtags="#RestockPS5India #PS5",
         thumbnail_link="https://i.imgur.com/pmgar66.jpg?1",
@@ -70,6 +82,11 @@ All_Products = {
         affiliate_links={
             "amazon": f"https://www.amazon.in/Sony-CFI-1008B01R-PlayStation-Digital-Edition/dp/B08FVRQ7BZ/?tag={config.amazon_affiliate_tag}"
         },
+        wishlist = PS5_wishlist,
+        notification_roles = {
+            config.playstation_server_id: 857134006243688458,
+            config.my_server_id: 893734151428132894,
+        },
         notification_channels=config.both_playstation_channels,
         twitter_hashtags="#RestockPS5India #PS5Digital",
         thumbnail_link="https://i.imgur.com/pmgar66.jpg?1",
@@ -87,6 +104,11 @@ All_Products = {
         },
         affiliate_links={
             "amazon": f"https://www.amazon.in/dp/B08NTT4RTQ/?tag={config.amazon_affiliate_tag}",
+        },
+        wishlist = PS5_wishlist,
+        notification_roles = {
+            config.playstation_server_id: 849606173522788352,
+            config.my_server_id: 893734056720740352,
         },
         notification_channels=config.both_playstation_channels,
         twitter_hashtags="#RestockPS5India #PS5",
@@ -106,6 +128,11 @@ All_Products = {
         affiliate_links={
             "amazon": f"https://www.amazon.in/gp/product/B08NTV53TC/?tag={config.amazon_affiliate_tag}",
         },
+        wishlist = PS5_wishlist,
+        notification_roles = {
+            config.playstation_server_id: 857134006243688458,
+            config.my_server_id: 893734151428132894,
+        },
         notification_channels=config.both_playstation_channels,
         twitter_hashtags="#RestockPS5India #PS5",
         thumbnail_link="https://i.imgur.com/pmgar66.jpg?1",
@@ -123,6 +150,11 @@ All_Products = {
         },
         affiliate_links={
             "amazon": f"https://www.amazon.in/gp/product/B08NTVH9VG/?tag={config.amazon_affiliate_tag}",
+        },
+        wishlist = PS5_wishlist, 
+        notification_roles = {
+            config.playstation_server_id: 857134006243688458,
+            config.my_server_id: 893734151428132894,
         },
         notification_channels=config.both_playstation_channels,
         twitter_hashtags="#RestockPS5India #PS5",
@@ -142,6 +174,11 @@ All_Products = {
         affiliate_links={
             "amazon": f"https://www.amazon.in/gp/product/B08NTV1QDX/?tag={config.amazon_affiliate_tag}",
         },
+        wishlist = PS5_wishlist,
+        notification_roles = {
+            config.playstation_server_id: 857134006243688458,
+            config.my_server_id: 893734151428132894,
+        },
         notification_channels=config.both_playstation_channels,
         twitter_hashtags="#RestockPS5India #PS5",
         thumbnail_link="https://i.imgur.com/pmgar66.jpg?1",
@@ -150,7 +187,7 @@ All_Products = {
     ),
     "PS5_DE_Charging_Station_Bundle": Product(
         name="PS5_DE_Charging_Station_Bundle",
-        display_name="PS5 DE & DualsenseCharging station bundle",
+        display_name="PS5 DE & Dualsense Charging station bundle",
         links={
             "amazon": "https://www.amazon.in/dp/B08NTVHTPT/?smid=AT95IG9ONZD7S",
         },
@@ -160,8 +197,56 @@ All_Products = {
         affiliate_links={
             "amazon": f"https://www.amazon.in/gp/product/B08NTVHTPT/?tag={config.amazon_affiliate_tag}",
         },
+        wishlist = PS5_wishlist,
+        notification_roles = {
+            config.playstation_server_id: 857134006243688458,
+            config.my_server_id: 893734151428132894,
+        },
         notification_channels=config.both_playstation_channels,
         twitter_hashtags="#RestockPS5India #PS5",
+        thumbnail_link="https://i.imgur.com/pmgar66.jpg?1",
+        colour=0x2100FF,
+        emoji=config.PS5_emoji
+    ),
+    "WHITE_PULSE_3D": Product(
+        name="WHITE_PULSE_3D",
+        display_name="White PULSE 3D",
+        links={
+            "amazon": "https://www.amazon.in/dp/B08FVNCYWZ/?smid=AT95IG9ONZD7S",
+            "flipkart": "https://www.flipkart.com/sony-ps5-pulse-3d-wireless-headset/p/itm668d882c6bb65",
+        },
+        add_to_cart_links={
+            "amazon": f"https://www.amazon.in/gp/aws/cart/add.html?AssociateTag=?tag={config.amazon_affiliate_tag}&ASIN.1=B08FVNCYWZ&Quantity.1=1"
+        },
+        affiliate_links={
+            "amazon": f"https://www.amazon.in/gp/product/B08FVNCYWZ/?tag={config.amazon_affiliate_tag}",
+        },
+        wishlist = PS5_wishlist,
+        notification_roles = {
+            config.my_server_id: 914105121959460874,
+        },
+        notification_channels=config.playstation_channel,
+        twitter_hashtags="#RestockPS5India #Pulse3D #PS5",
+        thumbnail_link="https://i.imgur.com/pmgar66.jpg?1",
+        colour=0x2100FF,
+        emoji=config.PS5_emoji
+    ),
+    "BLACK_PULSE_3D": Product(
+        name="BLACK_PULSE_3D",
+        display_name="Black PULSE 3D",
+        links={
+            "shopatsc": "https://shopatsc.com/collections/playstation-5-accessories/products/ps5-headset-black",
+        },
+        add_to_cart_links={
+        },
+        affiliate_links={
+        },
+        wishlist = PS5_wishlist,
+        notification_roles = {
+            config.my_server_id: 914105313030991902,
+        },
+        notification_channels=config.playstation_channel,
+        twitter_hashtags="#RestockPS5India #Pulse3D #PS5",
         thumbnail_link="https://i.imgur.com/pmgar66.jpg?1",
         colour=0x2100FF,
         emoji=config.PS5_emoji
@@ -180,6 +265,98 @@ All_Products = {
         },
         affiliate_links={
             "amazon": f"https://www.amazon.in/Xbox-Series-X/dp/B08J7QX1N1/{config.amazon_affiliate_tag}",
+        },
+        wishlist = XBOX_wishlist,
+        notification_roles = {
+            config.my_server_id: 893734236392144926,
+        },
+        notification_channels=config.xbox_channel,
+        twitter_hashtags="#RestockXSXIndia #XSX",
+        thumbnail_link="https://i.imgur.com/WpKbZXR.jpg",
+        colour=0x3E8806,
+        emoji=config.XSX_emoji,
+    ),
+    "XSX_Gears_Tactics_Bundle": Product(
+        name="XSX_Gear_Bundle",
+        display_name="Xbox Series X & Gears Tactics bundle",
+        links={
+            "amazon": "https://www.amazon.in/dp/B08NRLQ294/?smid=AT95IG9ONZD7S",
+        },
+        add_to_cart_links={
+            "amazon": f"https://www.amazon.in/gp/aws/cart/add.html?AssociateTag=?tag={config.amazon_affiliate_tag}&ASIN.1=B08NRLQ294&Quantity.1=1"
+        },
+        affiliate_links={
+            "amazon": f"https://www.amazon.in/Xbox-Series-X/dp/B08NRLQ294/{config.amazon_affiliate_tag}",
+        },
+        wishlist = XBOX_wishlist,
+        notification_roles = {
+            config.my_server_id: 893734236392144926,
+        },
+        notification_channels=config.xbox_channel,
+        twitter_hashtags="#RestockXSXIndia #XSX",
+        thumbnail_link="https://i.imgur.com/WpKbZXR.jpg",
+        colour=0x3E8806,
+        emoji=config.XSX_emoji,
+    ),
+    "XSX_White_Controller_Bundle": Product(
+        name="XSX_White_Controller_Bundle",
+        display_name="Xbox Series X & Robot White Controller bundle",
+        links={
+            "amazon": "https://www.amazon.in/dp/B08NRLS39X/?smid=AT95IG9ONZD7S",
+        },
+        add_to_cart_links={
+            "amazon": f"https://www.amazon.in/gp/aws/cart/add.html?AssociateTag=?tag={config.amazon_affiliate_tag}&ASIN.1=B08NRLS39X&Quantity.1=1"
+        },
+        affiliate_links={
+            "amazon": f"https://www.amazon.in/Xbox-Series-X/dp/B08NRLS39X/{config.amazon_affiliate_tag}",
+        },
+        wishlist = XBOX_wishlist,
+        notification_roles = {
+            config.my_server_id: 893734236392144926,
+        },
+        notification_channels=config.xbox_channel,
+        twitter_hashtags="#RestockXSXIndia #XSX",
+        thumbnail_link="https://i.imgur.com/WpKbZXR.jpg",
+        colour=0x3E8806,
+        emoji=config.XSX_emoji,
+    ),
+    "XSX_Black_Controller_Bundle": Product(
+        name="XSX_Black_Controller_Bundle",
+        display_name="Xbox Series X & Carbon Black Controller bundle",
+        links={
+            "amazon": "https://www.amazon.in/dp/B08NQZGSJ2/?smid=AT95IG9ONZD7S",
+        },
+        add_to_cart_links={
+            "amazon": f"https://www.amazon.in/gp/aws/cart/add.html?AssociateTag=?tag={config.amazon_affiliate_tag}&ASIN.1=B08NQZGSJ2&Quantity.1=1"
+        },
+        affiliate_links={
+            "amazon": f"https://www.amazon.in/Xbox-Series-X/dp/B08NQZGSJ2/{config.amazon_affiliate_tag}",
+        },
+        wishlist = XBOX_wishlist,
+        notification_roles = {
+            config.my_server_id: 893734236392144926,
+        },
+        notification_channels=config.xbox_channel,
+        twitter_hashtags="#RestockXSXIndia #XSX",
+        thumbnail_link="https://i.imgur.com/WpKbZXR.jpg",
+        colour=0x3E8806,
+        emoji=config.XSX_emoji,
+    ),
+    "XSX_Blue_Controller_Bundle": Product(
+        name="XSX_Blue_Controller_Bundle",
+        display_name="Xbox Series X & Shock Blue Controller bundle",
+        links={
+            "amazon": "https://www.amazon.in/dp/B08NRBNSPW/?smid=AT95IG9ONZD7S",
+        },
+        add_to_cart_links={
+            "amazon": f"https://www.amazon.in/gp/aws/cart/add.html?AssociateTag=?tag={config.amazon_affiliate_tag}&ASIN.1=B08NRBNSPW&Quantity.1=1"
+        },
+        affiliate_links={
+            "amazon": f"https://www.amazon.in/Xbox-Series-X/dp/B08NRBNSPW/{config.amazon_affiliate_tag}",
+        },
+        wishlist = XBOX_wishlist,
+        notification_roles = {
+            config.my_server_id: 893734236392144926,
         },
         notification_channels=config.xbox_channel,
         twitter_hashtags="#RestockXSXIndia #XSX",
@@ -203,6 +380,10 @@ All_Products = {
         affiliate_links={
             "amazon": f"https://www.amazon.in/Xbox-Series-S/dp/B08J89D6BW/?tag={config.amazon_affiliate_tag}"
         },
+        wishlist = XBOX_wishlist,
+        notification_roles = {
+            config.my_server_id: 893734365476057119,
+        },
         notification_channels=config.xbox_channel,
         twitter_hashtags="#XSS",
         thumbnail_link="https://i.imgur.com/OpInEum.jpg",
@@ -222,6 +403,10 @@ All_Products = {
         affiliate_links={
             "amazon": f"https://www.amazon.in/DualSense-Wireless-Controller-Red-PlayStation/dp/B098439Y2G?tag={config.amazon_affiliate_tag}"
         },
+        wishlist = PS5_wishlist,
+        notification_roles = {
+            config.my_server_id: 893734512255701035,
+        },
         notification_channels=config.playstation_channel,
         colour=0xFF0000,
         emoji=config.RED_DS_emoji,
@@ -239,17 +424,29 @@ All_Products = {
         affiliate_links={
             "amazon": f"https://www.amazon.in/DualSense-Wireless-Controller-Black-PlayStation/dp/B09842ZHNM?smid=AT95IG9ONZD7S?tag={config.amazon_affiliate_tag}"
         },
+        wishlist = PS5_wishlist,
+        notification_roles = {
+            config.my_server_id: 893734593621000232,
+        },
         notification_channels=config.playstation_channel,
         colour=0x030000,
         emoji=config.BLACK_DS_emoji,
     ),
-    "WISHLIST": Product(
-        name="WISHLIST",
-        display_name="Wishlist",
+    "PS5_WISHLIST": Product(
+        name="PS5_WISHLIST",
+        display_name="Playstation Wishlist",
         links={
-            "amazon": "https://www.amazon.in/hz/wishlist/ls/1TAF69OJPC2BQ/?viewType=list",
+            "amazon": PS5_wishlist,
         },
-        emoji="📜",
+        emoji=f"{config.PS5_emoji}📜",
+    ),
+    "XBOX_WISHLIST": Product(
+        name="XBOX_WISHLIST",
+        display_name="Xbox Wishlist",
+        links={
+            "amazon": XBOX_wishlist,
+        },
+        emoji=f"{config.XSX_emoji}📜",
     ),
 }
 
@@ -273,9 +470,9 @@ class Website:
 
 
 class Amazon_Wishlist_Item:
-    def __init__(self, name, item_id, max_cost=None):
+    def __init__(self, name, ASIN, max_cost=None):
         self.name = name
-        self.item_id = item_id
+        self.ASIN = ASIN
         self.max_cost = max_cost
 
 
@@ -283,43 +480,84 @@ All_Websites = {
     "amazon": Website(
         display_name="Amazon",
         common_name="amazon",
-        wishlist_link="https://www.amazon.in/hz/wishlist/ls/1TAF69OJPC2BQ/?viewType=list",
         affiliate_wishlist_link=f"https://www.amazon.in/hz/wishlist/ls/1TAF69OJPC2BQ/?viewType=list&tag={config.amazon_affiliate_tag}",
         wishlist_products={
             # "RED_DS": Amazon_Wishlist_Item(
-            #     name="RED_DS", item_id="I3237V48OIEN94", max_cost=6500
+            #     name="RED_DS", ASIN="B098439Y2G", max_cost=6500
             # ),
             # "BLACK_DS": Amazon_Wishlist_Item(
-            #     name="BLACK_DS", item_id="IJQJKY5K0113B", max_cost=6000
+            #     name="BLACK_DS", ASIN="B09842ZHNM", max_cost=6000
             # ),
             "PS5": Amazon_Wishlist_Item(
-                name="PS5", item_id="IB3PLDK83YLBG", max_cost=50000
+                name="PS5", 
+                ASIN="B08FV5GC28",
+                max_cost=50000
             ),
             "PS5_DE": Amazon_Wishlist_Item(
-                name="PS5_DE", item_id="I1G75WOQCJ6GYE", max_cost=40000
+                name="PS5_DE",
+                ASIN="B08FVRQ7BZ",
+                max_cost=40000
             ),
             "PS5_Camera_Bundle": Amazon_Wishlist_Item(
-                name="PS5_Camera_Bundle", item_id="I33Z5D191T42GO"
+                name="PS5_Camera_Bundle",
+                ASIN="B08NTT4RTQ"
             ),
             "PS5_DE_Camera_Bundle": Amazon_Wishlist_Item(
-                name="PS5_DE_Camera_Bundle", item_id="I1A9G3CA8VWFXD"
+                name="PS5_DE_Camera_Bundle",
+                ASIN="B08NTV53TC"
             ),
             "PS5_DE_Remote_Bundle": Amazon_Wishlist_Item(
-                name="PS5_DE_Camera_Bundle", item_id="I2ZVKSRWEDMOD0"
+                name="PS5_DE_Remote_Bundle",
+                ASIN="B08NTVH9VG"
             ),
             "PS5_DE_Pulse_Bundle": Amazon_Wishlist_Item(
-                name="PS5_DE_Pulse_Bundle", item_id="I2G1OUICVKFRKE"
+                name="PS5_DE_Pulse_Bundle",
+                ASIN="B08NTV1QDX"
             ),
             "PS5_DE_Charging_Station_Bundle": Amazon_Wishlist_Item(
-                name="PS5_DE_Charging_Station_Bundle", item_id="I8X5SS0M9EUQS"
+                name="PS5_DE_Charging_Station_Bundle",
+                ASIN="B08NTVHTPT"
             ),
+            "PS5_Camera_Bundle": Amazon_Wishlist_Item(
+                name="PS5_Camera_Bundle",
+                ASIN="B08NTT4RTQ"
+            ),
+            "WHITE_PULSE_3D": Amazon_Wishlist_Item(
+                name="WHITE_PULSE_3D",
+                ASIN="B08FVNCYWZ"
+            ),
+            # "BLACK_PULSE_3D": Amazon_Wishlist_Item(
+            #     name="BLACK_PULSE_3D",
+            #     ASIN=""
+            # ),
             # "XSS": Amazon_Wishlist_Item(
-            #     name="XSS", item_id="I2D2PR67EB4NAH", max_cost=35000
+            #     name="XSS",
+            #     ASIN="B08J89D6BW",
+            #     max_cost=35000
             # ),
             "XSX": Amazon_Wishlist_Item(
-                name="XSX", item_id="I3M997QVSEVYFH", max_cost=50000
+                name="XSX",
+                ASIN="B08J7QX1N1",
+                max_cost=50000
+            ),
+            "XSX_Gears_Tactics_Bundle": Amazon_Wishlist_Item(
+                name="XSX_Gears_Tactics_Bundle",
+                ASIN="B08NRLQ294"
+            ),
+            "XSX_Blue_Controller_Bundle": Amazon_Wishlist_Item(
+                name="XSX_Blue_Controller_Bundle",
+                ASIN="B08NRBNSPW"
+            ),
+            "XSX_White_Controller_Bundle": Amazon_Wishlist_Item(
+                name="XSX_White_Controller_Bundle",
+                ASIN="B08NRLS39X"
+            ),
+            "XSX_Black_Controller_Bundle": Amazon_Wishlist_Item(
+                name="XSX_Black_Controller_Bundle",
+                ASIN="B08NQZGSJ2"
             ),
         },
+
         headers=[
             {
                 "sec-ch-ua": "^\\^",

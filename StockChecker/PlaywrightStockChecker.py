@@ -28,7 +28,7 @@ class PlaywrightCog(commands.Cog):
 
     async def start_playwright(self):
         self.playwright = await async_playwright().start()
-        self.browser = await self.playwright.chromium.launch(headless=True)
+        self.browser = await self.playwright.chromium.launch(headless=False)
         self.context = await self.browser.new_context(
             viewport={"width": 1980, "height": 1080}
         )
@@ -53,10 +53,8 @@ class PlaywrightCog(commands.Cog):
             await page.set_extra_http_headers(headers)
             response = await page.goto(link, timeout=300000)
             html = await page.content()
-            if response.status not in [
-                200,
-                304,
-            ]:  # 200 > OK , 304 > Sending cached data because data didn't change
+            # 200 - OK , 304 - Sending cached data because data didn't change
+            if response.status not in [200,304]:
                 logger.error(f"Server returned {response.status} URL:{link}")
                 await self.add_count(
                     dictionary=self.error_count_dict,
@@ -80,13 +78,20 @@ class PlaywrightCog(commands.Cog):
         await self.start_playwright()
         self.bot.loop.create_task(
             self.playwright_scrapper(
-                product_name="WISHLIST",
+                product_name="PS5_WISHLIST",
                 website_name="amazon",
                 scrapper_function=self.ScrapperCog.scrape_amazon_wishlist,
                 delay=20,
             )
         )
-
+        self.bot.loop.create_task(
+            self.playwright_scrapper(
+                product_name="XBOX_WISHLIST",
+                website_name="amazon",
+                scrapper_function=self.ScrapperCog.scrape_amazon_wishlist,
+                delay=20,
+            )
+        )
         self.bot.loop.create_task(
             self.playwright_scrapper(
                 product_name="PS5",
@@ -175,30 +180,30 @@ class PlaywrightCog(commands.Cog):
                 delay=20,
             )
         )
-        self.bot.loop.create_task(
-            self.playwright_scrapper(
-                product_name="PS5",
-                website_name="ppgc",
-                scrapper_function=self.ScrapperCog.scrape_ppgc,
-                delay=20,
-            )
-        )
-        self.bot.loop.create_task(
-            self.playwright_scrapper(
-                product_name="PS5_DE",
-                website_name="ppgc",
-                scrapper_function=self.ScrapperCog.scrape_ppgc,
-                delay=20,
-            )
-        )
-        self.bot.loop.create_task(
-            self.playwright_scrapper(
-                product_name="XSX",
-                website_name="ppgc",
-                scrapper_function=self.ScrapperCog.scrape_ppgc,
-                delay=20,
-            )
-        )
+        # self.bot.loop.create_task(
+        #     self.playwright_scrapper(
+        #         product_name="PS5",
+        #         website_name="ppgc",
+        #         scrapper_function=self.ScrapperCog.scrape_ppgc,
+        #         delay=20,
+        #     )
+        # )
+        # self.bot.loop.create_task(
+        #     self.playwright_scrapper(
+        #         product_name="PS5_DE",
+        #         website_name="ppgc",
+        #         scrapper_function=self.ScrapperCog.scrape_ppgc,
+        #         delay=20,
+        #     )
+        # )
+        # self.bot.loop.create_task(
+        #     self.playwright_scrapper(
+        #         product_name="XSX",
+        #         website_name="ppgc",
+        #         scrapper_function=self.ScrapperCog.scrape_ppgc,
+        #         delay=20,
+        #     )
+        # )
         # self.bot.loop.create_task(
         #     self.playwright_scrapper(
         #         product_name="PS5",
