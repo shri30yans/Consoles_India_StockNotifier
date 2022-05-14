@@ -2,6 +2,7 @@ import os, sys, discord, platform, random
 from discord.ext import commands, tasks
 from utils.help import EmbedHelpCommand
 import config
+import asyncpg
 
 if not os.path.isfile("config.py"):
     sys.exit("'config.py' not found! Please add it and try again.")
@@ -9,11 +10,15 @@ else:
     import config
 
 colourlist = config.embed_colours
+
+
 async def get_prefix(bot, message):
     if message.guild:
-        prefixes_list = (config.server_prefixes.get(message.guild.id) or config.default_prefixes[0])
+        prefixes_list = (
+            config.server_prefixes.get(message.guild.id) or config.default_prefixes[0]
+        )
     else:
-        prefixes_list = (config.default_prefixes[0])
+        prefixes_list = config.default_prefixes[0]
 
     prefixes = ", ".join(prefixes_list)
     if prefixes:
@@ -25,6 +30,7 @@ async def get_prefix(bot, message):
 intents = discord.Intents.all()
 bot = commands.Bot(
     command_prefix=get_prefix,
+    strip_after_prefix = True,
     case_insensitive=True,
     intents=intents,
     help_command=EmbedHelpCommand(),
@@ -50,8 +56,12 @@ async def status_update():
 
 status_update.start()
 
+if config.mode == "Basic":
+    cogs = config.BASIC_COGS
+else:
+    cogs = config.STARTUP_COGS
 
-for extension in config.STARTUP_COGS:
+for extension in cogs:
     try:
         bot.load_extension(extension)
         extension = extension.replace("cogs.", "")
@@ -70,5 +80,29 @@ async def on_ready():
     print(f"Running on: {platform.system()} {platform.release()} ({os.name})")
     print("-------------------")
 
+    
+    print(f"Notifications are set to {config.notify}")
+    print(f"Scrapping mode is set to {config.mode}")
+    
+    print("-------------------")
 
+
+   
+
+
+DATABASE_DICT = config.DATABASE_DICT
+
+
+async def connection_pool():
+    bot.pool = await asyncpg.create_pool(
+        database=DATABASE_DICT["database"],
+        user=DATABASE_DICT["user"],
+        password=DATABASE_DICT["password"],
+        host=DATABASE_DICT["host"],
+        port=DATABASE_DICT["port"],
+        max_inactive_connection_lifetime=5,
+    )
+
+
+bot.loop.run_until_complete(connection_pool())
 bot.run(TOKEN)

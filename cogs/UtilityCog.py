@@ -1,7 +1,7 @@
 import discord, random, platform, os
 from discord.ext import commands
 import config
-import datetime
+import datetime, time
 
 colourlist = config.embed_colours
 
@@ -11,26 +11,63 @@ class Utility(commands.Cog):
         self.bot = bot
         self.bot.launch_time = datetime.datetime.utcnow()
 
-    # @commands.guild_only()
-    # @commands.has_permissions(manage_roles=True)
-    # @commands.bot_has_permissions(manage_roles=True)
-    # @commands.cooldown(1, 10, commands.BucketType.user)
-    # @commands.command(name="stuff")
-    # async def createmuterole(self,ctx):
-    #     embed=discord.Embed(title='Doing stuff',description="Startup")
-    #     embed.set_footer(icon_url= ctx.author.avatar_url,text=f"Requested by {ctx.message.author} • {self.bot.user.name}")
-    #     message=await ctx.send(embed=embed)
-    #     mute_role = ctx.guild.get_role(889937465832525885)
-    #     embed=discord.Embed(title='stuff',description="Setting permissions...")
-    #     embed.set_footer(icon_url= ctx.author.avatar_url,text=f"Requested by {ctx.message.author} • {self.bot.user.name}")
-    #     await message.edit(embed=embed)
-    #     # for x in [801069934041497631]:
-    #     #     category = self.bot.get_channel(x)
-    #     for channel in ctx.guild.channels:
-    #         await channel.set_permissions(mute_role, view_channel = False)
-    #     embed=discord.Embed(title='Stuff',description=f"Done stuff")
-    #     embed.set_footer(icon_url= ctx.author.avatar_url,text=f"Requested by {ctx.message.author} • {self.bot.user.name}")
-    #     await message.edit(embed=embed)
+    @commands.guild_only()
+    @commands.has_permissions(manage_roles=True)
+    @commands.bot_has_permissions(manage_roles=True)
+    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.command(name="stuff")
+    async def createmuterole(self, ctx):
+        embed = discord.Embed(title="Doing stuff", description="Startup")
+        embed.set_footer(
+            icon_url=ctx.author.avatar_url,
+            text=f"Requested by {ctx.message.author} • {self.bot.user.name}",
+        )
+        message = await ctx.send(embed=embed)
+
+        embed = discord.Embed(title="stuff", description="Setting permissions...")
+        embed.set_footer(
+            icon_url=ctx.author.avatar_url,
+            text=f"Requested by {ctx.message.author} • {self.bot.user.name}",
+        )
+        await message.edit(embed=embed)
+
+        role = ctx.guild.get_role(798978668403753000)
+
+        for x in [
+            797570310190530560,
+            865583434969514014,
+            797570078249844736,
+            814432680074412073,
+            807669335916806154,
+            861950014774050826,
+            814434416801480704,
+            797570078249844737,
+            844178807187439617,
+            797848476988735528,
+            800317930939482112,
+            801069934041497631,
+            850658377469788180,
+            798467157364834324,
+            807682660411375656,
+        ]:
+            category = self.bot.get_channel(x)
+            await category.set_permissions(
+                role, manage_channels=True, manage_permissions=True
+            )
+            for channel in category.channels:
+                await channel.set_permissions(
+                    role,
+                    manage_channels=True,
+                    manage_permissions=True,
+                    view_channel=True,
+                )
+
+        embed = discord.Embed(title="Stuff", description=f"Done stuff")
+        embed.set_footer(
+            icon_url=ctx.author.avatar_url,
+            text=f"Requested by {ctx.message.author} • {self.bot.user.name}",
+        )
+        await message.edit(embed=embed)
 
     @commands.command(name="Prefix", help=f"Shows the current prefix")
     async def prefix(self, ctx):
@@ -93,31 +130,27 @@ class Utility(commands.Cog):
         )
         await ctx.send(embed=embed)
 
-    @commands.cooldown(1, 3, commands.BucketType.user)
-    @commands.command(name="Ping", help=f"Tells the Ping of a server")
-    async def ping(self, ctx):
-        """Pong!"""
-        message = await ctx.send(
-            embed=discord.Embed(
-                title="Ping",
-                description=":Pong!  :ping_pong:",
-                color=random.choice(colourlist),
-                timestamp=ctx.message.created_at,
-            )
-        )
-        ping = (
-            message.created_at.timestamp() - ctx.message.created_at.timestamp()
-        ) * 1000
-        embed = discord.Embed(
-            title="Ping",
-            description=f"Pong!  :ping_pong:  \nBot latency: {int(ping)}ms\nWebsocket latency: {round(self.bot.latency * 1000)}ms",
-            color=random.choice(colourlist),
-            timestamp=ctx.message.created_at,
-        )
-        embed.set_footer(
-            icon_url=ctx.author.avatar_url,
-            text=f"Requested by {ctx.message.author} • {self.bot.user.name} ",
-        )
+    @commands.command(name="Ping", help=f'Tells the Ping of a server')
+    async def ping(self,ctx):
+        """ Pong! """
+        start = time.perf_counter()
+        message = await ctx.reply(embed=discord.Embed(title=f"{config.loading_reaction}  Pinging",description="Pinging...",color = random.choice(colourlist),timestamp=ctx.message.created_at))
+        end = time.perf_counter()
+        typing_ping = (end - start) * 1000
+        
+        start = time.perf_counter()
+        async with self.bot.pool.acquire() as connection:
+            async with connection.transaction():
+                await connection.fetchrow("SELECT rep FROM info LIMIT 1")
+        
+        end = time.perf_counter()
+        database_ping = (end - start) * 1000
+
+        embed=discord.Embed(title="Ping",color = random.choice(colourlist),timestamp=ctx.message.created_at)
+        embed.add_field(name="Typing",value=f"```{int(typing_ping)}ms```",inline=True)
+        embed.add_field(name="Websocket",value=f"```{round(self.bot.latency * 1000)}ms```",inline=True)
+        embed.add_field(name="Database",value=f"```{round(database_ping)}ms```",inline=True)
+        embed.set_footer(icon_url=ctx.author.avatar_url,text=f"Requested by {ctx.message.author} • {self.bot.user.name} ")
         await message.edit(embed=embed)
 
     @commands.guild_only()
@@ -132,9 +165,6 @@ class Utility(commands.Cog):
             timestamp=ctx.message.created_at,
         )
         embed.add_field(name="Name", value=f"{ctx.guild.name}", inline=False)
-        embed.add_field(
-            name="Region", value=f"{str(ctx.guild.region).capitalize()}", inline=False
-        )
         embed.add_field(name="Owner", value=f" {str(ctx.guild.owner)}", inline=False)
         embed.add_field(name="ID", value=f"{ctx.guild.id}", inline=False)
         embed.add_field(name="Roles", value=f"{len(ctx.guild.roles)}", inline=False)
@@ -187,7 +217,7 @@ class Utility(commands.Cog):
     )
     async def uptime(self, ctx):
         time = await self.find_time_difference(self.bot.launch_time)
-        await ctx.reply("I have been up from", time)
+        await ctx.reply(f"I have been up from {time}.")
 
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.command(
