@@ -1,19 +1,20 @@
+from operator import add
 import re
 import logging
 import pytz
-import lxml.html
 from bs4 import BeautifulSoup
 from datetime import datetime
 from io import BytesIO
-from discord.ext import commands
 from StockChecker.ScrapperConfig import All_Websites
-
+from discord.ext import commands
+import lxml
 
 # Gets or creates a logger
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 # define file handler and set formatter
-file_handler = logging.FileHandler("logs/StockChecker.log")
+file_handler = logging.FileHandler("StockChecker/logs/Notifications.log")
 formatter = logging.Formatter(
     f"{datetime.now(tz=pytz.timezone('Asia/Kolkata'))} : %(levelname)s : %(name)s : %(message)s"
 )  # logs in Indian Standard Time
@@ -30,37 +31,42 @@ logger.addHandler(file_handler)
 # Games the Shop: Games the Shop shows the Add to Cart Button when the product is available.
 # Prepaid Gamer Card: Prepaid Gamer Card shows the Add to Cart Button when the product is available.
 
+countinous_stock = {}
+
 
 class Scrapper(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.countinous_stock = {}
 
     async def get_countinous_stock(self, product, website_name):
-        product_value = self.countinous_stock.get(product)
+        product_value = countinous_stock.get(product)
         if product_value is None:
-            self.countinous_stock[product] = {}
-            self.countinous_stock[product][website_name] = False
+            countinous_stock[product] = {}
+            countinous_stock[product][website_name] = False
         else:
             count = product_value.get(website_name)
             if count is None:
-                self.countinous_stock[product][website_name] = False
-        return self.countinous_stock[product][website_name]
+                countinous_stock[product][website_name] = False
+        return countinous_stock[product][website_name]
 
     async def change_countinous_stock(self, product, website_name, value):
-        product_value = self.countinous_stock.get(product)
+        product_value = countinous_stock.get(product)
         if product_value is None:
-            self.countinous_stock[product] = {}
-            self.countinous_stock[product][website_name] = False
+            countinous_stock[product] = {}
+            countinous_stock[product][website_name] = False
         else:
             count = product_value.get(website_name)
             if count is None:
-                self.countinous_stock[product][website_name] = False
+                countinous_stock[product][website_name] = False
             else:
-                self.countinous_stock[product][website_name] = value
-        # print("Change stock",product,website_name,value,self.countinous_stock)
+                countinous_stock[product][website_name] = value
+
+        GUI = self.bot.get_cog("GUI")
+        if GUI is not None:  # if the GUI cog is loaded
+            await GUI.update_values(product, website_name, value)
 
     async def run_notifications(self, website_name, product, method, page=None):
+        logger.info(f"{product} is in stock at {website_name}.")
         countinous_stock = await self.get_countinous_stock(product, website_name)
         if not (countinous_stock):
             Notifications = self.bot.get_cog("Notifications")
@@ -77,36 +83,51 @@ class Scrapper(commands.Cog):
                     method=method,
                     image=image,
                 )
-            logger.info(f"Notified for {product} stock in {website_name}")
-        await self.change_countinous_stock(product, website_name=website_name, value=True)
+            logger.info(f"Notified for {product} stock at {website_name}.")
+        await self.change_countinous_stock(
+            product, website_name=website_name, value=True
+        )
 
-    async def scrape_amazon_wishlist(
-        self, page_html, product_name=None, page=None
-    ):
-        #print(product_name)
+    async def scrape_amazon_wishlist(self, page_html, product_name=None, page=None):
+        # print(product_name)
         soup = BeautifulSoup(page_html, "html.parser")
         wishlist_products = All_Websites["amazon"].wishlist_products
         for item in list(wishlist_products.values()):
             ASIN_regex = re.compile(item.ASIN)
-            all_list_elements=soup.find_all('li',{"data-reposition-action-params": ASIN_regex})
+            all_list_elements = soup.find_all(
+                "li", {"data-reposition-action-params": ASIN_regex}
+            )
             for list_element in all_list_elements:
-                add_to_cart_button = list_element.find_all("span", {"class": re.compile("add_to_cart")})
-                all_buying_options_button = list_element.find_all("span", {"class" : re.compile('buying_options')})
+                add_to_cart_button = list_element.find_all(
+                    "span", {"class": re.compile("add_to_cart")}
+                )
+                all_buying_options_button = list_element.find_all(
+                    "span", {"class": re.compile("buying_options")}
+                )
+
+                #To cross-check if item-id is correct
+                def check_for_items():
+                    if len(all_buying_options_button) > 0 or len(add_to_cart_button) > 0:
+                        print(item.name,"There")
+                    else:
+                        #print(item.name,"Not there")
+                        pass
                 
-                # #To cross-check if item-id is correct
-                # if len(all_buying_options_button) > 0 or len(add_to_cart_button) > 0:
-                #     print(item.name,"There")
-                # else:
-                #     pass
-                #     print(item.name,"Not there")
-                
+                #check_for_items()
+                    
+
                 async def check_price():
-                    '''To check if price is in a certain in range.
-                    If the price is "-Infinity" it means the product is out of stock.'''
+                    """
+                    To check if price is in a certain in range.
+                    If the price is "-Infinity" it means the product is out of stock.
+                    """
 
                     if list_element.has_attr("data-price"):
                         if item.max_cost:
-                            if float(list_element["data-price"]) <= item.max_cost and float(list_element["data-price"]) > 0:
+                            if (
+                                float(list_element["data-price"]) <= item.max_cost
+                                and float(list_element["data-price"]) > 0
+                            ):
                                 return True
                         else:
                             return True
@@ -123,17 +144,21 @@ class Scrapper(commands.Cog):
                 else:
                     await self.change_countinous_stock(
                         product=item.name, website_name="amazon", value=False
-                )
-        #print("----------------")
-        
+                    )
+        # print("----------------")
+
         return True
-        
+
     async def scrape_amazon(self, page_html, product, page=None):
         doc = lxml.html.fromstring(str(page_html))
         try:
             stock = doc.xpath('//*[@id="availability"]/span')  # Fetches Stock element
-            add_to_cart_button = doc.xpath('//*[@id="add-to-cart-button"]')  # Fetches the Add to Cart Button
-            pre_order_button = doc.xpath('//*[@id="buy-now-button"]')  # Fetches Pre Order button
+            add_to_cart_button = doc.xpath(
+                '//*[@id="add-to-cart-button"]'
+            )  # Fetches the Add to Cart Button
+            pre_order_button = doc.xpath(
+                '//*[@id="buy-now-button"]'
+            )  # Fetches Pre Order button
         except:
             return False
 
@@ -180,65 +205,90 @@ class Scrapper(commands.Cog):
 
     async def scrape_flipkart(self, page_html, product, page=None):
         soup = BeautifulSoup(str(page_html), "html.parser")
-        # notify me button
-        notify_me_button = soup.find("button", class_="_2KpZ6l _2uS5ZX _2Dfasx")
 
-        # If the notify me button is missing
-        if notify_me_button is None:
-            add_to_cart_button = soup.find(
-                "button", class_="_2KpZ6l _2U9uOA _3v1-ww"
-            )  # add to cart
-            buy_now_button = soup.find(
-                "button", class_="_2KpZ6l _2U9uOA ihZ75k _3AWRsL"
-            )  # buy now/preorder now
+        # notify_me_button = soup.find(
+        #     "button", class_="_2KpZ6l _2uS5ZX _2Dfasx"
+        # )  # notify me button
 
-            try:
-                # Will error out if these buttons were None
-                if add_to_cart_button.text in [" ADD TO CART"]:
-                    await self.run_notifications(
-                        website_name="flipkart",
-                        product=product,
-                        method="Add to Cart button",
-                        page=page,
-                    )
-
-                elif buy_now_button.text in [
-                    " BUY NOW",
-                    " PROCEED TO BUY",
-                    " ORDER IT",
-                    " PREORDER NOW",
-                    " PRE ORDER",
-                ]:
-                    await self.run_notifications(
-                        website_name="flipkart",
-                        product=product,
-                        method="Pre Order Now/ Buy Now button",
-                        page=page,
-                    )
-
-                else:
-                    for x in [
-                        "NOW",
-                        "BUY",
-                        "ORDER",
-                    ]:
-                        if x in buy_now_button.text:
-                            await self.run_notifications(
-                                website_name="flipkart",
-                                product=product,
-                                method="Buy Now/ Pre Order Now has 'NOW','BUY','ORDER' in it.",
-                                page=page,
-                            )
-                            break
-                return True
-
-            except:
-                return False
+        add_to_cart_button = soup.find(
+            "button", class_="_2KpZ6l _2U9uOA _3v1-ww"
+        )  # add to cart
+        buy_now_button = soup.find(
+            "button", class_="_2KpZ6l _2U9uOA ihZ75k _3AWRsL"
+        )  # buy now/preorder now
+        
+        if add_to_cart_button is not None:
+            await self.run_notifications(
+                website_name="flipkart",
+                product=product,
+                method="Add to Cart Button",
+                page=page,
+            )
+        elif buy_now_button is not None:
+            await self.run_notifications(
+                website_name="flipkart",
+                product=product,
+                method="Buy Now Button",
+                page=page,
+            )
+        # elif notify_me_button is None:
+        #     await self.run_notifications(
+        #         website_name="flipkart",
+        #         product=product,
+        #         method="Notify Me Button is missing.",
+        #         page=page,
+        #     )
         else:
             await self.change_countinous_stock(
                 product, website_name="flipkart", value=False
             )
             return True
+
+        
+        return True
+      
+            # try:
+            #     # Will error out if these buttons were None
+            #     if add_to_cart_button.text in [" ADD TO CART"]:
+            #         await self.run_notifications(
+            #             website_name="flipkart",
+            #             product=product,
+            #             method="Add to Cart button",
+            #             page=page,
+            #         )
+
+            #     elif buy_now_button.text in [
+            #         " BUY NOW",
+            #         " PROCEED TO BUY",
+            #         " ORDER IT",
+            #         " PREORDER NOW",
+            #         " PRE ORDER",
+            #     ]:
+            #         await self.run_notifications(
+            #             website_name="flipkart",
+            #             product=product,
+            #             method="Pre Order Now/ Buy Now button",
+            #             page=page,
+            #         )
+
+            #     else:
+            #         for x in [
+            #             "NOW",
+            #             "BUY",
+            #             "ORDER",
+            #         ]:
+            #             if x in buy_now_button.text:
+            #                 await self.run_notifications(
+            #                     website_name="flipkart",
+            #                     product=product,
+            #                     method="Buy Now/ Pre Order Now has 'NOW','BUY','ORDER' in it.",
+            #                     page=page,
+            #                 )
+            #                 break
+            #     return True
+
+            # except:
+            #     return False
 
     async def scrape_shopatsc(self, page_html, product, page=None):
         soup = BeautifulSoup(page_html, "html.parser")
@@ -255,7 +305,7 @@ class Scrapper(commands.Cog):
                 product, website_name="shopatsc", value=False
             )
         return True
-    
+
     async def scrape_reliance(self, page_html, product, page=None):
         soup = BeautifulSoup(page_html, "html.parser")
         add_to_cart_button = soup.find(id="add_to_cart_main_btn")
@@ -263,12 +313,14 @@ class Scrapper(commands.Cog):
         notify_me_button = soup.find(id="notify_me_btn_main")
         pincode_input_element = soup.find(class_="pdp__pincodeSection")
         # print(product)
-        # print("Add to cart",add_to_cart_button)
-        # print("Buy now",buy_now_button)
-        # print("Notify:",notify_me_button)
-        # print("Pincode:",pincode_input_element)
+        # print("Add to cart",add_to_cart_button,add_to_cart_button is not None)
+        # print("Buy now",buy_now_button,add_to_cart_button is not None)
+        # print("Notify:",notify_me_button,add_to_cart_button is not None)
+        # print("Pincode:",pincode_input_element,add_to_cart_button is not None)
         # print("-----------")
-        if notify_me_button is None:
+
+        # Notify button does not exist
+        if notify_me_button is not None:
             pass
         elif add_to_cart_button is not None:
             await self.run_notifications(
@@ -278,6 +330,7 @@ class Scrapper(commands.Cog):
                 page=page,
             )
         elif buy_now_button is not None:
+            print("buy")
             await self.run_notifications(
                 website_name="reliance",
                 product=product,
@@ -285,6 +338,7 @@ class Scrapper(commands.Cog):
                 page=page,
             )
         elif pincode_input_element is not None:
+            print("pin")
             await self.run_notifications(
                 website_name="reliance",
                 product=product,
@@ -296,10 +350,10 @@ class Scrapper(commands.Cog):
                 product, website_name="reliance", value=False
             )
         return True
-    
+
     async def scrape_ppgc(self, page_html, product, page=None):
         soup = BeautifulSoup(page_html, "html.parser")
-        add_to_cart_button = soup.find(attrs={"name" : "add-to-cart"})
+        add_to_cart_button = soup.find(attrs={"name": "add-to-cart"})
         if add_to_cart_button is not None:
             await self.run_notifications(
                 website_name="ppgc",

@@ -1,6 +1,6 @@
 import discord, random, asyncio, logging, pytz
 from discord.ext import commands
-from StockChecker.ScrapperConfig import All_Products
+from StockChecker.ScrapperConfig import All_Products,All_Websites
 from datetime import datetime
 from playwright.async_api import async_playwright
 import StockChecker.ScrapperConfig as ScrapperConfig
@@ -9,7 +9,7 @@ import StockChecker.ScrapperConfig as ScrapperConfig
 # Gets or creates a logger
 logger = logging.getLogger(__name__)
 # define file handler and set formatter
-file_handler = logging.FileHandler("logs/StockChecker.log")
+file_handler = logging.FileHandler("StockChecker/logs/PlaywrightStockChecker.log")
 formatter = logging.Formatter(
     f"{datetime.now(tz=pytz.timezone('Asia/Kolkata'))} : %(levelname)s : %(name)s : %(message)s"
 )  # logs in Indian Standard Time
@@ -21,31 +21,30 @@ logger.addHandler(file_handler)
 class PlaywrightCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.bot.loop.create_task(self.startup_scraping())
-        self.ScrapperCog = self.bot.get_cog("Scrapper")
         self.count_dict = {}
         self.error_count_dict = {}
+        self.bot.loop.create_task(self.start_playwright())
 
     async def start_playwright(self):
         self.playwright = await async_playwright().start()
-        self.browser = await self.playwright.chromium.launch(headless=False)
+        self.browser = await self.playwright.chromium.launch(headless=True)
         self.context = await self.browser.new_context(
-            viewport={"width": 1980, "height": 1080}
+            viewport={"width": 1980, "height": 2080}
         )
 
     async def get_page_html(self, link, page, headers_list, product_name, website_name):
         default_headers = [
             {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36"
+                "User-Agent": "Mozilla/5.0 (Windows NT 20.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4203.116 Safari/537.36"
             },
             {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"
+                "User-Agent": "Mozilla/5.0 (Windows NT 20.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"
             },
             {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36"
+                "User-Agent": "Mozilla/5.0 (Windows NT 20.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36"
             },
             {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.157 Safari/537.36"
+                "User-Agent": "Mozilla/5.0 (Windows NT 20.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.157 Safari/537.36"
             },
         ]
         headers = random.choice(headers_list or default_headers)
@@ -54,8 +53,10 @@ class PlaywrightCog(commands.Cog):
             response = await page.goto(link, timeout=300000)
             html = await page.content()
             # 200 - OK , 304 - Sending cached data because data didn't change
-            if response.status not in [200,304]:
-                logger.error(f"Server returned {response.status} URL:{link}")
+            if response.status not in [200, 304]:
+                logger.error(
+                    f"get_page_html() Error | Product: {product_name} | Website: {website_name} | Status: {response.status} | URL: {link}"
+                )
                 await self.add_count(
                     dictionary=self.error_count_dict,
                     product_name=product_name,
@@ -73,154 +74,6 @@ class PlaywrightCog(commands.Cog):
                 website_name=website_name,
             )
 
-    async def startup_scraping(self):
-        await self.bot.wait_until_ready()
-        await self.start_playwright()
-        self.bot.loop.create_task(
-            self.playwright_scrapper(
-                product_name="PS5_WISHLIST",
-                website_name="amazon",
-                scrapper_function=self.ScrapperCog.scrape_amazon_wishlist,
-                delay=20,
-            )
-        )
-        self.bot.loop.create_task(
-            self.playwright_scrapper(
-                product_name="XBOX_WISHLIST",
-                website_name="amazon",
-                scrapper_function=self.ScrapperCog.scrape_amazon_wishlist,
-                delay=20,
-            )
-        )
-        self.bot.loop.create_task(
-            self.playwright_scrapper(
-                product_name="PS5",
-                website_name="flipkart",
-                scrapper_function=self.ScrapperCog.scrape_flipkart,
-                delay=20,
-            )
-        )
-        self.bot.loop.create_task(
-            self.playwright_scrapper(
-                product_name="PS5_DE",
-                website_name="flipkart",
-                scrapper_function=self.ScrapperCog.scrape_flipkart,
-                delay=20,
-            )
-        )
-        self.bot.loop.create_task(
-            self.playwright_scrapper(
-                product_name="XSX",
-                website_name="flipkart",
-                scrapper_function=self.ScrapperCog.scrape_flipkart,
-                delay=20,
-            )
-        )
-        # self.bot.loop.create_task(
-        #     self.playwright_scrapper(
-        #         product_name="XSS",
-        #         website_name="flipkart",
-        #         scrapper_function=self.ScrapperCog.scrape_flipkart,
-        #         delay=20,
-        #     )
-        # )
-        self.bot.loop.create_task(
-            self.playwright_scrapper(
-                product_name="PS5",
-                website_name="shopatsc",
-                scrapper_function=self.ScrapperCog.scrape_shopatsc,
-                delay=20,
-            )
-        )
-        self.bot.loop.create_task(
-            self.playwright_scrapper(
-                product_name="PS5_DE",
-                website_name="shopatsc",
-                scrapper_function=self.ScrapperCog.scrape_shopatsc,
-                delay=20,
-            )
-        )
-        # self.bot.loop.create_task(
-        #     self.playwright_scrapper(
-        #         product_name="RED_DS",
-        #         website_name="shopatsc",
-        #         scrapper_function=self.ScrapperCog.scrape_shopatsc,
-        #         delay=20,
-        #     )
-        # )
-        # self.bot.loop.create_task(
-        #     self.playwright_scrapper(
-        #         product_name="BLACK_DS",
-        #         website_name="shopatsc",
-        #         scrapper_function=self.ScrapperCog.scrape_shopatsc,
-        #         delay=20,
-        #     )
-        # )
-        self.bot.loop.create_task(
-            self.playwright_scrapper(
-                product_name="PS5",
-                website_name="reliance",
-                scrapper_function=self.ScrapperCog.scrape_reliance,
-                delay=20,
-            )
-        )
-        self.bot.loop.create_task(
-            self.playwright_scrapper(
-                product_name="PS5_DE",
-                website_name="reliance",
-                scrapper_function=self.ScrapperCog.scrape_reliance,
-                delay=20,
-            )
-        )
-        self.bot.loop.create_task(
-            self.playwright_scrapper(
-                product_name="XSX",
-                website_name="reliance",
-                scrapper_function=self.ScrapperCog.scrape_reliance,
-                delay=20,
-            )
-        )
-        # self.bot.loop.create_task(
-        #     self.playwright_scrapper(
-        #         product_name="PS5",
-        #         website_name="ppgc",
-        #         scrapper_function=self.ScrapperCog.scrape_ppgc,
-        #         delay=20,
-        #     )
-        # )
-        # self.bot.loop.create_task(
-        #     self.playwright_scrapper(
-        #         product_name="PS5_DE",
-        #         website_name="ppgc",
-        #         scrapper_function=self.ScrapperCog.scrape_ppgc,
-        #         delay=20,
-        #     )
-        # )
-        # self.bot.loop.create_task(
-        #     self.playwright_scrapper(
-        #         product_name="XSX",
-        #         website_name="ppgc",
-        #         scrapper_function=self.ScrapperCog.scrape_ppgc,
-        #         delay=20,
-        #     )
-        # )
-        # self.bot.loop.create_task(
-        #     self.playwright_scrapper(
-        #         product_name="PS5",
-        #         website_name="games_the_shop",
-        #         scrapper_function=self.ScrapperCog.scrape_games_the_shop,
-        #         delay=20,
-        #     )
-        # )
-        # self.bot.loop.create_task(
-        #     self.playwright_scrapper(
-        #         product_name="PS5_DE",
-        #         website_name="games_the_shop",
-        #         scrapper_function=self.ScrapperCog.scrape_games_the_shop,
-        #         delay=20,
-        #     )
-        # )
-
     async def playwright_scrapper(
         self, product_name, website_name, scrapper_function, headers_list=None, delay=30
     ):
@@ -233,12 +86,17 @@ class PlaywrightCog(commands.Cog):
             print(f"{product_name} link does not exist in All_Products dict")
             return
 
+        website = All_Websites.get(website_name)
+        if website is None:
+            print(f"{website_name} does not exist in All_Websites dict")
+            return
+
         page = await self.context.new_page()
         while True:
             page_html = await self.get_page_html(
                 link=link,
                 page=page,
-                headers_list=headers_list,
+                headers_list=website.headers,
                 product_name=product_name,
                 website_name=website_name,
             )
@@ -258,6 +116,8 @@ class PlaywrightCog(commands.Cog):
                         website_name=website_name,
                     )
                     logger.error(f"{website_name} Error: {product_name} ")
+
+
                 await asyncio.sleep(delay)
 
     @commands.cooldown(1, 3, commands.BucketType.user)
@@ -276,6 +136,7 @@ class PlaywrightCog(commands.Cog):
             value = ""
             for website_name in self.count_dict.get(product_name):
                 Website_Class = ScrapperConfig.All_Websites.get(website_name)
+
                 def return_count(dict, product_name, website_name):
                     product_count_dict = dict.get(product_name)
                     if product_count_dict is not None:
@@ -284,14 +145,19 @@ class PlaywrightCog(commands.Cog):
                             return website_count
 
                 count = return_count(self.count_dict, product_name, website_name)
-                error_count = return_count(self.error_count_dict, product_name, website_name)
+                error_count = return_count(
+                    self.error_count_dict, product_name, website_name
+                )
 
-                value += f"\u2800**{Website_Class.display_name}** \n\u2800\u2800Count: {str(count)}\n\u2800\u2800Errored out: {str(error_count)}\n"
+                value += f"\u2800**{Website_Class.display_name}** \n\u2800\u2800Success: {str(count)}\n\u2800\u2800Errored out: {str(error_count)}\n"
             product = ScrapperConfig.All_Products.get(product_name)
-            embed.add_field(name=f"{product.emoji} {product.display_name}",value=value,inline=False,)
+            embed.add_field(
+                name=f"{product.emoji} {product.display_name}",
+                value=value,
+                inline=False,
+            )
 
         await ctx.send(embed=embed)
-
 
     async def add_count(self, dictionary, product_name, website_name):
         product_value = dictionary.get(product_name)
@@ -303,7 +169,7 @@ class PlaywrightCog(commands.Cog):
             if count is None:
                 dictionary[product_name][website_name] = 1
             else:
-                if dictionary[product_name][website_name] > 10000:
+                if dictionary[product_name][website_name] > 20000:
                     dictionary[product_name][website_name] = 0
                 else:
                     dictionary[product_name][website_name] += 1
