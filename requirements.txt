@@ -1,10 +1,7 @@
-discord.py #Main Library
 aiohttp #Async version of requests
-jishaku # To run cogs from console
 python-dotenv #Tp get .env file
 pytz
 lxml
-asyncpg #database wrapper
 requests
 beautifulsoup4
 aiohttp

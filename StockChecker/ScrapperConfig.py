@@ -142,6 +142,58 @@ All_Products = {
         colour=0x2100FF,
         emoji=config.PS5_emoji,
     ),
+     "PS5_HFW_BUNDLE": Product(
+        name="PS5_HFW_BUNDLE",
+        display_name="PS5 & HFW bundle",
+        links={
+            "amazon": "https://www.amazon.in/dp/B0B9GH5TTN/",
+            "shopatsc": "https://shopatsc.com/collections/playstation-5/products/playstation-5-console-horizon-forbidden-west-voucher-inside-box",
+            "flipkart": "https://www.flipkart.com/sony-cfi-1108a01r-825-gb-ssd-horizon-forbidden-west-for-ps5-voucher-inside-box/p/itm1e58025bea2d9",
+        },
+        add_to_cart_links={
+            "amazon": f"https://www.amazon.in/gp/aws/cart/add.html?AssociateTag={config.amazon_affiliate_tag}&ASIN.1=B0B9GH5TTN&Quantity.1=1",
+            "shopatsc": f"https://shopatsc.com/cart/40739681992843:1"
+        },
+        affiliate_links={
+            "amazon": f"https://www.amazon.in/dp/B0B9GH5TTN/?tag={config.amazon_affiliate_tag}",
+        },
+        wishlist= PS5_wishlist,
+        notification_roles={
+            config.playstation_server_id: 849606173522788352,
+            config.my_server_id: 893734056720740352,
+        },
+        notification_channels=config.both_playstation_channels,
+        twitter_hashtags="#RestockPS5India #PS5",
+        thumbnail_link="https://i.imgur.com/pmgar66.jpg?1",
+        colour=0x2100FF,
+        emoji=config.PS5_emoji,
+    ),
+     "PS5_DE_HFW_BUNDLE": Product(
+        name="PS5_DE_HFW_BUNDLE",
+        display_name="PS5 DE & HFW bundle",
+        links={
+            "amazon": "https://www.amazon.in/dp/B0B9GDVHQQ/",
+            "shopatsc": "https://shopatsc.com/collections/playstation-5/products/playstation-5-digital-edition-with-horizon-forbidden-west-voucher-inside-box",
+            "flipkart": "https://www.flipkart.com/sony-cfi-1108b01r-825-gb-ssd-horizon-forbidden-west-for-ps5-voucher-inside-box/p/itm3783a181f39d4",
+        },
+        add_to_cart_links={
+            "amazon": f"https://www.amazon.in/gp/aws/cart/add.html?AssociateTag={config.amazon_affiliate_tag}&ASIN.1=B09YD71MZT&Quantity.1=1",
+            "shopatsc": f"https://shopatsc.com/cart/40739661742219:1"
+        },
+        affiliate_links={
+            "amazon": f"https://www.amazon.in/dp/B0B9GDVHQQ/?tag={config.amazon_affiliate_tag}",
+        },
+        wishlist= PS5_wishlist,
+        notification_roles={
+            config.playstation_server_id: 849606173522788352,
+            config.my_server_id: 893734056720740352,
+        },
+        notification_channels=config.both_playstation_channels,
+        twitter_hashtags="#RestockPS5India #PS5",
+        thumbnail_link="https://i.imgur.com/pmgar66.jpg?1",
+        colour=0x2100FF,
+        emoji=config.PS5_emoji,
+    ),
     # "PS5_DE_REMOTE_BUNDLE": Product(
     #     name="PS5_DE_REMOTE_BUNDLE",
     #     display_name="PS5 Digital & Media Remote bundle",
@@ -676,6 +728,12 @@ All_Websites = {
             "PS5_GT7_BUNDLE": Amazon_Wishlist_Item(
                 name="PS5_GT7_BUNDLE", ASIN="B09YD71MZT"
             ),
+            "PS5_HFW_BUNDLE": Amazon_Wishlist_Item(
+                name="PS5_HFW_BUNDLE", ASIN="B0B9GH5TTN"
+            ),
+            "PS5_DE_GT7_BUNDLE": Amazon_Wishlist_Item(
+                name="PS5_DE_HFW_BUNDLE", ASIN="B0B9GDVHQQ"
+            ),
             # "PS5_DE_REMOTE_BUNDLE": Amazon_Wishlist_Item(
             #     name="PS5_DE_REMOTE_BUNDLE", ASIN="B08NTVH9VG"
             # ),
@@ -708,10 +766,10 @@ All_Websites = {
                 name="XSX_HALO_EDITION",
                 ASIN="B09LMY7K1L",
             ),
-            "XSX_20TH_ANNIVERSARY_EDITION_CONTROLLER": Amazon_Wishlist_Item(
-                name="XSX_20TH_ANNIVERSARY_EDITION_CONTROLLER",
-                ASIN="B09HTV3Q3T",
-            ),
+            # "XSX_20TH_ANNIVERSARY_EDITION_CONTROLLER": Amazon_Wishlist_Item(
+            #     name="XSX_20TH_ANNIVERSARY_EDITION_CONTROLLER",
+            #     ASIN="B09HTV3Q3T",
+            # ),
             # "XBOX_WIRELESS_HEADSET": Amazon_Wishlist_Item(
             #     name="XBOX_WIRELESS_HEADSET",
             #     ASIN="B09HSHXYCR",
