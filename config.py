@@ -6,11 +6,10 @@ import os
 notify = True
 
 # Modes:
-# 1. Basic (Amazon/Flipkart only, No other cogs are loaded)
-# 2. Requests
-# 3. Playwright
-# 4. All
-# 5. Pause
+# 1. Requests
+# 2. Playwright
+# 3. All
+# 4. Pause
 mode = "Requests"
 
 #####################
@@ -20,7 +19,7 @@ load_dotenv()
 # Discord
 TOKEN = os.getenv("DISCORD_TOKEN")
 
-#Telegram
+# Telegram
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 TELEGRAM_CHAT_ID = "@Consoles_India"
 
@@ -38,35 +37,7 @@ default_prefixes = ["?", "!"]
 server_prefixes = {797570077364977696: ["!s"]}
 
 
-# List of Cogs to run on startup
-STARTUP_COGS = [
-    "cogs.UtilityCog",
-    "cogs.TagsCog",
-    "cogs.DatabaseCog",
-    "cogs.RepCog",
-    "cogs.TradeChannelCog",
-    "cogs.RandomCog",
-    "utils.ErrorHandler",
-    "jishaku",
-    "StockChecker.scrapper",
-    "StockChecker.RequestsStockChecker",
-    #"StockChecker.PlaywrightStockChecker",
-    "StockChecker.run",
-    # "StockChecker.gui",
-    "StockChecker.Notifications",
-]
 
-BASIC_COGS = [
-    "utils.ErrorHandler",
-    "jishaku",
-    "StockChecker.scrapper",
-    "StockChecker.RequestsStockChecker",
-    #"StockChecker.PlaywrightStockChecker",
-    "StockChecker.run",
-    # "StockChecker.gui",
-    # "StockChecker.PlaywrightStockCheckerSeparate",
-    "StockChecker.Notifications",
-]
 
 my_server_id = 889437492477046785
 playstation_server_id = 797570077364977696
@@ -101,14 +72,6 @@ both_playstation_channels = {
 xbox_channel = {my_server_id: XBOX_stock_notification_channel}
 playstation_channel = {my_server_id: PS_stock_notification_channel}
 
-# Mod roles
-head_moderator_role_id = 798978668403753000
-moderator_role_id = 803139873078771713
-game_trade_moderator_role_id = 815165934338965504
-admin_role_id = 797840269109624862
-bot_role_id = 797840270028701756
-
-embed_colours = [0x00FFFF]  # blue
 
 # Emoji's
 XSX_emoji = "<:XSX:893792926574972929>"
