@@ -1,7 +1,7 @@
 from operator import add
 import re
 from bs4 import BeautifulSoup
-from StockChecker.ScrapperConfig import All_Websites
+from StockChecker.WebsiteConfig import All_Websites
 from lxml import html
 from StockChecker.Notifications import notify
 
@@ -182,7 +182,6 @@ class Scrapper:
 
 
         if add_to_cart_button is not None:
-            print("check")
             await notify(
                 self,
                 website_name="flipkart",
@@ -262,13 +261,20 @@ class Scrapper:
 
     async def scrape_shopatsc(self, page_html, product, page=None):
         soup = BeautifulSoup(page_html, "html.parser")
-        pincode_input_element = soup.find(class_="checker-combine")
+        pincode_input_element = soup.find("div",class_="checker-combine")
+        add_to_cart_button = soup.find(class_="btn product-form__cart-submit btn--secondary-accent")
         if pincode_input_element is not None:
-            await notify(
-                self,
+            await self.run_notifications(
                 website_name="shopatsc",
                 product=product,
                 method="Enter PINCODE element exists.",
+                page=page,
+             )
+        elif add_to_cart_button is not None:
+            await self.run_notifications(
+                website_name="shopatsc",
+                product=product,
+                method="Add to Cart button exists",
                 page=page,
             )
         else:

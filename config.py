@@ -29,8 +29,7 @@ consumer_secret = os.getenv("consumer_secret")
 access_token = os.getenv("access_token")
 access_token_secret = os.getenv("access_token_secret")
 
-# Database
-DATABASE_DICT = dict(eval(os.getenv("DISCORD_DATABASE_DETAILS")))
+
 
 # Prefixes
 default_prefixes = ["?", "!"]
@@ -42,7 +41,7 @@ server_prefixes = {797570077364977696: ["!s"]}
 my_server_id = 889437492477046785
 playstation_server_id = 797570077364977696
 
-amazon_affiliate_tag = "consolesindia-21"
+amazon_affiliate_tag = "consolesindiaid-21"
 
 # Channels
 PS_stock_notification_channel = 892795445112369183
