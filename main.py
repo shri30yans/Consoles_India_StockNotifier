@@ -24,7 +24,7 @@ async def start_requests_scrapping():
     # Amazon Wishlist
     for product in [
         "PS_WISHLIST", 
-        "XBOX_WISHLIST"
+        #"XBOX_WISHLIST"
     ]:
         tasks.append(
             asyncio.create_task(
@@ -36,12 +36,38 @@ async def start_requests_scrapping():
                 )
             )
         )
+    
+    # # Amazon Direct webpage
+    # for product in [
+    #     "TEST",
+    #     "PS5",
+    #     "PS5_DE",
+    #     "PS5_HFW_BUNDLE",
+    #     "PS5_DE_HFW_BUNDLE",
+    #     #"XSX",
+    #     #"XSX_HALO_EDITION",
+    #     # "XBOX_WIRELESS_HEADSET",
+    #     # "XSX_HALO_EDITION_CONTROLLER",
+    #     # "XSS",
+    # ]:
+    #     tasks.append(
+    #         asyncio.create_task(
+    #             RequestsObj.requests_scrapper(
+    #                 product_name=product,
+    #                 website_name="amazon",
+    #                 scrapper_function=ScrapperObj.scrape_amazon,
+    #                 delay=5,
+    #             )
+    #         )
+    #     )
 
     # Flipkart
     for product in [
-        "PS5",
-        "PS5_DE",
-        "XSX",
+        "ROG_ALLY_Z1_EXTREME",
+        #"TEST",
+        #"PS5",
+        #"PS5_DE",
+        #"XSX",
         #"XSX_HALO_EDITION",
         # "XBOX_WIRELESS_HEADSET",
         # "XSX_HALO_EDITION_CONTROLLER",
@@ -53,16 +79,18 @@ async def start_requests_scrapping():
                     product_name=product,
                     website_name="flipkart",
                     scrapper_function=ScrapperObj.scrape_flipkart,
-                    delay=5,
+                    delay=10,
                 )
             )
         )
 
     # Shop At Sony Center
     for product in [
-        "PS5",
-        "PS5_DE",
-        "PS5_GT7_BUNDLE",
+        # "PS5",
+        # "PS5_DE",
+        # "PS5_GT7_BUNDLE",
+        # "PS5_HFW_BUNDLE",
+        # "PS5_DE_HFW_BUNDLE",
         # "RED_DS",
         # "BLACK_DS",
     ]:
@@ -149,6 +177,7 @@ async def start_playwright_scrapping():
         "PS5_DE",
         "PS5_HFW_BUNDLE",
         "PS5_DE_GT7_BUNDLE",
+        #"XSX_FORZA_EDITION",
         # "XSX",
         # "XSX_HALO_EDITION",
         # "XSS",

@@ -3,7 +3,9 @@ from pytz import timezone
 from datetime import datetime
 from io import BytesIO
 import logging
-import StockChecker.ScrapperConfig as ScrapperConfig
+from StockChecker.ScrapperConfig import All_Products
+from StockChecker.WebsiteConfig import All_Websites
+
 import tweepy
 import asyncio, aiohttp
 
@@ -45,8 +47,8 @@ async def notify(ScrapperObj, website_name, product, method, page = None):
             image = BytesIO(screenshot_bytes)
 
         
-        Website_Class = ScrapperConfig.All_Websites.get(website_name)
-        Product_Class = ScrapperConfig.All_Products.get(product)
+        Website_Class = All_Websites.get(website_name)
+        Product_Class = All_Products.get(product)
 
         if Product_Class is None:
             print(product, "is an invalid product sent to notify for.")

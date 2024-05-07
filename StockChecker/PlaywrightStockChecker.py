@@ -1,5 +1,6 @@
 import random, asyncio, logging, pytz
-from StockChecker.ScrapperConfig import All_Products, All_Websites
+from StockChecker.ScrapperConfig import All_Products
+from StockChecker.WebsiteConfig import All_Websites
 from datetime import datetime
 from playwright.async_api import async_playwright
 from StockChecker.scrapper import ScrapperObj
