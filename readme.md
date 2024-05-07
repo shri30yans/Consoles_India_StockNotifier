@@ -1,6 +1,6 @@
 <div align="center" style="padding: 10px;">
     <img src="images/logo.jpg" height="90" style="padding: 10px;">
-    <h1>Consoles India Discord Bot</h1>
+    <h1>Consoles India Stock Notifier</h1>
     <a href="https://twitter.com/Consoles_India"><img src="https://img.shields.io/badge/Twitter-1DA1F2?style=for-the-badge&logo=twitter&logoColor=white" style="padding: 10px;"></a>
     <a href="https://t.me/Consoles_India"><img src="https://img.shields.io/badge/Telegram-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white" style="padding: 10px;"></a>
     <a href="https://discord.gg/4WqnrD3sRx"><img src="https://dcbadge.vercel.app/api/server/4WqnrD3sRx?style=for-the-badge" style="padding: 10px;"></a>
