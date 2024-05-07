@@ -5,15 +5,17 @@
     <a href="https://t.me/Consoles_India"><img src="https://img.shields.io/badge/Telegram-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white" style="padding: 10px;"></a>
     <a href="https://discord.gg/4WqnrD3sRx"><img src="https://dcbadge.vercel.app/api/server/4WqnrD3sRx?style=for-the-badge" style="padding: 10px;"></a>
 </div> <br>
+A versatile stock-checking project that helps you secure in-demand products. It leverages asynchronous multi-site scraping to provide real-time availability updates, ensuring that you never miss any drops. Originally created for PS5 and XSX stock notifications in India. 
 
-
+### Discord Integration
 Check out the [Discord Bot](https://github.com/shri30yans/Consoles_India_DiscordBot) version for Discord Features.
 
 ### Features
 - Multiplatform Asynchronous scrapping.
 - Notifications on Discord, Twitter and Telegram.
-- Supports both Requests library and Playwright for Headless Browser mode scrapping.
-- Logging
+- Flexible Customization to track any product across chosen sites
+- Supports both Requests library for traditional scrapping and Playwright for Browser based scrapping.
+- Comprehensive Logging
 
 ### Platforms currently supported
 - Amazon
@@ -68,8 +70,17 @@ playwright install
 1. On Telegram, search @BotFather, send him a `/start` message
 2. Send another `/newbot` message, then follow the instructions to setup a name and a username.
 3. A API Token/ Bot Token is shown. Add this token to the .env file.
+
+## Scrapper setup
+Modify the configuration file to specify:
+- `StockChecker/ScrapperConfig.py` Target products
+- `StockChecker/WebsiteConfig.py` Websites to scrape
+- `config.py` Notification and Scrapping mode (Requests/Playwright) preferences
    
-### Run script:
+### Run script
 ```
 python bot.py
 ```
+
+### Contributions
+This project welcomes contributions. Feel free to suggest new features, report bugs, or improve the codebase.
