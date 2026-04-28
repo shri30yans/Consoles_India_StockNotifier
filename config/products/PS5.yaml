@@ -1,0 +1,28 @@
+product:
+  name: PS5
+  display_name: PS5
+  links:
+    amazon: https://www.amazon.in/dp/B09V59MD1P
+    flipkart: https://www.flipkart.com/sony-playstation-5-cfi-1008a01r-825-gb-astro-s-playroom/p/itma0201bdea62fa
+    shopatsc: https://shopatsc.com/products/playstation-5-console
+    games_the_shop: https://www.gamestheshop.com/PlayStation-5-Console/5111
+    e2zstore: https://e2zstore.com/product/playstation-5-console-ps5/
+    reliance: https://www.reliancedigital.in/sony-playstation-5-console/p/491936180
+  hidden: false
+  notification_roles:
+    '797570077364977696': 849606173522788352
+    '889437492477046785': 893734056720740352
+  notification_channels:
+    '889437492477046785': 892795445112369183
+    '797570077364977696': 850096085770567700
+  affiliate_links:
+    amazon: https://www.amazon.in/dp/B09V59MD1P/?tag=consolesindiaid-21
+  add_to_cart_links:
+    amazon: https://www.amazon.in/gp/aws/cart/add.html?AssociateTag=consolesindiaid-21&ASIN.1=B09V59MD1P&Quantity.1=1
+    shopatsc: https://shopatsc.com/cart/34169891815563:1
+  wishlist: https://www.amazon.in/hz/wishlist/ls/K5HVAMY70DJ5/
+  twitter_hashtags: '#RestockPS5India #PS5 #PS5India'
+  thumbnail_link: https://i.imgur.com/pmgar66.jpg?1
+  colour: 2162943
+  emoji: <:PS5:893792926050684929>
+  key: PS5

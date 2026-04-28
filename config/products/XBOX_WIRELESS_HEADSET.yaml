@@ -1,0 +1,19 @@
+product:
+  name: XBOX_WIRELESS_HEADSET
+  display_name: Xbox Wireless Headset
+  links:
+    amazon: https://www.amazon.in/dp/product/B09HSHXYCR/
+    flipkart: https://www.flipkart.com/microsoft-xbox-wireless-bluetooth-gaming-headset/p/itm7541ed4978931
+  hidden: false
+  notification_channels:
+    '889437492477046785': 893754612547481630
+  affiliate_links:
+    amazon: https://www.amazon.in/Xbox-Series-X/dp/B09HSHXYCR/?tag=consolesindiaid-21
+  add_to_cart_links:
+    amazon: https://www.amazon.in/gp/aws/cart/add.html?AssociateTag=consolesindiaid-21&ASIN.1=B09HSHXYCR&Quantity.1=1
+  wishlist: https://www.amazon.in/hz/wishlist/ls/18WU5P3MXFWL0/
+  twitter_hashtags: '#RestockXSXIndia #XboxSeriesX #XSX'
+  thumbnail_link: https://i.imgur.com/C4yH5JO.jpg
+  colour: 4098054
+  emoji: <:XSX:893792926574972929>
+  key: XBOX_WIRELESS_HEADSET

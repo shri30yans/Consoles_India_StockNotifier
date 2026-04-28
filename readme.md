@@ -17,12 +17,12 @@ Check out the [Discord Bot](https://github.com/shri30yans/Consoles_India_Discord
 - Supports both Requests library for traditional scrapping and Playwright for Browser based scrapping.
 - Comprehensive Logging
 
-### Platforms currently supported
-- Amazon
+### Platforms currently supported (parsers)
+
+- Amazon (wishlist pages and standard product pages)
 - Flipkart
-- ShopAtSC
-- Prepaid Gamer Card
-- Games the Shop
+
+Other retailer links may still appear in `config/products.yaml` for reference, but monitoring jobs must only use **amazon** or **flipkart** (`website_key` in `config/jobs.yaml`).
 
 
 ### Working:
@@ -57,7 +57,7 @@ playwright install
 
 ## Discord Setup
 1. Obtain a Discord bot token from the [Discord developer portal](https://ptb.discord.com/developers/applications/)
-2. Add the bot to a server and fill in the channel ids in config.py
+2. Add the bot to a server and fill in the channel ids in your product YAML or integration config as needed.
 3. Fill in the bot credentials in the .env file.
 
 ## Twitter Setup
@@ -71,16 +71,42 @@ playwright install
 2. Send another `/newbot` message, then follow the instructions to setup a name and a username.
 3. A API Token/ Bot Token is shown. Add this token to the .env file.
 
-## Scrapper setup
-Modify the configuration file to specify:
-- `StockChecker/ScrapperConfig.py` Target products
-- `StockChecker/WebsiteConfig.py` Websites to scrape
-- `config.py` Notification and Scrapping mode (Requests/Playwright) preferences
-   
-### Run script
+## Configuration (YAML)
+
+Full reference: [docs/configuration.md](docs/configuration.md).
+
+- `config/app.yaml` — `notify`, `mode`, affiliate tag, Telegram chat, **logging** (`json_lines`, rotation), **fetch** (jitter, concurrency cap).
+- `config/products/<KEY>.yaml` — one file per product; `key` must match the filename stem.
+- `config/websites/amazon.yaml` and `config/websites/flipkart.yaml` — display name, optional HTTP headers, Amazon wishlist ASIN map.
+- `config/jobs.yaml` — which `(product, website)` pairs to poll, transport, and `delay_seconds`.
+
+Override the config root with `STOCK_NOTIFIER_CONFIG_DIR` if needed.
+
+### Development
+
+```text
+pip install -r requirements-dev.txt
+ruff check stock_notifier tests && ruff format --check stock_notifier tests
+mypy stock_notifier
 ```
-python bot.py
+
+On machines where a globally installed `pytest` plugin breaks startup (rare), run tests with autoload disabled:
+
+```text
+set PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
+pytest
 ```
+
+Pre-commit: `pre-commit install` then hooks run `ruff` on commit.
+
+### Run
+
+```
+python -m stock_notifier
+```
+
+or `python main.py` / `python bot.py` (same entrypoint).
+
 
 ### Contributions
 This project welcomes contributions. Feel free to suggest new features, report bugs, or improve the codebase.

@@ -1,0 +1,39 @@
+# Watchlist of retailer URLs to poll, plus aggregator sources.
+# Start small; the platform handles hundreds without code changes.
+
+watches:
+  - retailer: amazon
+    url: "https://www.amazon.in/dp/B0CHX1W1XY"     # example: PS5 Slim
+    poll_seconds: 600
+    title_hint: "PlayStation 5 Slim"
+
+  - retailer: flipkart
+    url: "https://www.flipkart.com/sony-playstation-5-slim/p/itm123"
+    poll_seconds: 600
+    title_hint: "PlayStation 5 Slim"
+
+  # Add more here. Keep poll_seconds >= 300 to be a polite scraper.
+
+# Amazon-first auto discovery:
+# seed deal/category pages -> discover product URLs -> verify product pages -> emit signals.
+amazon_signals:
+  enabled: true
+  poll_seconds: 900
+  max_links_per_seed: 15
+  seed_urls:
+    - "https://www.amazon.in/gp/goldbox"
+    - "https://www.amazon.in/deals"
+    - "https://www.amazon.in/s?i=electronics"
+
+aggregators:
+  - type: desidime
+    enabled: false                 # opt-in
+    poll_seconds: 900
+
+  - type: reddit
+    enabled: false                 # opt-in (needs REDDIT_CLIENT_ID/SECRET)
+    poll_seconds: 300
+    subreddits:
+      - IndiaDeals
+      - bapcsalesindia
+      - IndianGaming

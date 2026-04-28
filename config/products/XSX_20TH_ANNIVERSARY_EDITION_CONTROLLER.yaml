@@ -1,0 +1,18 @@
+product:
+  name: XSX_20TH_ANNIVERSARY_EDITION_CONTROLLER
+  display_name: Xbox 20th Anniversary Edition Controller
+  links:
+    amazon: https://www.amazon.in/dp/B09HTV3Q3T/
+  hidden: false
+  notification_channels:
+    '889437492477046785': 893754612547481630
+  affiliate_links:
+    amazon: https://www.amazon.in/Xbox-Series-X/dp/B09HTV3Q3T/?tag=consolesindiaid-21
+  add_to_cart_links:
+    amazon: https://www.amazon.in/gp/aws/cart/add.html?AssociateTag=consolesindiaid-21&ASIN.1=B09HTV3Q3T&Quantity.1=1
+  wishlist: https://www.amazon.in/hz/wishlist/ls/18WU5P3MXFWL0/
+  twitter_hashtags: '#RestockXSXIndia #XboxSeriesX #XSX'
+  thumbnail_link: https://i.imgur.com/ptzXioe.jpg
+  colour: 4098054
+  emoji: <:XSX:893792926574972929>
+  key: XSX_20TH_ANNIVERSARY_EDITION_CONTROLLER

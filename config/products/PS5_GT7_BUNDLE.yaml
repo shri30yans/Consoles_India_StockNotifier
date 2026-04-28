@@ -1,0 +1,24 @@
+product:
+  name: PS5_GT7_BUNDLE
+  display_name: PS5 & GT7 bundle
+  links:
+    amazon: https://www.amazon.in/dp/B09YD71MZT/
+    shopatsc: https://shopatsc.com/collections/playstation-5/products/playstation%C2%AE5-console-with-ps5-gran-turismo-7-standard-ed
+  hidden: false
+  notification_roles:
+    '797570077364977696': 849606173522788352
+    '889437492477046785': 893734056720740352
+  notification_channels:
+    '889437492477046785': 892795445112369183
+    '797570077364977696': 850096085770567700
+  affiliate_links:
+    amazon: https://www.amazon.in/dp/B09YD71MZT/?tag=consolesindiaid-21
+  add_to_cart_links:
+    amazon: https://www.amazon.in/gp/aws/cart/add.html?AssociateTag=consolesindiaid-21&ASIN.1=B09YD71MZT&Quantity.1=1
+    shopatsc: https://shopatsc.com/cart/40186379436171:1
+  wishlist: https://www.amazon.in/hz/wishlist/ls/K5HVAMY70DJ5/
+  twitter_hashtags: '#RestockPS5India #PS5'
+  thumbnail_link: https://i.imgur.com/pmgar66.jpg?1
+  colour: 2162943
+  emoji: <:PS5:893792926050684929>
+  key: PS5_GT7_BUNDLE

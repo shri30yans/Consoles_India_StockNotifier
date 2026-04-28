@@ -1,0 +1,22 @@
+services:
+  deals-platform:
+    build: .
+    container_name: deals-platform
+    restart: unless-stopped
+    env_file: .env
+    command: ["python", "-m", "deals_platform"]
+    volumes:
+      - ./config:/app/config:ro
+      - ./logs:/app/logs
+
+  # Legacy stock notifier — kept available alongside the platform.
+  stock-notifier:
+    build: .
+    container_name: stock-notifier
+    restart: unless-stopped
+    env_file: .env
+    command: ["python", "-m", "stock_notifier"]
+    volumes:
+      - ./config:/app/config:ro
+      - ./logs:/app/logs
+    profiles: ["legacy"]   # docker compose --profile legacy up

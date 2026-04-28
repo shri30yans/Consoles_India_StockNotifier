@@ -1,0 +1,19 @@
+product:
+  name: WHITE_PULSE_3D
+  display_name: White Pulse 3D
+  links:
+    amazon: https://www.amazon.in/dp/B08FVNCYWZ/?smid=AT95IG9ONZD7S
+  hidden: false
+  notification_channels:
+    '889437492477046785': 892795445112369183
+    '797570077364977696': 850096085770567700
+  affiliate_links:
+    amazon: https://www.amazon.in/gp/product/B08FVNCYWZ/?tag=consolesindiaid-21
+  add_to_cart_links:
+    amazon: https://www.amazon.in/gp/aws/cart/add.html?AssociateTag=consolesindiaid-21&ASIN.1=B08FVNCYWZ&Quantity.1=1
+  wishlist: https://www.amazon.in/hz/wishlist/ls/K5HVAMY70DJ5/
+  twitter_hashtags: '#RestockPS5India #PS5'
+  thumbnail_link: https://i.imgur.com/pmgar66.jpg?1
+  colour: 2162943
+  emoji: <:PS5:893792926050684929>
+  key: WHITE_PULSE_3D

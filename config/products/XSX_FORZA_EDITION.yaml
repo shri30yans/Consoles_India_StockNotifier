@@ -1,0 +1,16 @@
+product:
+  name: XSX_FORZA_EDITION
+  display_name: XSX Forza Edition Bundle
+  links:
+    flipkart: https://www.flipkart.com/xbox-series-x-console-1000-gb-forza-horizon-4/p/itm2c0869097870c
+  hidden: false
+  notification_roles:
+    '889437492477046785': 893734236392144926
+  notification_channels:
+    '889437492477046785': 893754612547481630
+  wishlist: https://www.amazon.in/hz/wishlist/ls/18WU5P3MXFWL0/
+  twitter_hashtags: '#RestockXSXIndia #XSX'
+  thumbnail_link: https://i.imgur.com/WpKbZXR.jpg
+  colour: 4098054
+  emoji: <:XSX:893792926574972929>
+  key: XSX_FORZA_EDITION

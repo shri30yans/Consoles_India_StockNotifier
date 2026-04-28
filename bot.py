@@ -1,4 +1,4 @@
-"""Entry point — delegates to the stock_notifier package."""
+"""Heroku-style entry (Procfile); same as main."""
 
 from stock_notifier.runner import main
 

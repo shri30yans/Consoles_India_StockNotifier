@@ -1,0 +1,9 @@
+threshold: 0.55
+repost_cooldown_hours: 24
+weights:
+  lowest_in_90d: 0.35
+  below_30d_median: 0.25
+  discount_vs_mrp: 0.10
+  cross_retailer_best: 0.15
+  has_offers: 0.05
+  aggregator_corroborated: 0.10

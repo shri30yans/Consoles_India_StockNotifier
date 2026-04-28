@@ -1,11 +1,30 @@
-aiohttp #Async version of requests
-python-dotenv #Tp get .env file
-pytz
-lxml
-requests
-beautifulsoup4
-aiohttp
-asyncpg # database
-playwright
-tweepy
-winsound # for the GUI sound alerts
+aiohttp==3.9.5
+curl_cffi==0.7.4
+fake-useragent==1.5.1
+beautifulsoup4==4.12.3
+lxml==5.2.2
+playwright==1.44.0
+pydantic==2.7.2
+python-dotenv==1.0.1
+pytz==2024.1
+pyyaml==6.0.1
+tweepy==4.14.0
+
+# --- Platform additions (DealsPlatform) ---
+# Database
+SQLAlchemy[asyncio]==2.0.34
+asyncpg==0.29.0
+alembic==1.13.2
+
+# LLM (Gemini via OpenAI-compatible endpoint)
+openai==1.51.0
+
+# Notifiers
+discord.py==2.4.0
+
+# Aggregator sources
+asyncpraw==7.7.1
+
+# HTTP utilities
+tenacity==9.0.0
+requests==2.32.3

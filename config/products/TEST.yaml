@@ -1,0 +1,13 @@
+product:
+  name: Test
+  display_name: PS5
+  links:
+    amazon: https://www.amazon.in/dp/B08FV5GC28
+    flipkart: https://www.flipkart.com/stop-worrying-start-living/p/itmfez44fyrr8dud
+    shopatsc: https://shopatsc.com/collections/all/products/dualsense%E2%84%A2-wireless-controller
+    games_the_shop: https://www.gamestheshop.com/PlayStation-5-Console/5111
+    e2zstore: https://e2zstore.com/product/playstation-5-console-ps5/
+    reliance: https://www.reliancedigital.in/bajaj-gx-1-mixer-grinder/p/490743989
+  hidden: true
+  colour: 0
+  key: TEST

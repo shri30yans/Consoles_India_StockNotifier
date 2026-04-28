@@ -1,0 +1,23 @@
+[Unit]
+Description=DealsPlatform — AI-curated deal channels for India
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/deals-platform
+EnvironmentFile=/opt/deals-platform/.env
+ExecStart=/opt/deals-platform/.venv/bin/python -m deals_platform
+Restart=on-failure
+RestartSec=10
+User=deals
+Group=deals
+
+# Security hardening (best-effort; loosen if it interferes with playwright/curl_cffi)
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
