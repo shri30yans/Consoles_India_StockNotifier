@@ -1,0 +1,10 @@
+{
+  "env": {
+    "DATABASE_URL": "postgresql+asyncpg://postgres.hevojawanglosclbhuex:BlipBlopBlip@aws-1-ap-south-1.pooler.supabase.com:5432/postgres"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(python fix_product_encoding.py)"
+    ]
+  }
+}
