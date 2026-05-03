@@ -1,0 +1,168 @@
+platform:
+  store:
+    # Optional Postgres URI; if omitted, use DATABASE_URL from .env (server only — never in the SPA).
+    # Supabase: direct db.* can be IPv6-only; IPv4 → session pooler URI in .env (see .env.example).
+    dsn: null
+  # DEBUG — all loggers at DEBUG+; INFO for quieter production
+  log_level: DEBUG
+  log_json: false
+  # Hot-reload merged config (YAML + DB overlay) for workers — interval in seconds
+  config_reload_seconds: 60
+
+defaults:
+  poll_seconds: 60
+  alerts:
+    - type: back_in_stock
+      channels: [gaming_alerts]
+
+products:
+  - id: ps5
+    name: PlayStation 5
+    brand: Sony
+    category: gaming
+    emoji: "🎮"
+    colour: 0x003791
+    watches:
+      - source: amazon
+        url: https://www.amazon.in/dp/B08FC5L3RG
+        asin: B08FC5L3RG
+        affiliate_tag: env:AMAZON_AFFILIATE_TAG
+        poll_seconds: 30
+      - source: flipkart
+        url: https://www.flipkart.com/sony-playstation-5/p/itm8842e69d8349e
+        poll_seconds: 60
+    alerts:
+      - type: back_in_stock
+        channels: [gaming_alerts]
+      - type: price_below
+        threshold_inr: 45000
+        channels: [gaming_alerts, deals_gaming]
+      - type: discount_pct
+        threshold: 0.10
+        channels: [deals_gaming]
+
+  - id: ps5_digital
+    name: PlayStation 5 Digital Edition
+    brand: Sony
+    category: gaming
+    emoji: "🎮"
+    watches:
+      - source: amazon
+        url: https://www.amazon.in/dp/B09FZ6HSQG
+        asin: B09FZ6HSQG
+        affiliate_tag: env:AMAZON_AFFILIATE_TAG
+        poll_seconds: 30
+    # no alerts: uses defaults (back_in_stock → gaming_alerts)
+
+  - id: xsx
+    name: Xbox Series X
+    brand: Microsoft
+    category: gaming
+    emoji: "🎮"
+    colour: 0x107C10
+    watches:
+      - source: amazon
+        url: https://www.amazon.in/dp/B08H75RTZ8
+        asin: B08H75RTZ8
+        affiliate_tag: env:AMAZON_AFFILIATE_TAG
+        poll_seconds: 30
+      - source: flipkart
+        url: https://www.flipkart.com/xbox-series-x/p/itmf98b53e3bc98b
+        poll_seconds: 60
+
+  - id: xss
+    name: Xbox Series S
+    brand: Microsoft
+    category: gaming
+    emoji: "🎮"
+    watches:
+      - source: amazon
+        url: https://www.amazon.in/dp/B08H93ZRK9
+        asin: B08H93ZRK9
+        affiliate_tag: env:AMAZON_AFFILIATE_TAG
+        # poll_seconds omitted → uses defaults.poll_seconds (60s)
+
+  - id: ds_controller_white
+    name: DualSense Controller White
+    brand: Sony
+    category: gaming
+    emoji: "🕹️"
+    watches:
+      - source: amazon
+        url: https://www.amazon.in/dp/B08H99BPJN
+        asin: B08H99BPJN
+        affiliate_tag: env:AMAZON_AFFILIATE_TAG
+
+channels:
+  - id: gaming_alerts
+    name: Gaming Stock Alerts
+    telegram:
+      chat_id: env:TELEGRAM_GAMING_CHAT_ID
+
+  - id: deals_gaming
+    name: Gaming Deals
+    telegram:
+      chat_id: env:TELEGRAM_DEALS_GAMING_CHAT_ID
+    discord:
+      webhook_url: env:DISCORD_GAMING_WEBHOOK
+
+  - id: deals_tech
+    name: Tech Deals
+    telegram:
+      chat_id: env:TELEGRAM_DEALS_TECH_CHAT_ID
+
+  - id: admin
+    name: Admin
+    telegram:
+      chat_id: env:TELEGRAM_ADMIN_CHAT
+
+platform_sources:
+  - type: amazon_serp
+    category: gaming
+    poll_seconds: 3600
+    minimum_discount_pct: 5.0
+    max_links_per_seed: 50
+    seed_urls:
+      - https://www.amazon.in/s?k=gaming+console+deals&rh=p_36%3A2000-&sort=price-asc-rank
+
+  - type: desidime
+    poll_seconds: 900
+    category: tech
+
+  - type: reddit
+    poll_seconds: 900
+    category: tech
+    subreddits:
+      - IndiaDeals
+      - DesiDeal
+      - IndianGaming
+
+stock:
+  fetch:
+    http_client: curl_cffi
+    curl_impersonate: chrome124
+    jitter_max_seconds: 3.0
+    max_concurrent_requests: 4
+    max_concurrent_playwright: 2
+    playwright_stealth: true
+    use_fake_useragent: true
+
+deals:
+  scoring:
+    threshold: 0.40
+    repost_cooldown_hours: 24
+    weights:
+      lowest_90d: 0.35
+      below_30d_median: 0.25
+      discount_vs_mrp: 0.10
+      cross_retailer_best: 0.15
+      has_offers: 0.05
+      aggregator_corroborated: 0.10
+  curation:
+    use_llm: false
+    approval_required: true
+    approval_timeout_seconds: 1800
+    admin_channel: admin
+  routing:
+    gaming: [deals_gaming]
+    tech: [deals_tech]

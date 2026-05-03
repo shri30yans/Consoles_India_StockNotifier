@@ -1,0 +1,22 @@
+[Unit]
+Description=Commerce Platform (HTTP API + stock/alerts/deals workers)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/commerce-platform
+EnvironmentFile=/opt/commerce-platform/.env
+Environment=PLATFORM_CONFIG=/opt/commerce-platform/config.yaml
+ExecStart=/opt/commerce-platform/.venv/bin/python -m commerce_platform --config /opt/commerce-platform/config.yaml --host 127.0.0.1 --port 8000
+Restart=on-failure
+RestartSec=5
+User=deals
+Group=deals
+
+# Hardening — tighten if needed for your image
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

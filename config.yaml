@@ -1,0 +1,98 @@
+platform:
+  store:
+    # optional URI; default is DATABASE_URL from .env (Supabase session pooler recommended on IPv4)
+    dsn: null
+  log_level: DEBUG
+  log_json: false
+  config_reload_seconds: 60
+
+defaults:
+  poll_seconds: 60
+  alerts:
+    - type: back_in_stock
+      channels: [gaming_alerts]
+
+# Stock products live in the DB (catalog_products, catalog_watches, catalog_product_alerts).
+# Optional one-off seed from a YAML file that still defines products: (not this file):
+#   python scripts/import_catalog_from_yaml.py --config path/to/seed.yaml
+products: []
+
+channels:
+  - id: gaming_alerts
+    name: Gaming Stock Alerts
+    telegram:
+      chat_id: env:TELEGRAM_CHAT_GAMING
+
+  - id: deals_gaming
+    name: Gaming Deals
+    telegram:
+      chat_id: env:TELEGRAM_CHAT_GAMING
+    discord:
+      webhook_url: env:DISCORD_CHANNEL_GAMING
+
+  - id: deals_tech
+    name: Tech Deals
+    telegram:
+      chat_id: env:TELEGRAM_CHAT_TECH
+
+  - id: admin
+    name: Admin
+    telegram:
+      chat_id: env:TELEGRAM_ADMIN_CHAT
+
+platform_sources:
+  - type: amazon_wishlist
+    url: https://www.amazon.in/hz/wishlist/ls/1TKJ9EPWU9E0A
+    channels: [gaming_alerts]
+    poll_seconds: 20
+    category: gaming
+
+  - type: amazon_serp
+    category: gaming
+    poll_seconds: 3600
+    minimum_discount_pct: 5.0
+    max_links_per_seed: 50
+    seed_urls:
+      - https://www.amazon.in/s?k=gaming+console+deals&rh=p_36%3A2000-&sort=price-asc-rank
+
+  - type: desidime
+    poll_seconds: 900
+    category: tech
+
+  - type: reddit
+    poll_seconds: 900
+    category: tech
+    subreddits:
+      - IndiaDeals
+      - DesiDeal
+      - IndianGaming
+
+stock:
+  fetch:
+    http_client: curl_cffi
+    curl_impersonate: chrome124
+    jitter_max_seconds: 3.0
+    max_concurrent_requests: 4
+    max_concurrent_playwright: 2
+    playwright_stealth: true
+    use_fake_useragent: true
+
+deals:
+  scoring:
+    threshold: 0.40
+    repost_cooldown_hours: 24
+    weights:
+      lowest_90d: 0.35
+      below_30d_median: 0.25
+      discount_vs_mrp: 0.10
+      cross_retailer_best: 0.15
+      has_offers: 0.05
+      aggregator_corroborated: 0.10
+  curation:
+    use_llm: false
+    approval_required: true
+    approval_timeout_seconds: 1800
+    admin_channel: admin
+  routing:
+    gaming: [deals_gaming]
+    tech: [deals_tech]

@@ -22,9 +22,13 @@ backend/
 │   ├── notify/                 # Notification channels
 │   └── web/                    # FastAPI HTTP API
 ├── bot.py                      # Entry point (Procfile/Docker)
-├── init_db.py                  # Database schema initialization
-├── platform.yaml               # Application configuration
-└── requirements.txt            # Python dependencies
+├── config.yaml               # Application configuration
+├── requirements.txt            # Python dependencies
+└── scripts/
+    ├── init_db.py             # Database schema initialization
+    ├── import_catalog_from_yaml.py  # Bulk import products
+    ├── telegram_resolve_chat_id.py  # Get Telegram chat IDs
+    └── scrape_debug.py         # Test scraper
 
 frontend/
 ├── src/                        # React + TypeScript source
@@ -59,12 +63,14 @@ cp .env.example .env
 # Edit .env with your Telegram token, database URL, etc.
 
 # Initialize database
-python init_db.py
+python scripts/init_db.py
 
 # Start backend (API + workers)
 python bot.py
 # OR with custom port/config:
-python bot.py --config platform.yaml --port 8000 --host 127.0.0.1
+python bot.py --config config.yaml --port 8000 --host 127.0.0.1
+# OR to deploy with custom config location:
+python -m commerce_platform --config config.yaml --port 8000
 ```
 
 **Backend will start:**
@@ -97,7 +103,7 @@ npm run build
 
 ## Configuration
 
-### Platform Config (`platform.yaml`)
+### Platform Config (`config.yaml`)
 
 Core application settings:
 
@@ -129,7 +135,7 @@ platform_sources:
     poll_seconds: 20
 ```
 
-See `platform.yaml.example` for all options.
+See `config.yaml.example` for all options.
 
 ### Environment Variables (`.env`)
 
@@ -300,7 +306,7 @@ python init_db.py
 
 ### Wishlist Returns 0 Items
 
-Amazon login may be required. Check platform.yaml `url` and ensure wishlist is public.
+Amazon login may be required. Check config.yaml `url` and ensure wishlist is public.
 
 ## Tech Stack
 
