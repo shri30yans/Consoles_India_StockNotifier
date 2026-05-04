@@ -11,10 +11,6 @@ pyyaml==6.0.1
 tweepy==4.14.0
 
 # --- Platform additions (DealsPlatform) ---
-# Database
-SQLAlchemy[asyncio]==2.0.34
-asyncpg==0.29.0
-alembic==1.13.2
 
 # LLM (Gemini via OpenAI-compatible endpoint)
 openai==1.51.0
@@ -28,3 +24,17 @@ asyncpraw==7.7.1
 # HTTP utilities
 tenacity==9.0.0
 requests==2.32.3
+certifi==2024.8.30
+
+# Postgres (Supabase) + public web API
+asyncpg==0.30.0
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+passlib[bcrypt]==1.7.4
+pyjwt==2.10.1
+python-multipart==0.0.17
+email-validator==2.2.0
+
+# Database migrations
+alembic==1.14.0
+psycopg2-binary==2.9.9

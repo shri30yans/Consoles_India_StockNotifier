@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import pytest
-from stock_notifier.fetch.http_headers import build_request_headers
-from stock_notifier.models import AppConfig
+from commerce_platform.adapters.fetch.http_headers import build_request_headers
+from commerce_platform.stock.models import AppConfig
 
 
 def _minimal_app(**kwargs) -> AppConfig:
@@ -31,7 +31,7 @@ def _minimal_app(**kwargs) -> AppConfig:
 def test_build_headers_replaces_ua_when_fake_enabled(monkeypatch: pytest.MonkeyPatch) -> None:
     app = _minimal_app(use_fake_useragent=True)
     monkeypatch.setattr(
-        "stock_notifier.fetch.http_headers.random_user_agent_string",
+        "commerce_platform.adapters.fetch.http_headers.random_user_agent_string",
         lambda: "SyntheticUA/1.0",
     )
     h = build_request_headers(app, [{"User-Agent": "OldUA", "X-Test": "1"}])

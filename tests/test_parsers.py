@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from stock_notifier.models import ParseContext, WebsiteConfig, WishlistItem
-from stock_notifier.parsers import amazon as amazon_parser
-from stock_notifier.parsers import flipkart as flipkart_parser
+from commerce_platform.stock.models import ParseContext, WebsiteConfig, WishlistItem
+from commerce_platform.stock.parsers import amazon as amazon_parser
+from commerce_platform.stock.parsers import flipkart as flipkart_parser
 
 
 def _minimal_amazon_website() -> WebsiteConfig:

@@ -3,7 +3,7 @@ requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "stock-notifier"
+name = "commerce-platform"
 version = "2.1.0"
 readme = "readme.md"
 requires-python = ">=3.10"
@@ -11,20 +11,26 @@ requires-python = ">=3.10"
 [tool.ruff]
 target-version = "py310"
 line-length = 100
-src = ["stock_notifier", "tests"]
+src = ["commerce_platform", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
 
 [tool.ruff.lint.per-file-ignores]
-"stock_notifier/fetch/default_headers.py" = ["E501"]
+"commerce_platform/adapters/fetch/default_headers.py" = ["E501"]
+"commerce_platform/web/main.py" = ["B008", "E501"]
+"commerce_platform/web/deps.py" = ["B008"]
+"commerce_platform/web/routes/admin.py" = ["B008", "E501"]
+"commerce_platform/web/routes/auth.py" = ["B008"]
+"commerce_platform/web/routes/products.py" = ["B008"]
+"commerce_platform/web/routes/tracking.py" = ["B008"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
 [tool.mypy]
 python_version = "3.10"
-packages = ["stock_notifier"]
+packages = ["commerce_platform"]
 warn_unused_configs = true
 ignore_missing_imports = true
 strict = false

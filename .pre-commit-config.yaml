@@ -3,6 +3,6 @@ repos:
     rev: v0.4.8
     hooks:
       - id: ruff
-        args: [--fix, stock_notifier, tests]
+        args: [--fix, commerce_platform, tests]
       - id: ruff-format
-        args: [stock_notifier, tests]
+        args: [commerce_platform, tests]

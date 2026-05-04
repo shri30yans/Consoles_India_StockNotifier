@@ -1,22 +1,22 @@
 services:
-  deals-platform:
+  commerce-platform:
     build: .
-    container_name: deals-platform
+    container_name: commerce-platform
     restart: unless-stopped
     env_file: .env
-    command: ["python", "-m", "deals_platform"]
+    command: ["python", "-m", "commerce_platform", "all"]
     volumes:
       - ./config:/app/config:ro
       - ./logs:/app/logs
 
-  # Legacy stock notifier — kept available alongside the platform.
+  # Optional: run only the stock service for focused debugging.
   stock-notifier:
     build: .
     container_name: stock-notifier
     restart: unless-stopped
     env_file: .env
-    command: ["python", "-m", "stock_notifier"]
+    command: ["python", "-m", "commerce_platform", "stock"]
     volumes:
       - ./config:/app/config:ro
       - ./logs:/app/logs
-    profiles: ["legacy"]   # docker compose --profile legacy up
+    profiles: ["stock-only"]

@@ -125,6 +125,31 @@ class CatalogRepo:
             rows = await conn.fetch("SELECT id FROM catalog_products")
         return {str(r["id"]) for r in rows}
 
+    async def normalize_stored_product_names(self) -> list[tuple[str, str, str]]:
+        """Apply normalize_product_name to every catalog_products row and persist changes.
+
+        Returns ``[(product_id, old_name, new_name), ...]`` for rows that were updated.
+        """
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch("SELECT id, name FROM catalog_products ORDER BY id")
+        updates: list[tuple[str, str, str]] = []
+        for row in rows:
+            old = row["name"]
+            new = normalize_product_name(old)
+            if new != old:
+                updates.append((str(row["id"]), old, new))
+        if not updates:
+            return []
+        async with self._pool.acquire() as conn:
+            async with conn.transaction():
+                for pid, _old, new in updates:
+                    await conn.execute(
+                        "UPDATE catalog_products SET name = $1 WHERE id = $2",
+                        new,
+                        pid,
+                    )
+        return updates
+
     async def list_watches_for_product(self, product_id: str) -> list[WatchRow]:
         async with self._pool.acquire() as conn:
             rows = await conn.fetch(

@@ -15,5 +15,6 @@ RUN pip install -r requirements.txt
 
 COPY . .
 
-# Default: run the deals platform. Override CMD for the legacy stock notifier.
-CMD ["python", "-m", "deals_platform"]
+RUN mkdir -p data
+
+CMD ["python", "-m", "commerce_platform", "all", "--config", "platform.yaml"]

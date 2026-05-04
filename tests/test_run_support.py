@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from stock_notifier.run_support import redact_url
+from commerce_platform.stock.run_support import redact_url
 
 
 def test_redact_url_strips_query_length_hint() -> None:

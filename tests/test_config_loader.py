@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import commerce_platform.stock.config_loader as cl
 import pytest
-import stock_notifier.config_loader as cl
 
 
 def test_load_jobs_rejects_unknown_website(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

@@ -1,0 +1,84 @@
+{
+  "products": [
+    {
+      "id": "ps5_slim_ea_fc26",
+      "name": "Sony PS5® Console Slim - EA SPORTS FC 26 Bundle",
+      "category": "gaming",
+      "brand": "Sony",
+      "emoji": "🎮",
+      "image_url": "https://m.media-amazon.com/images/I/61W7J4tLGvL.jpg",
+      "watches": [
+        {
+          "source": "amazon",
+          "url": "https://www.amazon.in/hz/wishlist/ls/1TKJ9EPWU9E0A",
+          "asin": "1TKJ9EPWU9E0A",
+          "poll_seconds": 20
+        }
+      ]
+    },
+    {
+      "id": "ps5_slim_nba2k26",
+      "name": "Sony PS5® Console Slim – NBA 2K26 Bundle",
+      "category": "gaming",
+      "brand": "Sony",
+      "emoji": "🎮",
+      "image_url": "https://m.media-amazon.com/images/I/61W7J4tLGvL.jpg",
+      "watches": [
+        {
+          "source": "amazon",
+          "url": "https://www.amazon.in/hz/wishlist/ls/1TKJ9EPWU9E0A",
+          "asin": "1TKJ9EPWU9E0A",
+          "poll_seconds": 20
+        }
+      ]
+    },
+    {
+      "id": "ps5_slim_base",
+      "name": "Sony PlayStation5 Gaming Console (Slim)",
+      "category": "gaming",
+      "brand": "Sony",
+      "emoji": "🎮",
+      "image_url": "https://m.media-amazon.com/images/I/61W7J4tLGvL.jpg",
+      "watches": [
+        {
+          "source": "amazon",
+          "url": "https://www.amazon.in/hz/wishlist/ls/1TKJ9EPWU9E0A",
+          "asin": "1TKJ9EPWU9E0A",
+          "poll_seconds": 20
+        }
+      ]
+    },
+    {
+      "id": "ps5_slim_madden25",
+      "name": "Sony PS5® Console Slim - Madden 25 Bundle",
+      "category": "gaming",
+      "brand": "Sony",
+      "emoji": "🎮",
+      "image_url": "https://m.media-amazon.com/images/I/61W7J4tLGvL.jpg",
+      "watches": [
+        {
+          "source": "amazon",
+          "url": "https://www.amazon.in/hz/wishlist/ls/1TKJ9EPWU9E0A",
+          "asin": "1TKJ9EPWU9E0A",
+          "poll_seconds": 20
+        }
+      ]
+    },
+    {
+      "id": "ps5_slim_nhl25",
+      "name": "Sony PS5® Console Slim - EA SPORTS NHL 25 Bundle",
+      "category": "gaming",
+      "brand": "Sony",
+      "emoji": "🎮",
+      "image_url": "https://m.media-amazon.com/images/I/61W7J4tLGvL.jpg",
+      "watches": [
+        {
+          "source": "amazon",
+          "url": "https://www.amazon.in/hz/wishlist/ls/1TKJ9EPWU9E0A",
+          "asin": "1TKJ9EPWU9E0A",
+          "poll_seconds": 20
+        }
+      ]
+    }
+  ]
+}

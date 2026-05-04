@@ -6,6 +6,10 @@ platform:
   log_json: false
   config_reload_seconds: 60
 
+# Admin emails — users registering with these emails automatically get admin role
+admin_emails:
+  - shri30yans@gmail.com
+
 defaults:
   poll_seconds: 60
   alerts:
@@ -13,8 +17,7 @@ defaults:
       channels: [gaming_alerts]
 
 # Stock products live in the DB (catalog_products, catalog_watches, catalog_product_alerts).
-# Optional one-off seed from a YAML file that still defines products: (not this file):
-#   python scripts/import_catalog_from_yaml.py --config path/to/seed.yaml
+# Use backfill_products.py to one-time import from products.json
 products: []
 
 channels:
