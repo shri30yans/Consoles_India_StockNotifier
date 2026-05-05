@@ -217,7 +217,7 @@ async def run_stock_and_deals_workers(
     tasks = [
         asyncio.create_task(
             StockRunner(
-                get_merged,
+                load_platform_config,
                 bus,
                 catalog_repo,
                 config_repo=config_repo,
