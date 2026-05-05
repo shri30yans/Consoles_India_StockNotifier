@@ -1152,7 +1152,7 @@ function WatchRowEditor({
         >
           {editable ? "Save" : "Save override"}
         </Button>
-        {editable ? (
+        {editable && (
           <>
             <Button
               type="button"

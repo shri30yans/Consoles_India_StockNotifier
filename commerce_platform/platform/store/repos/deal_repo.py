@@ -282,12 +282,11 @@ class DealRepo:
                 """
                 SELECT * FROM deals
                 WHERE admin_status IS NULL
-                AND (created_at > NOW() - INTERVAL '%d minutes'
-                     OR last_confirmed_at > NOW() - INTERVAL '%d minutes')
+                AND (created_at > NOW() - MAKE_INTERVAL(mins := $1)
+                     OR last_confirmed_at > NOW() - MAKE_INTERVAL(mins := $1))
                 ORDER BY score ASC, created_at DESC
                 LIMIT 100
                 """,
-                minutes,
                 minutes,
             )
         return [self._row_to_dealrow(row) for row in rows]

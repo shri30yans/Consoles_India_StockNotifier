@@ -126,7 +126,7 @@ async def run_stock_and_deals_workers(
         try:
             while True:
                 merged = await get_merged()
-                for source in merged.platform.sources:
+                for source in merged.platform_sources:
                     # Only process deal sources
                     if not any(source.type.startswith(t) for t in ["amazon_deals", "flipkart_deals", "ajio_deals", "myntra_deals"]):
                         continue
@@ -174,7 +174,7 @@ async def run_stock_and_deals_workers(
         except asyncio.CancelledError:
             logger.info("Discovery loop stopped")
         finally:
-            await http_fetcher.stop()
+            await http_fetcher.close()
 
     async def curation_loop() -> None:
         """Autonomous curation agent evaluates deals and routes to admin."""
