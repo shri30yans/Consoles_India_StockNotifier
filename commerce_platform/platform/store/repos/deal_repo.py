@@ -259,7 +259,7 @@ class DealRepo:
                 UPDATE deals
                 SET is_active = false
                 WHERE is_active = true
-                AND last_confirmed_at < NOW() - INTERVAL '%d hours'
+                AND last_confirmed_at::TIMESTAMP < NOW() - MAKE_INTERVAL(hours := $1)
                 """,
                 older_than_hours,
             )
@@ -282,8 +282,8 @@ class DealRepo:
                 """
                 SELECT * FROM deals
                 WHERE admin_status IS NULL
-                AND (created_at > NOW() - MAKE_INTERVAL(mins := $1)
-                     OR last_confirmed_at > NOW() - MAKE_INTERVAL(mins := $1))
+                AND (created_at::TIMESTAMP > NOW() - MAKE_INTERVAL(mins := $1)
+                     OR last_confirmed_at::TIMESTAMP > NOW() - MAKE_INTERVAL(mins := $1))
                 ORDER BY score ASC, created_at DESC
                 LIMIT 100
                 """,

@@ -39,6 +39,19 @@ export async function ensureOk(r: Response): Promise<Response> {
   throw new ApiError(r.status, msg, r)
 }
 
+/** GET/POST JSON: fetch → {@link ensureOk} → `response.json()`. Pass `signal` for cancellation. */
+export async function apiJson<T>(path: string, opts: RequestInit = {}): Promise<T> {
+  const r = await api(path, opts)
+  await ensureOk(r)
+  return (await r.json()) as T
+}
+
+export function getErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof ApiError) return error.message
+  if (error instanceof Error && error.message) return error.message
+  return fallback
+}
+
 export async function readErrorMessage(r: Response): Promise<string> {
   try {
     const j: unknown = await r.json()

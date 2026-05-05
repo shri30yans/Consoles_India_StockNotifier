@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react"
-import { api } from "@/lib/api"
+import { apiJson } from "@/lib/api"
 import { PageShell } from "@/components/blocks/PageShell"
 import { LoadingSpinner } from "@/components/blocks/LoadingSpinner"
 import { PageHeader } from "@/components/blocks/PageHeader"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Select,
   SelectContent,
@@ -52,8 +52,8 @@ export function DealsPage() {
       if (minDiscountValue > 0) params.append("min_discount", minDiscountValue.toString())
       params.append("limit", "50")
 
-      const response = await api.get(`/deals?${params.toString()}`)
-      setDeals(response.data || [])
+      const data = await apiJson<Deal[]>(`/api/deals?${params.toString()}`)
+      setDeals(Array.isArray(data) ? data : [])
       setLastRefresh(new Date())
     } catch (error) {
       console.error("Failed to load deals:", error)

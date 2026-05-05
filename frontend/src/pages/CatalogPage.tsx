@@ -1,13 +1,15 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { Link } from "react-router-dom"
-import { ApiError, api, ensureOk } from "@/lib/api"
+import { apiJson } from "@/lib/api"
 import { BRAND_TAGLINE } from "@/lib/brand"
 import { formatShortDate } from "@/lib/format"
 import { useAuth } from "@/auth/AuthContext"
+import { FetchErrorPanel } from "@/components/blocks/FetchErrorPanel"
 import { PageShell } from "@/components/blocks/PageShell"
 import { PageHeader } from "@/components/blocks/PageHeader"
 import { EmptyState } from "@/components/blocks/EmptyState"
 import { LoadingSpinner } from "@/components/blocks/LoadingSpinner"
+import { useRemoteQuery } from "@/hooks/useRemoteQuery"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -54,32 +56,18 @@ export function CatalogPage() {
   const { me } = useAuth()
   const [sort, setSort] = useState("updated")
   const [searchQuery, setSearchQuery] = useState("")
-  const [items, setItems] = useState<Product[] | null>(null)
-  const [fetchError, setFetchError] = useState<string | null>(null)
-  const [reloadToken, setReloadToken] = useState(0)
   const addProductTo = me ? "/request" : "/login?next=%2Frequest"
 
-  useEffect(() => {
-    let c = false
-    setFetchError(null)
-    setItems(null)
-    void (async () => {
-      try {
-        const r = await api(`/api/products?sort=${encodeURIComponent(sort)}`)
-        await ensureOk(r)
-        if (c) return
-        setItems(parseProductList(await r.json()))
-      } catch (e) {
-        if (c) return
-        setFetchError(e instanceof ApiError ? e.message : "Failed to load products")
-      }
-    })()
-    return () => {
-      c = true
-    }
-  }, [sort, reloadToken])
+  const { query, retry } = useRemoteQuery(
+    `catalog:${sort}`,
+    async (signal) =>
+      parseProductList(
+        await apiJson<unknown>(`/api/products?sort=${encodeURIComponent(sort)}`, { signal }),
+      ),
+    { fallbackMessage: "Failed to load products" },
+  )
 
-  if (items === null && fetchError === null) {
+  if (query.status === "loading") {
     return (
       <PageShell>
         <div className="flex justify-center py-16">
@@ -89,36 +77,27 @@ export function CatalogPage() {
     )
   }
 
-  if (fetchError) {
+  if (query.status === "error") {
     return (
       <PageShell className="space-y-4">
         <PageHeader title="Live Availability" description={BRAND_TAGLINE} />
-        <div className="rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm">
-          <p className="font-medium text-destructive">Couldn&apos;t load products</p>
-          <p className="mt-1 text-muted-foreground">{fetchError}</p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              onClick={() => {
-                setFetchError(null)
-                setReloadToken((t) => t + 1)
-              }}
-            >
-              Try again
-            </Button>
+        <FetchErrorPanel
+          title={"Couldn't load products"}
+          message={query.message}
+          onRetry={retry}
+          actions={
             <Button size="sm" variant="outline" asChild>
               <Link to="/">Back to home</Link>
             </Button>
-          </div>
-        </div>
+          }
+        />
       </PageShell>
     )
   }
 
-  if (items === null) return null
+  if (query.status !== "success") return null
 
+  const items = query.data
   const searchLower = searchQuery.toLowerCase()
   const filteredItems = searchQuery
     ? items.filter((p) => p.name.toLowerCase().includes(searchLower))
