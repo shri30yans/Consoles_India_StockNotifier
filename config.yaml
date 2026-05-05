@@ -2,7 +2,7 @@ platform:
   store:
     # optional URI; default is DATABASE_URL from .env (Supabase session pooler recommended on IPv4)
     dsn: null
-  log_level: DEBUG
+  log_level: INFO
   log_json: false
   config_reload_seconds: 60
 
@@ -44,11 +44,12 @@ channels:
       chat_id: env:TELEGRAM_ADMIN_CHAT
 
 platform_sources:
-  - type: amazon_wishlist
-    url: https://www.amazon.in/hz/wishlist/ls/1TKJ9EPWU9E0A
-    channels: [gaming_alerts]
-    poll_seconds: 20
-    category: gaming
+  # Disabled: amazon_wishlist (verbose logs, limited usefulness)
+  # - type: amazon_wishlist
+  #   url: https://www.amazon.in/hz/wishlist/ls/1TKJ9EPWU9E0A
+  #   channels: [gaming_alerts]
+  #   poll_seconds: 20
+  #   category: gaming
 
   - type: amazon_deals
     poll_seconds: 3600
@@ -67,21 +68,24 @@ platform_sources:
       - https://www.flipkart.com/offers/deals-today
     category: tech
 
-  - type: ajio_deals
-    poll_seconds: 3600
-    minimum_discount_pct: 0.15
-    max_links_per_seed: 30
-    seed_urls:
-      - https://www.ajio.com/s/sale
-    category: tech
-
-  - type: myntra_deals
-    poll_seconds: 3600
-    minimum_discount_pct: 0.15
-    max_links_per_seed: 30
-    seed_urls:
-      - https://www.myntra.com/offers
-    category: tech
+  # Disabled: ajio_deals, myntra_deals (require Playwright for JS rendering)
+  # Playwright doesn't work on Windows due to asyncio subprocess limitations.
+  # Re-enable on Linux/macOS or when Playwright support improves.
+  # - type: ajio_deals
+  #   poll_seconds: 3600
+  #   minimum_discount_pct: 0.15
+  #   max_links_per_seed: 30
+  #   seed_urls:
+  #     - https://www.ajio.com/s/sale
+  #   category: tech
+  #
+  # - type: myntra_deals
+  #   poll_seconds: 3600
+  #   minimum_discount_pct: 0.15
+  #   max_links_per_seed: 30
+  #   seed_urls:
+  #     - https://www.myntra.com/offers
+  #   category: tech
 
 stock:
   fetch:
