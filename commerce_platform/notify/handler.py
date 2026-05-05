@@ -10,6 +10,11 @@ from commerce_platform.platform.notify.router import ChannelRouter
 
 logger = logging.getLogger(__name__)
 
+# Notification rule types (transformed from Rule types during RuleMatch creation)
+NOTIF_TYPE_STOCK = "stock"
+NOTIF_TYPE_PRICE = "price"
+NOTIF_TYPE_DEAL = "deal"
+
 
 class NotificationHandler:
     """Handles rule matches → format → send to channels."""
@@ -44,7 +49,7 @@ class NotificationHandler:
         obs = match.observation
         discount = match.discount_percent()
 
-        if match.rule_type == "stock":
+        if match.rule_type == NOTIF_TYPE_STOCK:
             status = "✅ IN STOCK" if obs.in_stock else "❌ OUT OF STOCK"
             title = f"{obs.product_title or obs.product_id}: {status}"
             body = await self._format_body(
@@ -56,7 +61,7 @@ class NotificationHandler:
             )
             price_rupees = obs.price_paise / 100 if obs.price_paise > 0 else None
 
-        elif match.rule_type == "price":
+        elif match.rule_type == NOTIF_TYPE_PRICE:
             price_rupees = obs.price_paise / 100
             title = f"{obs.product_title or obs.product_id}: ₹{price_rupees:,.0f}"
             threshold = match.context.get("threshold_inr")
@@ -69,7 +74,7 @@ class NotificationHandler:
                 url=obs.product_url,
             )
 
-        elif match.rule_type == "deal":
+        elif match.rule_type == NOTIF_TYPE_DEAL:
             price_rupees = obs.price_paise / 100
             discount_pct = match.context.get("discount_pct", 0)
             title = f"{obs.product_title or obs.product_id}: {discount_pct:.0%} off · ₹{price_rupees:,.0f}"

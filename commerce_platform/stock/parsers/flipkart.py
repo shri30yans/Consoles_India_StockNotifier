@@ -16,14 +16,20 @@ _FLIPKART_TITLE_SUFFIX = re.compile(
     re.IGNORECASE,
 )
 
+# CSS selectors for buttons and prices (fragile to layout changes — update if Flipkart redesigns)
+_ADD_TO_CART_BUTTON_CLASSES = "_2KpZ6l _2U9uOA _3v1-ww"
+_BUY_NOW_BUTTON_CLASSES = "_2KpZ6l _2U9uOA ihZ75k _3AWRsL"
+_PRICE_CLASSES = ["_30jeq3", "_16Jk6d", "Nx9bqj"]
+_MRP_CLASSES = ["_3I9_wc", "yRaY8j"]
+
 
 def parse(page_html: str, url: str) -> ParseSignal:
     soup = BeautifulSoup(str(page_html), "html.parser")
     listing = _flipkart_listing_snapshot(soup)
 
     # --- Stock buttons ---
-    add_to_cart = soup.find("button", class_="_2KpZ6l _2U9uOA _3v1-ww")
-    buy_now = soup.find("button", class_="_2KpZ6l _2U9uOA ihZ75k _3AWRsL")
+    add_to_cart = soup.find("button", class_=_ADD_TO_CART_BUTTON_CLASSES)
+    buy_now = soup.find("button", class_=_BUY_NOW_BUTTON_CLASSES)
 
     if add_to_cart is not None:
         in_stock = True
@@ -61,8 +67,8 @@ def parse(page_html: str, url: str) -> ParseSignal:
 
 
 def _extract_price(soup: BeautifulSoup) -> float | None:
-    # Flipkart price is in ._30jeq3 or ._16Jk6d
-    for cls in ["_30jeq3", "_16Jk6d", "Nx9bqj"]:
+    """Extract price from Flipkart product page."""
+    for cls in _PRICE_CLASSES:
         el = soup.find(class_=cls)
         if el:
             p = _rupee_to_float(el.get_text())
@@ -72,7 +78,8 @@ def _extract_price(soup: BeautifulSoup) -> float | None:
 
 
 def _extract_mrp(soup: BeautifulSoup) -> float | None:
-    for cls in ["_3I9_wc", "yRaY8j"]:
+    """Extract MRP from Flipkart product page."""
+    for cls in _MRP_CLASSES:
         el = soup.find(class_=cls)
         if el:
             p = _rupee_to_float(el.get_text())

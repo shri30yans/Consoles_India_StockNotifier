@@ -30,14 +30,17 @@ def _health_age_seconds(
     return "stale", age
 
 
+# Mapping of source types to status keys (excludes stock/deals which are processed as watches)
+_SOURCE_TYPE_TO_STATUS_KEY = {
+    "desidime": "aggregator:desidime",
+    "reddit": "aggregator:reddit",
+    "amazon_wishlist": "platform:amazon_wishlist",
+}
+
+
 def _source_key_for_platform_source(src: PlatformSourceConfig) -> str | None:
-    if src.type == "desidime":
-        return "aggregator:desidime"
-    if src.type == "reddit":
-        return "aggregator:reddit"
-    if src.type == "amazon_wishlist":
-        return "platform:amazon_wishlist"
-    return None
+    """Map platform source type to status monitoring key."""
+    return _SOURCE_TYPE_TO_STATUS_KEY.get(src.type)
 
 
 async def build_status_payload(yaml_path: str | Path, db: Database) -> dict:

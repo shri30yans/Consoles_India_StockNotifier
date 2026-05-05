@@ -5,11 +5,17 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from typing import Literal
 
 from commerce_platform.platform.events.observation import PriceObservation, RuleMatch
 from commerce_platform.platform.store.repos import CatalogRepo, PriceRepo, StockRepo
 
 logger = logging.getLogger(__name__)
+
+# Rule type constants for type-safe rule evaluation
+RULE_TYPE_STOCK = "stock"
+RULE_TYPE_PRICE_BELOW = "price_below"
+RULE_TYPE_DISCOUNT_PCT = "discount_pct"
 
 
 @dataclass(frozen=True)
@@ -18,7 +24,7 @@ class Rule:
 
     rule_id: str
     product_id: str
-    rule_type: str  # "stock", "price_below", "discount_pct"
+    rule_type: Literal["stock", "price_below", "discount_pct"]
     threshold_inr: float | None
     threshold_pct: float | None
     channels: list[str]
@@ -74,11 +80,11 @@ class RuleEngine:
                 continue
 
             # Evaluate rule type
-            if rule.rule_type == "stock":
+            if rule.rule_type == RULE_TYPE_STOCK:
                 match = await self._evaluate_stock_rule(observation, rule)
-            elif rule.rule_type == "price_below":
+            elif rule.rule_type == RULE_TYPE_PRICE_BELOW:
                 match = await self._evaluate_price_below_rule(observation, rule)
-            elif rule.rule_type == "discount_pct":
+            elif rule.rule_type == RULE_TYPE_DISCOUNT_PCT:
                 match = await self._evaluate_discount_rule(observation, rule)
             else:
                 logger.warning("Unknown rule type: %s", rule.rule_type)
