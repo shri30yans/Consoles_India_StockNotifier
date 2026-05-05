@@ -13,8 +13,12 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from commerce_platform.platform.store.db import Database
+from commerce_platform.deals.agent_gateway import AgentGateway
+from commerce_platform.platform.events.bus import EventBus
 from commerce_platform.platform.store.repos import (
     CatalogRepo,
+    ConfigSettingsRepo,
+    DealRepo,
     PriceRepo,
     StockRepo,
     TrackingRepo,
@@ -25,6 +29,7 @@ from commerce_platform.web.config import WebConfig
 from commerce_platform.web.rate_limit import RateLimiter
 from commerce_platform.web.routes import admin as admin_routes
 from commerce_platform.web.routes import auth as auth_routes
+from commerce_platform.web.routes import deals as deals_routes
 from commerce_platform.web.routes import health as health_routes
 from commerce_platform.web.routes import products as products_routes
 from commerce_platform.web.routes import tracking as tracking_routes
@@ -52,6 +57,9 @@ def create_app(
         app.state.user_repo = UserRepo(connection.pool)
         app.state.tracking_repo = TrackingRepo(connection.pool)
         app.state.catalog_repo = CatalogRepo(connection.pool)
+        app.state.config_repo = ConfigSettingsRepo(connection.pool)
+        app.state.deal_repo = DealRepo(connection.pool)
+        app.state.event_bus = EventBus()
         await maybe_bootstrap_admin(connection, web)
         logger.info("Web API using DB %s", connection.describe_for_logs())
 
@@ -90,10 +98,25 @@ def create_app(
     api = "/api"
     app.include_router(health_routes.router, prefix=api)
     app.include_router(products_routes.router, prefix=api)
+    app.include_router(deals_routes.router, prefix=api)
     app.include_router(auth_routes.router, prefix=api)
     app.include_router(auth_routes.me_router, prefix=api)
     app.include_router(tracking_routes.router, prefix=api)
     app.include_router(admin_routes.router, prefix=api)
+
+    # Agent gateway (independent agent communication)
+    def register_agent_gateway():
+        agent_gateway = AgentGateway(
+            app.state.deal_repo,
+            app.state.config_repo,
+            app.state.event_bus,
+        )
+        app.include_router(agent_gateway.create_router(), prefix=api)
+
+    # Register after lifespan starts (DB available)
+    @app.on_event("startup")
+    async def startup():
+        register_agent_gateway()
 
     static_dir = Path(__file__).resolve().parent / "static"
     if static_dir.is_dir():

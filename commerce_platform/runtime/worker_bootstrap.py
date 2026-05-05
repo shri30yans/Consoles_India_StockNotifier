@@ -6,14 +6,20 @@ import asyncio
 import logging
 from pathlib import Path
 
+from commerce_platform.agents.curator_agent import CuratorAgent
+from commerce_platform.agents.discovery_agent import DealDiscoveryAgent
+from commerce_platform.agents.parser_fixer_agent import ParserFixerAgent
+from commerce_platform.deals.scorer import DealScorer
 from commerce_platform.notify.handler import NotificationHandler
+from commerce_platform.platform.notify.affiliate import AffiliateRewriter
 from commerce_platform.platform.notify.router import ChannelRouter
 from commerce_platform.platform.config.merge import load_merged_platform_config
 from commerce_platform.platform.config.schema import PlatformConfig
 from commerce_platform.platform.events.bus import EventBus
 from commerce_platform.platform.events.observation import PriceObservation, RuleMatch
+from commerce_platform.platform.fetch.factory import create_http_fetcher, create_playwright_fetcher
 from commerce_platform.platform.store.db import Database
-from commerce_platform.platform.store.repos import CatalogRepo, PriceRepo, StockRepo
+from commerce_platform.platform.store.repos import CatalogRepo, ConfigSettingsRepo, DealRepo, PriceRepo, StockRepo
 from commerce_platform.platform.store.repos.price_repo import PriceSnapshot
 from commerce_platform.rules.engine import RuleEngine
 from commerce_platform.stock.runner import StockRunner
@@ -30,6 +36,8 @@ async def run_stock_and_deals_workers(
     """Run unified notification pipeline. ``db`` must already be open."""
     path = Path(yaml_path)
     catalog_repo = CatalogRepo(db.pool)
+    config_repo = ConfigSettingsRepo(db.pool)
+    deal_repo = DealRepo(db.pool)
     price_repo = PriceRepo(db.pool)
     stock_repo = StockRepo(db.pool)
     bus = EventBus()
@@ -37,7 +45,8 @@ async def run_stock_and_deals_workers(
 
     # Core services
     rule_engine = RuleEngine(catalog_repo, price_repo, stock_repo)
-    notification_handler = NotificationHandler(router)
+    affiliate_rewriter = AffiliateRewriter(config_repo)
+    notification_handler = NotificationHandler(router, affiliate_rewriter=affiliate_rewriter)
 
     async def get_merged():
         return await load_merged_platform_config(path, catalog_repo)
@@ -102,10 +111,122 @@ async def run_stock_and_deals_workers(
             reload_task.cancel()
             await asyncio.gather(reload_task, return_exceptions=True)
 
+    async def discovery_loop() -> None:
+        """Autonomous discovery agents poll retailer deal pages."""
+        http_fetcher = create_http_fetcher(config.stock.fetch)
+        await http_fetcher.start()
+        pw_fetcher = create_playwright_fetcher(config.stock.fetch)
+
+        deal_scorer = DealScorer(
+            config_repo,
+            price_repo,
+            config.deals.scoring.weights,
+        )
+
+        try:
+            while True:
+                merged = await get_merged()
+                for source in merged.platform.sources:
+                    # Only process deal sources
+                    if not any(source.type.startswith(t) for t in ["amazon_deals", "flipkart_deals", "ajio_deals", "myntra_deals"]):
+                        continue
+
+                    if not source.seed_urls:
+                        logger.warning("Deal source %s has no seed URLs", source.type)
+                        continue
+
+                    # Determine fetcher based on retailer
+                    use_playwright = source.type in ["ajio_deals", "myntra_deals"]
+                    fetcher = pw_fetcher if use_playwright else http_fetcher
+
+                    agent = DealDiscoveryAgent(
+                        source_type=source.type,
+                        seed_urls=source.seed_urls,
+                        minimum_discount_pct=source.minimum_discount_pct or 0.0,
+                        fetcher=fetcher,
+                        catalog_repo=catalog_repo,
+                        deal_repo=deal_repo,
+                        deal_scorer=deal_scorer,
+                        bus=bus,
+                        config_repo=config_repo,
+                    )
+
+                    try:
+                        result = await agent.discover()
+                        logger.info(
+                            "Discovery: %s — found=%d qualified=%d created=%d updated=%d errors=%d",
+                            source.type,
+                            result.items_found,
+                            result.items_qualified,
+                            result.deals_created,
+                            result.deals_updated,
+                            len(result.errors),
+                        )
+                        if result.parser_suggestion:
+                            logger.warning("Parser suggestion for %s: %s", source.type, result.parser_suggestion)
+                    except Exception:
+                        logger.exception("Discovery failed for source %s", source.type)
+
+                # Sleep until next poll
+                poll_interval = max(60, config.platform.config_reload_seconds)
+                await asyncio.sleep(poll_interval)
+
+        except asyncio.CancelledError:
+            logger.info("Discovery loop stopped")
+        finally:
+            await http_fetcher.stop()
+
+    async def curation_loop() -> None:
+        """Autonomous curation agent evaluates deals and routes to admin."""
+        curator = CuratorAgent(deal_repo, config_repo, router)
+
+        try:
+            while True:
+                try:
+                    result = await curator.curate()
+                    logger.info(
+                        "Curation: pending=%d sent_to_admin=%d errors=%d",
+                        result.get("total_pending", 0),
+                        result.get("sent_to_admin", 0),
+                        len(result.get("errors", [])),
+                    )
+                    if result.get("errors"):
+                        for err in result.get("errors", []):
+                            logger.warning("Curation error: %s", err)
+                except Exception:
+                    logger.exception("Curation pass failed")
+
+                # Run curation every 5 minutes
+                await asyncio.sleep(300)
+
+        except asyncio.CancelledError:
+            logger.info("Curation loop stopped")
+
+    async def parser_fixer_loop() -> None:
+        """ParserFixerAgent listens for parser failures and auto-fixes."""
+        fixer = ParserFixerAgent(config_repo, bus)
+        try:
+            await fixer.run_continuous()
+        except asyncio.CancelledError:
+            logger.info("ParserFixerAgent stopped")
+
     # Create tasks
     tasks = [
-        asyncio.create_task(StockRunner(get_merged, bus, catalog_repo).run(), name="stock-runner"),
+        asyncio.create_task(
+            StockRunner(
+                get_merged,
+                bus,
+                catalog_repo,
+                config_repo=config_repo,
+                deal_repo=deal_repo,
+                price_repo=price_repo,
+            ).run(),
+            name="stock-runner",
+        ),
         asyncio.create_task(observation_processor(), name="observation-processor"),
+        asyncio.create_task(discovery_loop(), name="discovery-loop"),
+        asyncio.create_task(curation_loop(), name="curation-loop"),
+        asyncio.create_task(parser_fixer_loop(), name="parser-fixer"),
     ]
 
     try:

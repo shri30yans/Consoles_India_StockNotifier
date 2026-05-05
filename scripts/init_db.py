@@ -21,7 +21,6 @@ async def init_db(config_path: Path) -> None:
                 name TEXT NOT NULL,
                 brand TEXT,
                 category TEXT NOT NULL,
-                emoji TEXT,
                 colour INTEGER,
                 source_request_id INTEGER,
                 created_at TEXT NOT NULL,
@@ -113,6 +112,17 @@ async def init_db(config_path: Path) -> None:
             )
         """)
 
+        # app_users table
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS app_users (
+                id SERIAL PRIMARY KEY,
+                email TEXT NOT NULL UNIQUE,
+                password_hash TEXT NOT NULL,
+                role TEXT NOT NULL DEFAULT 'user',
+                created_at TEXT NOT NULL
+            )
+        """)
+
         # tracking_requests table
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS tracking_requests (
@@ -124,6 +134,68 @@ async def init_db(config_path: Path) -> None:
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL
             )
+        """)
+
+        # config_settings table — admin-editable config stored in DB (JSON values)
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS config_settings (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+        """)
+
+        # deals table — confirmed good deals (upsert semantics, not append-only)
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS deals (
+                id SERIAL PRIMARY KEY,
+                product_url TEXT NOT NULL UNIQUE,
+                product_id TEXT REFERENCES catalog_products(id),
+                retailer TEXT NOT NULL,
+                price_paise INTEGER NOT NULL,
+                mrp_paise INTEGER,
+                discount_pct FLOAT,
+                score FLOAT NOT NULL DEFAULT 0.0,
+                score_reasons TEXT NOT NULL DEFAULT '[]',
+                product_title TEXT,
+                image_url TEXT,
+                source TEXT NOT NULL,
+                is_active BOOLEAN NOT NULL DEFAULT true,
+                last_notified_at TEXT,
+                first_seen_at TEXT NOT NULL,
+                last_confirmed_at TEXT NOT NULL,
+                admin_status TEXT,
+                admin_reviewed_by INTEGER,
+                admin_reviewed_at TEXT,
+                admin_review_note TEXT,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        # Add approval tracking columns to existing deals table (if not already present)
+        try:
+            await conn.execute("""
+                ALTER TABLE deals
+                ADD COLUMN IF NOT EXISTS admin_status TEXT,
+                ADD COLUMN IF NOT EXISTS admin_reviewed_by INTEGER,
+                ADD COLUMN IF NOT EXISTS admin_reviewed_at TEXT,
+                ADD COLUMN IF NOT EXISTS admin_review_note TEXT
+            """)
+        except Exception:
+            pass  # Columns may already exist; ignore errors
+
+        # Indexes for deals table
+        await conn.execute("""
+            CREATE INDEX IF NOT EXISTS deals_active_score ON deals(is_active, score DESC)
+        """)
+        await conn.execute("""
+            CREATE INDEX IF NOT EXISTS deals_product_id ON deals(product_id, is_active)
+        """)
+        await conn.execute("""
+            CREATE INDEX IF NOT EXISTS deals_retailer ON deals(retailer, is_active)
+        """)
+        await conn.execute("""
+            CREATE INDEX IF NOT EXISTS deals_admin_status ON deals(admin_status, created_at DESC)
         """)
 
     await db.close()

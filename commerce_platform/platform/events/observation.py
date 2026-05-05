@@ -21,6 +21,7 @@ class PriceObservation:
     product_title: str | None = None  # "PS5 Console"
     offers: list[str] = field(default_factory=list)  # Special offers/codes
     raw_payload: dict = field(default_factory=dict)  # Store raw HTML/JSON for audit
+    context: dict = field(default_factory=dict)  # Source metadata: deal_score, reddit_score, etc.
 
     def __post_init__(self) -> None:
         """Validate observation."""

@@ -36,7 +36,6 @@ async def backfill_products(config_path: Path, json_path: Path) -> None:
                 name=product["name"],
                 brand=product.get("brand"),
                 category=product.get("category", "tech"),
-                emoji=product.get("emoji"),
                 colour=None,
                 image_url=product.get("image_url"),
             )

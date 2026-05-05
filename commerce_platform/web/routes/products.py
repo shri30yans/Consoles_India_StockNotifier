@@ -84,7 +84,6 @@ async def product_detail(
         "name": p.name,
         "brand": p.brand,
         "category": p.category,
-        "emoji": p.emoji,
         "colour": p.colour,
         "image_url": p.image_url,
         "watches": watches,

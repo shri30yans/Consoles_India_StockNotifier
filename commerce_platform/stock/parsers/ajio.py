@@ -13,25 +13,99 @@ from typing import Any
 
 from bs4 import BeautifulSoup
 
-from commerce_platform.stock.parsers.protocol import ParseSignal
+from commerce_platform.platform.product_name import coerce_product_name
+from commerce_platform.stock.parsers.json_ld_brand import brand_from_json_ld_object
+from commerce_platform.stock.parsers.protocol import ListingSnapshot, ParseSignal
 
 logger = logging.getLogger(__name__)
 
 
 def parse(page_html: str, url: str) -> ParseSignal:
     soup = BeautifulSoup(str(page_html), "html.parser")
+    listing = _ajio_listing_snapshot(soup)
 
     ld = _parse_json_ld_product(soup)
     if ld is not None:
         price, mrp, in_stock, method = ld
-        return ParseSignal(in_stock=in_stock, price_inr=price, mrp_inr=mrp, method=method)
+        return ParseSignal(in_stock=in_stock, price_inr=price, mrp_inr=mrp, method=method, listing=listing)
 
     dom = _dom_fallback(soup)
     if dom is not None:
-        return dom
+        return dom if listing is None else ParseSignal(
+            in_stock=dom.in_stock,
+            price_inr=dom.price_inr,
+            mrp_inr=dom.mrp_inr,
+            method=dom.method,
+            offers=dom.offers,
+            listing=listing,
+        )
 
     logger.warning("AJIO parse: no JSON-LD Product and no DOM fallback matched url=%s", url[:80])
-    return ParseSignal(in_stock=False, method="ajio_no_signals")
+    return ParseSignal(in_stock=False, method="ajio_no_signals", listing=listing)
+
+
+def _ajio_listing_snapshot(soup: BeautifulSoup) -> ListingSnapshot | None:
+    title = _ajio_title(soup)
+    brand = _ajio_brand(soup)
+    image_url = _ajio_image(soup)
+
+    if title:
+        title = coerce_product_name(title).strip() or None
+    if brand:
+        brand = coerce_product_name(brand).strip() or None
+
+    if not title and not brand and not image_url:
+        return None
+    return ListingSnapshot(title=title, brand=brand, image_url=image_url)
+
+
+def _meta_content(soup: BeautifulSoup, *, prop: str | None = None, name: str | None = None) -> str | None:
+    if prop:
+        meta = soup.find("meta", attrs={"property": prop})
+    elif name:
+        meta = soup.find("meta", attrs={"name": name})
+    else:
+        return None
+    if not meta:
+        return None
+    content = meta.get("content")
+    if isinstance(content, str) and content.strip():
+        return content.strip()
+    return None
+
+
+def _ajio_title(soup: BeautifulSoup) -> str | None:
+    og = _meta_content(soup, prop="og:title")
+    if og:
+        return og
+    title = soup.find("title")
+    if title:
+        txt = title.get_text(strip=True)
+        if txt:
+            return txt
+    return None
+
+
+def _ajio_image(soup: BeautifulSoup) -> str | None:
+    og = _meta_content(soup, prop="og:image")
+    if og and og.startswith("http"):
+        return og
+    return None
+
+
+def _ajio_brand(soup: BeautifulSoup) -> str | None:
+    for script in soup.find_all("script", type="application/ld+json"):
+        raw = (script.string or script.get_text() or "").strip()
+        if not raw:
+            continue
+        try:
+            data = json.loads(raw)
+        except json.JSONDecodeError:
+            continue
+        found = brand_from_json_ld_object(data)
+        if found:
+            return found
+    return None
 
 
 def _parse_json_ld_product(soup: BeautifulSoup) -> tuple[float | None, float | None, bool, str] | None:
@@ -76,7 +150,7 @@ def _offers_to_signal(
     """Extract selling price, optional MRP, and availability from schema.org offers."""
     price: float | None = None
     mrp: float | None = None
-    in_stock = True
+    in_stock = False
     method = "offers"
 
     def _num(x: Any) -> float | None:

@@ -21,18 +21,22 @@ def merge_products(base: PlatformConfig, overlays: list[ProductConfig]) -> list[
             by_id[o.id] = o
             continue
         cur = by_id[o.id]
-        urls = {w.url for w in cur.watches}
+        by_url = {w.url: w for w in cur.watches}
         new_watches = list(cur.watches)
         for w in o.watches:
-            if w.url not in urls:
-                new_watches.append(w)
-                urls.add(w.url)
+            if w.url in by_url:
+                idx = next((i for i, existing in enumerate(new_watches) if existing.url == w.url), -1)
+                if idx >= 0:
+                    new_watches[idx] = w
+                by_url[w.url] = w
+                continue
+            new_watches.append(w)
+            by_url[w.url] = w
         updated = cur.model_copy(
             update={
                 "name": o.name,
                 "brand": o.brand,
                 "category": o.category,
-                "emoji": o.emoji,
                 "colour": o.colour,
                 "image_url": o.image_url or cur.image_url,
                 "watches": new_watches,

@@ -12,7 +12,10 @@ from commerce_platform.platform.config.schema import PlatformConfig, ProductConf
 from commerce_platform.platform.events.bus import EventBus
 from commerce_platform.platform.fetch.factory import create_http_fetcher, create_playwright_fetcher
 from commerce_platform.platform.fetch.protocol import HtmlFetcher
-from commerce_platform.platform.store.repos import CatalogRepo
+from commerce_platform.platform.store.repos import CatalogRepo, ConfigSettingsRepo, DealRepo, PriceRepo
+from commerce_platform.deals.scorer import DealScorer
+from commerce_platform.stock.deal_discovery_watcher import DealDiscoveryWatcher
+from commerce_platform.stock.deals_source_watcher import DealsSourceWatcher
 from commerce_platform.stock.poller import Poller
 from commerce_platform.stock.wishlist_watcher import WishlistWatcher
 
@@ -25,12 +28,19 @@ class StockRunner:
         get_config: Callable[[], Awaitable[PlatformConfig]],
         bus: EventBus,
         catalog_repo: CatalogRepo,
+        config_repo: ConfigSettingsRepo | None = None,
+        deal_repo: DealRepo | None = None,
+        price_repo: PriceRepo | None = None,
     ) -> None:
         self._get_config = get_config
         self._bus = bus
         self._catalog_repo = catalog_repo
+        self._config_repo = config_repo
+        self._deal_repo = deal_repo
+        self._price_repo = price_repo
         self._http_sem: asyncio.Semaphore | None = None
         self._pw_sem: asyncio.Semaphore | None = None
+        self._deal_scorer: DealScorer | None = None
 
     async def run(self) -> None:
         http_fetcher = None
@@ -44,6 +54,14 @@ class StockRunner:
                 http_fetcher = create_http_fetcher(config.stock.fetch)
                 await http_fetcher.start()
                 pw_fetcher = create_playwright_fetcher(config.stock.fetch)
+
+            # Initialize deal scorer if repos available
+            if self._deal_scorer is None and self._config_repo and self._price_repo:
+                self._deal_scorer = DealScorer(
+                    self._config_repo,
+                    self._price_repo,
+                    config.deals.scoring.weights,
+                )
 
             self._http_sem = asyncio.Semaphore(config.stock.fetch.max_concurrent_requests)
             self._pw_sem = asyncio.Semaphore(config.stock.fetch.max_concurrent_playwright)
@@ -74,6 +92,37 @@ class StockRunner:
                             source,
                             http_fetcher,
                             self._catalog_repo,
+                            self._bus,
+                        ).run()
+                    )
+                elif source.type in {
+                    "amazon_serp",
+                    "flipkart_serp",
+                    "ajio_serp",
+                    "amazon_deals",
+                    "flipkart_deals",
+                    "ajio_deals",
+                    "myntra_deals",
+                }:
+                    logger.info(
+                        "Registering %s discovery source: poll_every=%ds min_discount=%.0f%%",
+                        source.type,
+                        source.poll_seconds,
+                        (source.minimum_discount_pct or 0.0) * 100,
+                    )
+                    if not self._deal_scorer or not self._deal_repo:
+                        logger.error(
+                            "Cannot register deal source %s: deal_scorer or deal_repo not available",
+                            source.type,
+                        )
+                        continue
+                    tasks.append(
+                        DealDiscoveryWatcher(
+                            source,
+                            http_fetcher,
+                            self._catalog_repo,
+                            self._deal_repo,
+                            self._deal_scorer,
                             self._bus,
                         ).run()
                     )

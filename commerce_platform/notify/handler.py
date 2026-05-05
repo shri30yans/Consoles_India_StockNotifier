@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 
 from commerce_platform.platform.events.observation import Notification, RuleMatch
+from commerce_platform.platform.notify.affiliate import AffiliateRewriter
 from commerce_platform.platform.notify.router import ChannelRouter
 
 logger = logging.getLogger(__name__)
@@ -13,12 +14,13 @@ logger = logging.getLogger(__name__)
 class NotificationHandler:
     """Handles rule matches → format → send to channels."""
 
-    def __init__(self, router: ChannelRouter) -> None:
+    def __init__(self, router: ChannelRouter, affiliate_rewriter: AffiliateRewriter | None = None) -> None:
         self._router = router
+        self._affiliate = affiliate_rewriter
 
     async def handle_rule_match(self, match: RuleMatch) -> None:
         """Process a single rule match and send notification."""
-        notification = self._format_notification(match)
+        notification = await self._format_notification(match)
 
         logger.info(
             "Sending notification: product=%s rule=%s channels=%s",
@@ -37,7 +39,7 @@ class NotificationHandler:
                     e,
                 )
 
-    def _format_notification(self, match: RuleMatch) -> Notification:
+    async def _format_notification(self, match: RuleMatch) -> Notification:
         """Create markdown notification from rule match."""
         obs = match.observation
         discount = match.discount_percent()
@@ -45,7 +47,7 @@ class NotificationHandler:
         if match.rule_type == "stock":
             status = "✅ IN STOCK" if obs.in_stock else "❌ OUT OF STOCK"
             title = f"{obs.product_title or obs.product_id}: {status}"
-            body = self._format_body(
+            body = await self._format_body(
                 title=title,
                 product_id=obs.product_id,
                 retailer=obs.retailer,
@@ -58,7 +60,7 @@ class NotificationHandler:
             price_rupees = obs.price_paise / 100
             title = f"{obs.product_title or obs.product_id}: ₹{price_rupees:,.0f}"
             threshold = match.context.get("threshold_inr")
-            body = self._format_body(
+            body = await self._format_body(
                 title=title,
                 product_id=obs.product_id,
                 retailer=obs.retailer,
@@ -71,7 +73,7 @@ class NotificationHandler:
             price_rupees = obs.price_paise / 100
             discount_pct = match.context.get("discount_pct", 0)
             title = f"{obs.product_title or obs.product_id}: {discount_pct:.0%} off · ₹{price_rupees:,.0f}"
-            body = self._format_body(
+            body = await self._format_body(
                 title=title,
                 product_id=obs.product_id,
                 retailer=obs.retailer,
@@ -99,7 +101,7 @@ class NotificationHandler:
             product_url=obs.product_url,
         )
 
-    def _format_body(
+    async def _format_body(
         self,
         title: str,
         product_id: str,
@@ -124,6 +126,9 @@ class NotificationHandler:
         lines.append(f"**Retailer:** {retailer}")
 
         if url:
+            # Rewrite URL with affiliate tag if available
+            if self._affiliate:
+                url = await self._affiliate.rewrite(url, retailer) or url
             lines.append(f"[View on {retailer.title()}]({url})")
 
         return "\n".join(lines)

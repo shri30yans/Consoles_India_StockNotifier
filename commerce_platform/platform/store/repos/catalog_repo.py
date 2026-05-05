@@ -15,7 +15,7 @@ from commerce_platform.platform.config.schema import (
     ProductConfig,
     WatchConfig,
 )
-from commerce_platform.platform.text_normalization import normalize_product_name
+from commerce_platform.platform.product_name import coerce_product_name
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +43,7 @@ class CatalogRepo:
         async with self._pool.acquire() as conn:
             product_rows = await conn.fetch(
                 """
-                SELECT id, name, brand, category, emoji, colour, source_request_id, created_at, image_url
+                SELECT id, name, brand, category, colour, source_request_id, created_at, image_url
                 FROM catalog_products
                 ORDER BY created_at
                 """
@@ -54,7 +54,6 @@ class CatalogRepo:
                     name=row["name"],
                     brand=row["brand"],
                     category=row["category"],
-                    emoji=row["emoji"],
                     colour=row["colour"],
                     image_url=row["image_url"],
                     watches=[],
@@ -125,31 +124,6 @@ class CatalogRepo:
             rows = await conn.fetch("SELECT id FROM catalog_products")
         return {str(r["id"]) for r in rows}
 
-    async def normalize_stored_product_names(self) -> list[tuple[str, str, str]]:
-        """Apply normalize_product_name to every catalog_products row and persist changes.
-
-        Returns ``[(product_id, old_name, new_name), ...]`` for rows that were updated.
-        """
-        async with self._pool.acquire() as conn:
-            rows = await conn.fetch("SELECT id, name FROM catalog_products ORDER BY id")
-        updates: list[tuple[str, str, str]] = []
-        for row in rows:
-            old = row["name"]
-            new = normalize_product_name(old)
-            if new != old:
-                updates.append((str(row["id"]), old, new))
-        if not updates:
-            return []
-        async with self._pool.acquire() as conn:
-            async with conn.transaction():
-                for pid, _old, new in updates:
-                    await conn.execute(
-                        "UPDATE catalog_products SET name = $1 WHERE id = $2",
-                        new,
-                        pid,
-                    )
-        return updates
-
     async def list_watches_for_product(self, product_id: str) -> list[WatchRow]:
         async with self._pool.acquire() as conn:
             rows = await conn.fetch(
@@ -187,6 +161,20 @@ class CatalogRepo:
                 """,
                 retailer,
                 sku,
+            )
+        return row
+
+    async def get_product_id_by_watch_url(self, watch_url: str) -> str | None:
+        """Resolve product_id from an exact watch URL."""
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchval(
+                """
+                SELECT product_id
+                FROM catalog_watches
+                WHERE url = $1
+                LIMIT 1
+                """,
+                watch_url,
             )
         return row
 
@@ -302,34 +290,76 @@ class CatalogRepo:
         name: str,
         brand: str | None,
         category: str,
-        emoji: str | None,
         colour: int | None,
         image_url: str | None,
     ) -> None:
-        name = normalize_product_name(name)
+        name = coerce_product_name(name)
         now = datetime.now(timezone.utc).isoformat()
         async with self._pool.acquire() as conn:
             await conn.execute(
                 """
-                INSERT INTO catalog_products(id, name, brand, category, emoji, colour, source_request_id, created_at, image_url)
-                VALUES ($1, $2, $3, $4, $5, $6, NULL, $7, $8)
+                INSERT INTO catalog_products(id, name, brand, category, colour, source_request_id, created_at, image_url)
+                VALUES ($1, $2, $3, $4, $5, NULL, $6, $7)
                 ON CONFLICT (id) DO UPDATE SET
                     name = $2,
                     brand = $3,
                     category = $4,
-                    emoji = $5,
-                    colour = $6,
-                    image_url = COALESCE($8, catalog_products.image_url)
+                    colour = $5,
+                    image_url = COALESCE($7, catalog_products.image_url)
                 """,
                 product_id,
                 name,
                 brand,
                 category,
-                emoji,
                 colour,
                 now,
                 image_url,
             )
+
+    async def upsert_watch_by_product_url(
+        self,
+        product_id: str,
+        source: str,
+        url: str,
+        asin: str | None,
+        affiliate_tag: str | None,
+        poll_seconds: int | None,
+    ) -> int:
+        async with self._pool.acquire() as conn:
+            existing = await conn.fetchval(
+                """
+                SELECT id
+                FROM catalog_watches
+                WHERE product_id = $1 AND url = $2
+                ORDER BY id DESC
+                LIMIT 1
+                """,
+                product_id,
+                url,
+            )
+            if existing is not None:
+                await conn.execute(
+                    """
+                    UPDATE catalog_watches
+                    SET source = $1, asin = $2, affiliate_tag = $3, poll_seconds = $4
+                    WHERE id = $5
+                    """,
+                    source,
+                    asin,
+                    affiliate_tag,
+                    poll_seconds,
+                    existing,
+                )
+                return int(existing)
+
+        return await self.insert_watch(
+            product_id=product_id,
+            source=source,
+            url=url,
+            asin=asin,
+            affiliate_tag=affiliate_tag,
+            poll_seconds=poll_seconds,
+        )
 
     async def insert_watch(
         self,
@@ -424,7 +454,7 @@ class CatalogRepo:
         source_request_id: int | None,
         image_url: str | None = None,
     ) -> None:
-        name = normalize_product_name(name)
+        name = coerce_product_name(name)
         now = datetime.now(timezone.utc).isoformat()
         async with self._pool.acquire() as conn:
             async with conn.transaction():
@@ -435,16 +465,16 @@ class CatalogRepo:
                 if not exists:
                     await conn.execute(
                         """
-                        INSERT INTO catalog_products(id, name, brand, category, emoji, colour,
+                        INSERT INTO catalog_products(id, name, brand, category, colour,
                                                     source_request_id, created_at, image_url)
-                        VALUES ($1, $2, $3, $4, NULL, NULL, $5, $6, $7)
+                        VALUES ($1, $2, $3, $4, NULL, $5, $6, $7)
                         """,
                         product_id,
                         name,
                         brand or None,
                         category,
-                        source_request_id,
                         now,
+                        source_request_id,
                         image_url,
                     )
                 elif image_url:
@@ -477,25 +507,22 @@ class CatalogRepo:
         async with self._pool.acquire() as conn:
             async with conn.transaction():
                 for product in products:
-                    normalized_name = normalize_product_name(product.name)
                     await conn.execute(
                         """
-                        INSERT INTO catalog_products(id, name, brand, category, emoji, colour,
+                        INSERT INTO catalog_products(id, name, brand, category, colour,
                                                     source_request_id, created_at, image_url)
-                        VALUES ($1, $2, $3, $4, $5, $6, NULL, $7, $8)
+                        VALUES ($1, $2, $3, $4, $5, NULL, $6, $7)
                         ON CONFLICT (id) DO UPDATE SET
                             name = $2,
                             brand = $3,
                             category = $4,
-                            emoji = $5,
-                            colour = $6,
-                            image_url = COALESCE($8, catalog_products.image_url)
+                            colour = $5,
+                            image_url = COALESCE($7, catalog_products.image_url)
                         """,
                         product.id,
-                        normalized_name,
+                        product.name,
                         product.brand,
                         product.category,
-                        product.emoji,
                         product.colour,
                         now,
                         product.image_url,

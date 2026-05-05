@@ -1,13 +1,21 @@
-"""Amazon India product page parser — extracts stock status and price."""
+"""Amazon India product page parser — extracts stock status, price, and listing metadata."""
 
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass
 
 from lxml import html
 
-from commerce_platform.stock.parsers.protocol import ParseSignal
+from commerce_platform.platform.product_name import coerce_product_name
+from commerce_platform.stock.parsers.json_ld_brand import brand_from_json_ld_object
+from commerce_platform.stock.parsers.protocol import ListingSnapshot, ParseSignal
+
+_AMAZON_TITLE_SUFFIX = re.compile(
+    r"\s*:\s*Amazon\.in(?::\s*[^:]*)?\s*$",
+    re.IGNORECASE,
+)
 
 
 @dataclass(frozen=True)
@@ -30,6 +38,8 @@ def _parse_product_page(page_html: str) -> ParseSignal:
     except Exception:
         return ParseSignal(in_stock=False, method="parse_error")
 
+    listing = _amazon_listing_snapshot(doc)
+
     # --- Stock status ---
     availability = doc.xpath('//*[@id="availability"]/span')
     add_to_cart = doc.xpath('//*[@id="add-to-cart-button"]')
@@ -40,11 +50,11 @@ def _parse_product_page(page_html: str) -> ParseSignal:
             in_stock = True
             method = "add_to_cart_no_avail"
         else:
-            return ParseSignal(in_stock=False, method="no_availability_block")
+            return ParseSignal(in_stock=False, method="no_availability_block", listing=listing)
     else:
         text = (availability[0].text or "").strip()
         if "Currently unavailable" in text or "don't know when" in text:
-            return ParseSignal(in_stock=False, method="unavailable_text")
+            return ParseSignal(in_stock=False, method="unavailable_text", listing=listing)
         elif "In stock" in text:
             in_stock = True
             method = "availability_in_stock"
@@ -55,7 +65,7 @@ def _parse_product_page(page_html: str) -> ParseSignal:
             in_stock = True
             method = "buy_now"
         else:
-            return ParseSignal(in_stock=False, method="unknown_availability")
+            return ParseSignal(in_stock=False, method="unknown_availability", listing=listing)
 
     # --- Price ---
     price = _extract_price(doc)
@@ -64,7 +74,14 @@ def _parse_product_page(page_html: str) -> ParseSignal:
     # --- Offers ---
     offers = _extract_offers(doc)
 
-    return ParseSignal(in_stock=in_stock, price_inr=price, mrp_inr=mrp, method=method, offers=tuple(offers))
+    return ParseSignal(
+        in_stock=in_stock,
+        price_inr=price,
+        mrp_inr=mrp,
+        method=method,
+        offers=tuple(offers),
+        listing=listing,
+    )
 
 
 def _extract_price(doc: html.HtmlElement) -> float | None:
@@ -110,6 +127,112 @@ def _rupee_to_float(text: str) -> float | None:
             return float(m.group(1))
         except ValueError:
             pass
+    return None
+
+
+def _amazon_listing_snapshot(doc: html.HtmlElement) -> ListingSnapshot | None:
+    title = _listing_title(doc)
+    brand = _listing_brand(doc)
+    image_url = _listing_image(doc)
+
+    if title:
+        title = coerce_product_name(title)
+        title = _AMAZON_TITLE_SUFFIX.sub("", title).strip() or None
+
+    if brand:
+        brand = coerce_product_name(brand.strip()) or None
+
+    if not title and not brand and not image_url:
+        return None
+    return ListingSnapshot(title=title, brand=brand, image_url=image_url)
+
+
+def _listing_title(doc: html.HtmlElement) -> str | None:
+    for sel in [
+        '//*[@id="productTitle"]',
+        '//span[@id="productTitle"]',
+        '//meta[@property="og:title"]/@content',
+        '//title/text()',
+    ]:
+        if sel.endswith("/@content"):
+            nodes = doc.xpath(sel)
+            if nodes:
+                t = (nodes[0] or "").strip()
+                if t:
+                    return t
+        elif sel.endswith("/text()"):
+            nodes = doc.xpath(sel)
+            if nodes:
+                t = (nodes[0] or "").strip()
+                if t:
+                    return t
+        else:
+            nodes = doc.xpath(sel)
+            if nodes:
+                t = (nodes[0].text_content() or "").strip()
+                if t:
+                    return t
+    return None
+
+
+def _listing_image(doc: html.HtmlElement) -> str | None:
+    for sel in [
+        '//meta[@property="og:image"]/@content',
+        '//img[@id="landingImage"]/@src',
+        '//div[@id="imgTagWrapperId"]//img/@src',
+    ]:
+        nodes = doc.xpath(sel)
+        if nodes:
+            u = (nodes[0] or "").strip()
+            if u.startswith("http"):
+                return u
+    return None
+
+
+def _listing_brand(doc: html.HtmlElement) -> str | None:
+    b = _brand_from_json_ld(doc)
+    if b:
+        return b
+
+    for sel in [
+        '//*[@id="bylineInfo"]',
+        '//a[@id="bylineInfo"]',
+        '//a[contains(@id,"bylineInfo")]',
+    ]:
+        nodes = doc.xpath(sel)
+        if not nodes:
+            continue
+        raw = (nodes[0].text_content() or "").strip()
+        m = re.search(r"Visit\s+the\s+(.+?)\s+Store", raw, re.I)
+        if m:
+            return m.group(1).strip()
+        m = re.search(r"Brand\s*:\s*(.+)", raw, re.I)
+        if m:
+            return m.group(1).strip()
+
+    for row in doc.xpath("//tr[th]"):
+        cells = row.xpath("./th|./td")
+        if len(cells) < 2:
+            continue
+        label = (cells[0].text_content() or "").strip().lower()
+        if label == "brand":
+            return (cells[1].text_content() or "").strip()[:120] or None
+
+    return None
+
+
+def _brand_from_json_ld(doc: html.HtmlElement) -> str | None:
+    for script in doc.xpath('//script[@type="application/ld+json"]'):
+        raw = (script.text or "").strip()
+        if not raw:
+            continue
+        try:
+            data = json.loads(raw)
+        except json.JSONDecodeError:
+            continue
+        found = brand_from_json_ld_object(data)
+        if found:
+            return found
     return None
 
 

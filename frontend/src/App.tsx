@@ -1,4 +1,4 @@
-import { HashRouter, Navigate, Route, Routes } from "react-router-dom"
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom"
 import { AuthProvider } from "@/auth/AuthContext"
 import { AppShell } from "@/components/blocks/AppShell"
 import { CatalogPage } from "@/pages/CatalogPage"
@@ -12,7 +12,7 @@ import { AdminPage } from "@/pages/AdminPage"
 export default function App() {
   return (
     <AuthProvider>
-      <HashRouter>
+      <BrowserRouter>
         <Routes>
           <Route element={<AppShell />}>
             <Route index element={<CatalogPage />} />
@@ -25,7 +25,7 @@ export default function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>
-      </HashRouter>
+      </BrowserRouter>
     </AuthProvider>
   )
 }

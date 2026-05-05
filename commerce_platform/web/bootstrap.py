@@ -6,7 +6,7 @@ import logging
 
 from commerce_platform.platform.store.db import Database
 from commerce_platform.platform.store.repos import UserRepo
-from commerce_platform.web.auth_tokens import pwd_context
+from commerce_platform.web.auth_tokens import hash_password
 from commerce_platform.web.config import WebConfig
 
 logger = logging.getLogger(__name__)
@@ -22,6 +22,6 @@ async def maybe_bootstrap_admin(db: Database, web: WebConfig) -> None:
     user_count = await repo.count()
     if user_count > 0:
         return
-    h = pwd_context.hash(web.bootstrap_admin_password)
+    h = hash_password(web.bootstrap_admin_password)
     await repo.create(web.bootstrap_admin_email, h, role="admin")
     logger.info("Bootstrapped admin user %s", web.bootstrap_admin_email)

@@ -35,6 +35,22 @@ def _repair_utf8_misread_as_cp1252(s: str) -> str:
     return "".join(out)
 
 
+def _fix_broken_utf8_pair(c1: str, c2: str) -> str | None:
+    """
+    Fix broken UTF-8 two-byte sequence that NFKC doesn't handle.
+    
+    When UTF-8 bytes [0xc2, 0xXX] are decoded as CP1252, they become two separate characters.
+    Re-encode both as CP1252 bytes, then decode as UTF-8 to get the actual character.
+    
+    For example: Â (U+C2) + ® (U+00AE) → encode as c2 ae → decode as UTF-8 → ®
+    """
+    try:
+        raw = (c1 + c2).encode("cp1252")
+        return raw.decode("utf-8")
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        return None
+
+
 def normalize_product_name(name: str) -> str:
     """
     Normalize product name: fix encoding issues, standardize spacing, clean whitespace.
@@ -50,11 +66,31 @@ def normalize_product_name(name: str) -> str:
     if not name:
         return name
 
+    # Fix broken UTF-8 two-byte sequences FIRST (before NFKC destroys them)
+    # e.g. Â (U+C2) + ® (U+00AE) → encode as cp1252 → decode as UTF-8 → ®
+    if len(name) >= 2:
+        out = []
+        i = 0
+        while i < len(name):
+            if i < len(name) - 1:
+                fixed = _fix_broken_utf8_pair(name[i], name[i + 1])
+                if fixed and fixed != name[i]:
+                    out.append(fixed)
+                    i += 2
+                    continue
+            out.append(name[i])
+            i += 1
+        name = "".join(out)
+
+    # Remove stray broken UTF-8 lead bytes (e.g. stray Â after pair-fixing failed)
+    name = name.replace('Â', '')
+
+    # Then normalize unicode
+    name = unicodedata.normalize('NFKC', name)
+
     name = _repair_utf8_misread_as_cp1252(name)
 
-    # Fix broken UTF-8 sequences (Â® and stray Â characters)
-    name = name.replace('Â®', '®')
-    name = name.replace('Â', '')
+    # (Â® and Â already handled above, no need to repeat)
 
     # Normalize various dash/hyphen variations to standard hyphen
     name = name.replace('–', '-')  # en-dash to hyphen
@@ -65,9 +101,6 @@ def normalize_product_name(name: str) -> str:
     name = re.sub(r'PS\s*5', 'PS5', name, flags=re.IGNORECASE)
     name = re.sub(r'Xbox\s*Series\s*X', 'Xbox Series X', name, flags=re.IGNORECASE)
     name = re.sub(r'Xbox\s*Series\s*S', 'Xbox Series S', name, flags=re.IGNORECASE)
-
-    # Normalize unicode (e.g., decompose accented characters to base + combining)
-    name = unicodedata.normalize('NFKC', name)
 
     # Remove control characters and other problematic unicode
     name = ''.join(c for c in name if unicodedata.category(c)[0] != 'C')

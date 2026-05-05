@@ -6,7 +6,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from commerce_platform.platform.text_normalization import normalize_product_name
+from commerce_platform.platform.product_name import CanonicalProductName
 
 
 # ---------------------------------------------------------------------------
@@ -91,10 +91,9 @@ class AlertConfig(BaseModel):
 
 class ProductConfig(BaseModel):
     id: str
-    name: str
+    name: CanonicalProductName
     brand: str | None = None
     category: str = "tech"
-    emoji: str | None = None
     colour: int | None = None
     image_url: str | None = None
     watches: list[WatchConfig]
@@ -106,11 +105,6 @@ class ProductConfig(BaseModel):
         if not v.replace("_", "").replace("-", "").isalnum():
             raise ValueError(f"product id must be alphanumeric+underscore: {v!r}")
         return v.lower()
-
-    @field_validator("name")
-    @classmethod
-    def _normalize_product_name(cls, v: str) -> str:
-        return normalize_product_name(v)
 
 
 class DefaultsConfig(BaseModel):
@@ -134,7 +128,18 @@ class ChannelConfig(BaseModel):
 
 
 class PlatformSourceConfig(BaseModel):
-    type: Literal["amazon_serp", "desidime", "reddit", "amazon_wishlist"]
+    type: Literal[
+        "amazon_serp",
+        "flipkart_serp",
+        "ajio_serp",
+        "amazon_deals",
+        "flipkart_deals",
+        "ajio_deals",
+        "myntra_deals",
+        "desidime",
+        "reddit",
+        "amazon_wishlist",
+    ]
     url: str | None = None              # required for amazon_wishlist
     wishlist_id: str | None = None      # optional stable key for routing (default: hash of url)
     channels: list[str] = []           # alert channels for amazon_wishlist back-in-stock

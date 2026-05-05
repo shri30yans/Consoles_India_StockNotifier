@@ -50,25 +50,38 @@ platform_sources:
     poll_seconds: 20
     category: gaming
 
-  - type: amazon_serp
-    category: gaming
+  - type: amazon_deals
     poll_seconds: 3600
-    minimum_discount_pct: 5.0
+    minimum_discount_pct: 0.15
     max_links_per_seed: 50
     seed_urls:
-      - https://www.amazon.in/s?k=gaming+console+deals&rh=p_36%3A2000-&sort=price-asc-rank
+      - https://www.amazon.in/deals
+      - https://www.amazon.in/gp/goldbox
+    category: gaming
 
-  - type: desidime
-    poll_seconds: 900
+  - type: flipkart_deals
+    poll_seconds: 3600
+    minimum_discount_pct: 0.15
+    max_links_per_seed: 50
+    seed_urls:
+      - https://www.flipkart.com/offers/deals-today
     category: tech
 
-  - type: reddit
-    poll_seconds: 900
+  - type: ajio_deals
+    poll_seconds: 3600
+    minimum_discount_pct: 0.15
+    max_links_per_seed: 30
+    seed_urls:
+      - https://www.ajio.com/s/sale
     category: tech
-    subreddits:
-      - IndiaDeals
-      - DesiDeal
-      - IndianGaming
+
+  - type: myntra_deals
+    poll_seconds: 3600
+    minimum_discount_pct: 0.15
+    max_links_per_seed: 30
+    seed_urls:
+      - https://www.myntra.com/offers
+    category: tech
 
 stock:
   fetch:
@@ -84,18 +97,11 @@ deals:
   scoring:
     threshold: 0.40
     repost_cooldown_hours: 24
-    weights:
-      lowest_90d: 0.35
-      below_30d_median: 0.25
-      discount_vs_mrp: 0.10
-      cross_retailer_best: 0.15
-      has_offers: 0.05
-      aggregator_corroborated: 0.10
   curation:
-    use_llm: false
     approval_required: true
     approval_timeout_seconds: 1800
     admin_channel: admin
   routing:
     gaming: [deals_gaming]
+    tech: [deals_tech]
     tech: [deals_tech]

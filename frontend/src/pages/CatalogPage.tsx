@@ -37,7 +37,7 @@ type Product = {
   last_updated: string | null
 }
 
-function normalizeProducts(raw: unknown): Product[] {
+function parseProductList(raw: unknown): Product[] {
   if (!Array.isArray(raw)) return []
   return raw.map((row) => {
     const p = row as Product
@@ -62,7 +62,7 @@ export function CatalogPage() {
     void (async () => {
       const r = await api(`/api/products?sort=${encodeURIComponent(sort)}`)
       if (!r.ok || c) return
-      setItems(normalizeProducts(await r.json()))
+      setItems(parseProductList(await r.json()))
     })()
     return () => {
       c = true

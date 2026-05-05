@@ -16,14 +16,19 @@ export function RegisterPage() {
   const { refresh } = useAuth()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [passwordConfirm, setPasswordConfirm] = useState("")
   const [err, setErr] = useState<string | null>(null)
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
     setErr(null)
+    if (password !== passwordConfirm) {
+      setErr("Passwords do not match")
+      return
+    }
     const r = await api("/api/auth/register", {
       method: "POST",
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, password_confirm: passwordConfirm }),
     })
     if (!r.ok) {
       setErr(await readErrorMessage(r))
@@ -39,7 +44,7 @@ export function RegisterPage() {
     <PageShell className="max-w-md space-y-6">
       <PageHeader
         title="Create account"
-        description="Then you can paste product URLs to add them to the tracker (subject to admin review)."
+        description="Join to request product tracking and never miss a restock again."
       />
       <form onSubmit={onSubmit} className="space-y-4">
         <div className="space-y-2">
@@ -63,6 +68,18 @@ export function RegisterPage() {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="rpass-confirm">Confirm Password</Label>
+          <Input
+            id="rpass-confirm"
+            type="password"
+            autoComplete="new-password"
+            minLength={8}
+            required
+            value={passwordConfirm}
+            onChange={(e) => setPasswordConfirm(e.target.value)}
           />
         </div>
         {err ? <p className="text-destructive text-xs">{err}</p> : null}

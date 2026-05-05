@@ -9,24 +9,9 @@ from commerce_platform.platform.config.schema import ProductConfig, WatchConfig
 from commerce_platform.platform.events.bus import EventBus
 from commerce_platform.platform.events.observation import PriceObservation
 from commerce_platform.platform.fetch.protocol import HtmlFetcher
-from commerce_platform.stock.parsers import ajio as ajio_parser
-from commerce_platform.stock.parsers import amazon as amazon_parser
-from commerce_platform.stock.parsers import flipkart as flipkart_parser
+from commerce_platform.stock.parsers.registry import get_parser_for_source
 
 logger = logging.getLogger(__name__)
-
-_PARSERS = {
-    "amazon": amazon_parser.parse,
-    "flipkart": flipkart_parser.parse,
-    "ajio": ajio_parser.parse,
-}
-
-
-def _parser_key(source: str) -> str:
-    """Map watch.source (e.g. ajio_playwright) to registered parser name."""
-    if source.endswith("_playwright"):
-        return source[: -len("_playwright")]
-    return source
 
 
 class Poller:
@@ -47,8 +32,9 @@ class Poller:
 
         logger.info("Scrape fetch OK for %s — %d byte(s) HTML", label, len(html))
 
-        parser = _PARSERS.get(_parser_key(watch.source))
-        if parser is None:
+        try:
+            parser = get_parser_for_source(watch.source)
+        except ValueError:
             logger.warning("No parser for source %s", watch.source)
             return
 
@@ -73,7 +59,7 @@ class Poller:
             source=f"scraper:{watch.source}",
             observed_at=datetime.now(timezone.utc).isoformat(),
             product_url=watch.url,
-            product_title=product.name,
+            product_title=signal.listing_title or product.name,
         )
 
         # Emit observation

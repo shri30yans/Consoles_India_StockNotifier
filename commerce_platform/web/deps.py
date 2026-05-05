@@ -5,12 +5,14 @@ from __future__ import annotations
 from pathlib import Path
 
 import jwt
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials
 
 from commerce_platform.platform.store.db import Database
 from commerce_platform.platform.store.repos import (
     CatalogRepo,
+    ConfigSettingsRepo,
+    DealRepo,
     PriceRepo,
     StockRepo,
     TrackingRepo,
@@ -50,6 +52,18 @@ async def get_tracking_repo(request: Request) -> TrackingRepo:
 
 async def get_catalog_repo(request: Request) -> CatalogRepo:
     return request.app.state.catalog_repo
+
+
+async def get_config_repo(request: Request) -> ConfigSettingsRepo:
+    return request.app.state.config_repo
+
+
+async def get_deal_repo(request: Request) -> DealRepo:
+    return request.app.state.deal_repo
+
+
+async def get_app(request: Request) -> FastAPI:
+    return request.app
 
 
 async def optional_user(
