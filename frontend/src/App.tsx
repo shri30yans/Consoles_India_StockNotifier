@@ -8,6 +8,7 @@ import { RegisterPage } from "@/pages/RegisterPage"
 import { AccountPage } from "@/pages/AccountPage"
 import { RequestPage } from "@/pages/RequestPage"
 import { AdminPage } from "@/pages/AdminPage"
+import { DealsPage } from "@/pages/DealsPage"
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
           <Route element={<AppShell />}>
             <Route index element={<CatalogPage />} />
             <Route path="product/:id" element={<ProductPage />} />
+            <Route path="deals" element={<DealsPage />} />
             <Route path="login" element={<LoginPage />} />
             <Route path="register" element={<RegisterPage />} />
             <Route path="account" element={<AccountPage />} />
