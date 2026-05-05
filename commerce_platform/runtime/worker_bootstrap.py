@@ -175,6 +175,7 @@ async def run_stock_and_deals_workers(
             logger.info("Discovery loop stopped")
         finally:
             await http_fetcher.close()
+            await pw_fetcher.close()
 
     async def curation_loop() -> None:
         """Autonomous curation agent evaluates deals and routes to admin."""

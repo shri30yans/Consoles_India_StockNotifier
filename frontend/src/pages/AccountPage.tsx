@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { Link, Navigate } from "react-router-dom"
 import { useAuth } from "@/auth/AuthContext"
-import { api } from "@/lib/api"
+import { ApiError, api, ensureOk } from "@/lib/api"
 import { formatShortDate } from "@/lib/format"
 import { PageShell } from "@/components/blocks/PageShell"
 import { PageHeader } from "@/components/blocks/PageHeader"
@@ -15,6 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { LoadingSpinner } from "@/components/blocks/LoadingSpinner"
 
 type Row = {
@@ -29,19 +30,29 @@ type Row = {
 export function AccountPage() {
   const { me, loading } = useAuth()
   const [rows, setRows] = useState<Row[] | null>(null)
+  const [rowsError, setRowsError] = useState<string | null>(null)
+  const [reloadToken, setReloadToken] = useState(0)
 
   useEffect(() => {
     if (!me) return
     let c = false
+    setRowsError(null)
+    setRows(null)
     void (async () => {
-      const r = await api("/api/me/requests")
-      if (!r.ok || c) return
-      setRows((await r.json()) as Row[])
+      try {
+        const r = await api("/api/me/requests")
+        await ensureOk(r)
+        if (c) return
+        setRows((await r.json()) as Row[])
+      } catch (e) {
+        if (c) return
+        setRowsError(e instanceof ApiError ? e.message : "Failed to load requests")
+      }
     })()
     return () => {
       c = true
     }
-  }, [me])
+  }, [me, reloadToken])
 
   if (!loading && !me) {
     return <Navigate to="/login" replace />
@@ -79,7 +90,24 @@ export function AccountPage() {
 
       <section aria-label="Request history">
         <h2 className="mb-3 font-heading text-sm font-medium">History</h2>
-        {!rows ? (
+        {rowsError ? (
+          <div className="rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm">
+            <p className="font-medium text-destructive">Couldn&apos;t load requests</p>
+            <p className="mt-1 text-muted-foreground">{rowsError}</p>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              className="mt-3"
+              onClick={() => {
+                setRowsError(null)
+                setReloadToken((t) => t + 1)
+              }}
+            >
+              Try again
+            </Button>
+          </div>
+        ) : !rows ? (
           <div className="flex justify-center py-10">
             <LoadingSpinner label="Loading requests" />
           </div>

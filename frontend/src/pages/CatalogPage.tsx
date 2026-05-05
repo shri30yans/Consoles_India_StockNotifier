@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
-import { api } from "@/lib/api"
+import { ApiError, api, ensureOk } from "@/lib/api"
 import { BRAND_TAGLINE } from "@/lib/brand"
 import { formatShortDate } from "@/lib/format"
 import { useAuth } from "@/auth/AuthContext"
@@ -55,21 +55,31 @@ export function CatalogPage() {
   const [sort, setSort] = useState("updated")
   const [searchQuery, setSearchQuery] = useState("")
   const [items, setItems] = useState<Product[] | null>(null)
+  const [fetchError, setFetchError] = useState<string | null>(null)
+  const [reloadToken, setReloadToken] = useState(0)
   const addProductTo = me ? "/request" : "/login?next=%2Frequest"
 
   useEffect(() => {
     let c = false
+    setFetchError(null)
+    setItems(null)
     void (async () => {
-      const r = await api(`/api/products?sort=${encodeURIComponent(sort)}`)
-      if (!r.ok || c) return
-      setItems(parseProductList(await r.json()))
+      try {
+        const r = await api(`/api/products?sort=${encodeURIComponent(sort)}`)
+        await ensureOk(r)
+        if (c) return
+        setItems(parseProductList(await r.json()))
+      } catch (e) {
+        if (c) return
+        setFetchError(e instanceof ApiError ? e.message : "Failed to load products")
+      }
     })()
     return () => {
       c = true
     }
-  }, [sort])
+  }, [sort, reloadToken])
 
-  if (items === null) {
+  if (items === null && fetchError === null) {
     return (
       <PageShell>
         <div className="flex justify-center py-16">
@@ -78,6 +88,36 @@ export function CatalogPage() {
       </PageShell>
     )
   }
+
+  if (fetchError) {
+    return (
+      <PageShell className="space-y-4">
+        <PageHeader title="Live Availability" description={BRAND_TAGLINE} />
+        <div className="rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm">
+          <p className="font-medium text-destructive">Couldn&apos;t load products</p>
+          <p className="mt-1 text-muted-foreground">{fetchError}</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => {
+                setFetchError(null)
+                setReloadToken((t) => t + 1)
+              }}
+            >
+              Try again
+            </Button>
+            <Button size="sm" variant="outline" asChild>
+              <Link to="/">Back to home</Link>
+            </Button>
+          </div>
+        </div>
+      </PageShell>
+    )
+  }
+
+  if (items === null) return null
 
   const searchLower = searchQuery.toLowerCase()
   const filteredItems = searchQuery

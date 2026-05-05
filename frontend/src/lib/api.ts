@@ -19,6 +19,26 @@ export async function api(path: string, opts: RequestInit = {}): Promise<Respons
   return fetch(path, { ...opts, headers })
 }
 
+/** Thrown when {@link ensureOk} receives a non-OK response (4xx/5xx). */
+export class ApiError extends Error {
+  readonly status: number
+  readonly response: Response
+
+  constructor(status: number, message: string, response: Response) {
+    super(message)
+    this.name = "ApiError"
+    this.status = status
+    this.response = response
+  }
+}
+
+/** Throws {@link ApiError} if the response is not OK; otherwise returns the same response. */
+export async function ensureOk(r: Response): Promise<Response> {
+  if (r.ok) return r
+  const msg = await readErrorMessage(r)
+  throw new ApiError(r.status, msg, r)
+}
+
 export async function readErrorMessage(r: Response): Promise<string> {
   try {
     const j: unknown = await r.json()
