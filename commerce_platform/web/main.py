@@ -6,14 +6,15 @@ import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
+from commerce_platform.platform.config.loader import load
 from commerce_platform.platform.store.db import Database
-from commerce_platform.deals.agent_gateway import AgentGateway
 from commerce_platform.platform.events.bus import EventBus
 from commerce_platform.platform.store.repos import (
     CatalogRepo,
@@ -24,8 +25,9 @@ from commerce_platform.platform.store.repos import (
     TrackingRepo,
     UserRepo,
 )
+from commerce_platform.deals.agent_gateway import AgentGateway
 from commerce_platform.web.bootstrap import maybe_bootstrap_admin
-from commerce_platform.web.config import WebConfig
+from commerce_platform.web.config import WebConfig, load_web_config
 from commerce_platform.web.rate_limit import RateLimiter
 from commerce_platform.web.routes import admin as admin_routes
 from commerce_platform.web.routes import auth as auth_routes
@@ -132,3 +134,15 @@ def create_app(
             return JSONResponse({"detail": "Frontend not built"}, status_code=404)
 
     return app
+
+
+def _initialize_app() -> FastAPI:
+    """Initialize the app for uvicorn. Load config once at startup."""
+    load_dotenv(Path(".env"), override=True)
+    config = load(Path("config.yaml"))
+    web_cfg = load_web_config(admin_emails=config.admin_emails)
+    return create_app("config.yaml", web_cfg)
+
+
+# Uvicorn entry point: creates app once on startup
+app = _initialize_app()
