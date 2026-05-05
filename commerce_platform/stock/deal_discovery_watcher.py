@@ -6,12 +6,12 @@ import asyncio
 import logging
 from datetime import datetime, timezone
 
+from commerce_platform.deals.scorer import DealScorer
 from commerce_platform.platform.config.schema import PlatformSourceConfig
 from commerce_platform.platform.events.bus import EventBus
 from commerce_platform.platform.events.observation import PriceObservation
 from commerce_platform.platform.fetch.protocol import HtmlFetcher
 from commerce_platform.platform.store.repos import CatalogRepo, DealRepo
-from commerce_platform.stock.deal_scorer import DealScorer
 from commerce_platform.stock.sources.serp_parsers import (
     ListingItem,
     extract_ajio_offer_items,
