@@ -137,7 +137,7 @@ class DealDiscoveryWatcher:
         min_disc = self._source.minimum_discount_pct or 0.0
         qualifying = [item for item in items if _pre_filter(item, min_disc)]
 
-        logger.info(
+        logger.debug(
             "%s: extracted %d items, %d passed pre-filter (min_discount=%.0f%%)",
             self._source.type,
             len(items),
@@ -241,7 +241,7 @@ class DealDiscoveryWatcher:
 
         try:
             action, should_notify = await self._deal_repo.upsert(row)
-            logger.info(
+            logger.debug(
                 "Deal %s: action=%s notify=%s score=%.2f",
                 item.url,
                 action,

@@ -30,7 +30,7 @@ class Poller:
             logger.warning("Scrape failed — no HTML for %s (network/block/captcha?)", label)
             return
 
-        logger.info("Scrape fetch OK for %s — %d byte(s) HTML", label, len(html))
+        logger.debug("Scrape fetch OK for %s — %d byte(s) HTML", label, len(html))
 
         try:
             parser = get_parser_for_source(watch.source)
@@ -40,7 +40,7 @@ class Poller:
 
         signal = parser(html, watch.url)
 
-        logger.info(
+        logger.debug(
             "Scraped %s: in_stock=%s price_inr=%s mrp_inr=%s method=%s",
             label,
             signal.in_stock,

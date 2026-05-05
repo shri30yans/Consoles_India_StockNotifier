@@ -56,7 +56,7 @@ class WishlistWatcher:
                 await asyncio.sleep(min(backoff * 2, 300))
                 backoff = min(backoff * 2, 300)
                 continue
-            logger.info(
+            logger.debug(
                 "Wishlist cycle %d: sleeping %ds before next scrape",
                 cycle,
                 self._source.poll_seconds,
@@ -64,7 +64,7 @@ class WishlistWatcher:
             await asyncio.sleep(self._source.poll_seconds)
 
     async def _poll(self, url: str, cycle: int) -> None:
-        logger.info("Wishlist cycle %d: fetching wishlist HTML…", cycle)
+        logger.debug("Wishlist cycle %d: fetching wishlist HTML…", cycle)
         page_html = await self._fetcher.get_html(url, label="wishlist")
         if page_html is None:
             logger.warning(
@@ -74,7 +74,7 @@ class WishlistWatcher:
             )
             return
 
-        logger.info(
+        logger.debug(
             "Wishlist cycle %d: fetched OK — %d byte(s) HTML",
             cycle,
             len(page_html),
@@ -89,11 +89,11 @@ class WishlistWatcher:
             )
             return
 
-        logger.info("Wishlist cycle %d: parsed %d item(s)", cycle, len(items))
+        logger.debug("Wishlist cycle %d: parsed %d item(s)", cycle, len(items))
         for idx, item in enumerate(items, start=1):
             price_txt = f"₹{item.price_inr:,.0f}" if item.price_inr else "—"
             stock_txt = "IN_STOCK" if item.in_stock else "OUT_OF_STOCK"
-            logger.info(
+            logger.debug(
                 "Wishlist cycle %d: item %d/%d asin=%s status=%s price=%s name=%s",
                 cycle,
                 idx,
@@ -105,7 +105,7 @@ class WishlistWatcher:
             )
             await self._check_item(item, cycle)
 
-        logger.info(
+        logger.debug(
             "Wishlist cycle %d: scrape complete — processed %d wishlist row(s)",
             cycle,
             len(items),
