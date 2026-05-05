@@ -48,7 +48,8 @@ async def run_stock_and_deals_workers(
     affiliate_rewriter = AffiliateRewriter(config_repo)
     notification_handler = NotificationHandler(router, affiliate_rewriter=affiliate_rewriter)
 
-    async def get_merged():
+    async def load_platform_config() -> PlatformConfig:
+        """Load current platform configuration from disk."""
         return await load_merged_platform_config(path, catalog_repo)
 
     async def observation_processor() -> None:
@@ -125,8 +126,8 @@ async def run_stock_and_deals_workers(
 
         try:
             while True:
-                merged = await get_merged()
-                for source in merged.platform_sources:
+                platform_config = await load_platform_config()
+                for source in platform_config.platform_sources:
                     # Only process deal sources
                     if not any(source.type.startswith(t) for t in ["amazon_deals", "flipkart_deals", "ajio_deals", "myntra_deals"]):
                         continue
