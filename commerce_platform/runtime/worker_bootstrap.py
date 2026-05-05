@@ -128,16 +128,17 @@ async def run_stock_and_deals_workers(
             while True:
                 platform_config = await load_platform_config()
                 for source in platform_config.platform_sources:
-                    # Only process deal sources
-                    if not any(source.type.startswith(t) for t in ["amazon_deals", "flipkart_deals", "ajio_deals", "myntra_deals"]):
+                    # Only process deal sources (type ends with _deals)
+                    if not source.type.endswith("_deals"):
                         continue
 
                     if not source.seed_urls:
                         logger.warning("Deal source %s has no seed URLs", source.type)
                         continue
 
-                    # Determine fetcher based on retailer
-                    use_playwright = source.type in ["ajio_deals", "myntra_deals"]
+                    # Sources that require Playwright for JS rendering
+                    playwright_sources = {"ajio_deals", "myntra_deals"}
+                    use_playwright = source.type in playwright_sources
                     fetcher = pw_fetcher if use_playwright else http_fetcher
 
                     agent = DealDiscoveryAgent(
