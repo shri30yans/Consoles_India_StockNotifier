@@ -1,6 +1,4 @@
 aiohttp==3.9.5
-curl_cffi==0.7.4
-fake-useragent==1.5.1
 beautifulsoup4==4.12.3
 lxml==5.2.2
 playwright==1.44.0
@@ -35,6 +33,5 @@ pyjwt==2.10.1
 python-multipart==0.0.17
 email-validator==2.2.0
 
-# Database migrations
-alembic==1.14.0
-psycopg2-binary==2.9.9
+# Amazon Product Advertising API 5 (affiliate DetailPageURL / GetItems)
+python-amazon-paapi==6.2.0

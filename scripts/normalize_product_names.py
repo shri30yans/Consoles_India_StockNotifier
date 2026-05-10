@@ -7,11 +7,10 @@ import asyncio
 import os
 from pathlib import Path
 
-from dotenv import load_dotenv
-
 from commerce_platform.platform.config.loader import load
 from commerce_platform.platform.product_name import coerce_product_name
 from commerce_platform.platform.store.db import Database
+from dotenv import load_dotenv
 
 
 async def run(config_path: Path) -> None:

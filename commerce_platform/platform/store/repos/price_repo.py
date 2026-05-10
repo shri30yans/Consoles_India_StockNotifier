@@ -32,6 +32,17 @@ class PriceRepo:
     def __init__(self, pool: asyncpg.Pool) -> None:
         self._pool = pool
 
+    def _row_to_price_snapshot(self, row: asyncpg.Record) -> PriceSnapshot:
+        return PriceSnapshot(
+            id=row["id"],
+            product_id=row["product_id"],
+            retailer=row["retailer"],
+            price_paise=row["price_paise"],
+            mrp_paise=row["mrp_paise"],
+            in_stock=bool(row["in_stock"]),
+            captured_at=row["captured_at"],
+        )
+
     async def get_latest_snapshot(self, product_id: str, retailer: str) -> PriceSnapshot | None:
         async with self._pool.acquire() as conn:
             row = await conn.fetchrow(
@@ -47,15 +58,7 @@ class PriceRepo:
             )
         if row is None:
             return None
-        return PriceSnapshot(
-            id=row["id"],
-            product_id=row["product_id"],
-            retailer=row["retailer"],
-            price_paise=row["price_paise"],
-            mrp_paise=row["mrp_paise"],
-            in_stock=bool(row["in_stock"]),
-            captured_at=row["captured_at"],
-        )
+        return self._row_to_price_snapshot(row)
 
     async def get_latest_snapshots_batch(
         self, pairs: list[tuple[str, str]]
@@ -87,15 +90,7 @@ class PriceRepo:
         out: dict[tuple[str, str], PriceSnapshot] = {}
         for row in rows:
             key = (row["product_id"], row["retailer"])
-            out[key] = PriceSnapshot(
-                id=row["id"],
-                product_id=row["product_id"],
-                retailer=row["retailer"],
-                price_paise=row["price_paise"],
-                mrp_paise=row["mrp_paise"],
-                in_stock=bool(row["in_stock"]),
-                captured_at=row["captured_at"],
-            )
+            out[key] = self._row_to_price_snapshot(row)
         return out
 
     async def record(self, snap: PriceSnapshot) -> None:
@@ -115,56 +110,33 @@ class PriceRepo:
 
     async def min_price(self, product_id: str, retailer: str | None, *, days: int) -> int | None:
         cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
-        async with self._pool.acquire() as conn:
-            if retailer is None:
-                row = await conn.fetchrow(
-                    """
+        params: list[Any] = [product_id, cutoff]
+        sql = """
                     SELECT MIN(price_paise) as min_price
                     FROM price_snapshots
                     WHERE product_id = $1 AND captured_at >= $2
-                    """,
-                    product_id,
-                    cutoff,
-                )
-            else:
-                row = await conn.fetchrow(
-                    """
-                    SELECT MIN(price_paise) as min_price
-                    FROM price_snapshots
-                    WHERE product_id = $1 AND retailer = $2 AND captured_at >= $3
-                    """,
-                    product_id,
-                    retailer,
-                    cutoff,
-                )
+                """
+        if retailer is not None:
+            sql += " AND retailer = $3"
+            params.append(retailer)
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(sql, *params)
         return row["min_price"] if row and row["min_price"] is not None else None
 
     async def median_price(self, product_id: str, retailer: str | None, *, days: int) -> int | None:
         cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
-        async with self._pool.acquire() as conn:
-            if retailer is None:
-                rows = await conn.fetch(
-                    """
+        params: list[Any] = [product_id, cutoff]
+        sql = """
                     SELECT price_paise
                     FROM price_snapshots
                     WHERE product_id = $1 AND captured_at >= $2
-                    ORDER BY price_paise
-                    """,
-                    product_id,
-                    cutoff,
-                )
-            else:
-                rows = await conn.fetch(
-                    """
-                    SELECT price_paise
-                    FROM price_snapshots
-                    WHERE product_id = $1 AND retailer = $2 AND captured_at >= $3
-                    ORDER BY price_paise
-                    """,
-                    product_id,
-                    retailer,
-                    cutoff,
-                )
+                """
+        if retailer is not None:
+            sql += " AND retailer = $3"
+            params.append(retailer)
+        sql += "\n                    ORDER BY price_paise\n                "
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(sql, *params)
         if not rows:
             return None
         prices = [r["price_paise"] for r in rows]
@@ -208,34 +180,23 @@ class PriceRepo:
         self, product_id: str, retailer: str | None, *, days: int, limit: int = 800
     ) -> list[PriceRow]:
         cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
-        async with self._pool.acquire() as conn:
-            if retailer is None:
-                rows = await conn.fetch(
-                    """
+        params: list[Any] = [product_id, cutoff]
+        sql = """
                     SELECT price_paise, in_stock, captured_at
                     FROM price_snapshots
                     WHERE product_id = $1 AND captured_at >= $2
+                """
+        if retailer is not None:
+            sql += " AND retailer = $3"
+            params.append(retailer)
+        limit_placeholder = "$3" if retailer is None else "$4"
+        sql += f"""
                     ORDER BY captured_at ASC
-                    LIMIT $3
-                    """,
-                    product_id,
-                    cutoff,
-                    limit,
-                )
-            else:
-                rows = await conn.fetch(
-                    """
-                    SELECT price_paise, in_stock, captured_at
-                    FROM price_snapshots
-                    WHERE product_id = $1 AND retailer = $2 AND captured_at >= $3
-                    ORDER BY captured_at ASC
-                    LIMIT $4
-                    """,
-                    product_id,
-                    retailer,
-                    cutoff,
-                    limit,
-                )
+                    LIMIT {limit_placeholder}
+                """
+        params.append(limit)
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(sql, *params)
         return [
             PriceRow(price_paise=r["price_paise"], in_stock=bool(r["in_stock"]), captured_at=r["captured_at"])
             for r in rows

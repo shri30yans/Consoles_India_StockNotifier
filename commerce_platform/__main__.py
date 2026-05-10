@@ -47,8 +47,10 @@ async def _run_app_with_workers(config_path: Path, *, host: str, port: int) -> N
 def main() -> None:
     load_dotenv()
 
+    # Playwright spawns its Node driver via asyncio.create_subprocess_exec, which
+    # only the Proactor loop supports on Windows.
     if sys.platform == "win32":
-        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+        asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
     parser = argparse.ArgumentParser(
         prog="commerce_platform",

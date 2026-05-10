@@ -16,8 +16,8 @@ defaults:
     - type: back_in_stock
       channels: [gaming_alerts]
 
-# Stock products live in the DB (catalog_products, catalog_watches, catalog_product_alerts).
-# Use backfill_products.py to one-time import from products.json
+# Tracked products live only in the DB (catalog_products, catalog_watches). Runtime ignores this list.
+# One-time: scripts/import_yaml_products_to_db.py if you still have products here; then keep this empty.
 products: []
 
 channels:
@@ -43,6 +43,11 @@ channels:
     telegram:
       chat_id: env:TELEGRAM_ADMIN_CHAT
 
+  # Post as the account tied to access_token in .env (OAuth 1.0a). Add x_alerts to catalog_rules.channels to use.
+  - id: x_alerts
+    name: X (Twitter) alerts
+    twitter: {}
+
 platform_sources:
   # Disabled: amazon_wishlist (verbose logs, limited usefulness)
   # - type: amazon_wishlist
@@ -65,12 +70,12 @@ platform_sources:
     minimum_discount_pct: 0.15
     max_links_per_seed: 50
     seed_urls:
-      - https://www.flipkart.com/offers/deals-today
+      # offers/deals-today is JS-gated (returns bot-detection page) — use search URLs instead
+      - https://www.flipkart.com/search?q=gaming+console&sort=discount_asc
+      - https://www.flipkart.com/search?q=electronics+deals&sort=discount_asc
     category: tech
 
   # Disabled: ajio_deals, myntra_deals (require Playwright for JS rendering)
-  # Playwright doesn't work on Windows due to asyncio subprocess limitations.
-  # Re-enable on Linux/macOS or when Playwright support improves.
   # - type: ajio_deals
   #   poll_seconds: 3600
   #   minimum_discount_pct: 0.15
@@ -89,13 +94,10 @@ platform_sources:
 
 stock:
   fetch:
-    http_client: curl_cffi
-    curl_impersonate: chrome124
     jitter_max_seconds: 3.0
     max_concurrent_requests: 4
     max_concurrent_playwright: 2
     playwright_stealth: true
-    use_fake_useragent: true
 
 deals:
   scoring:

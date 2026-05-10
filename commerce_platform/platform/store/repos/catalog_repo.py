@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 from datetime import datetime, timezone
-from typing import Any, NamedTuple
+from typing import NamedTuple
 
 import asyncpg
 
@@ -37,8 +37,20 @@ class CatalogRepo:
     def __init__(self, pool: asyncpg.Pool) -> None:
         self._pool = pool
 
+    def _row_to_watch(self, row: asyncpg.Record) -> WatchRow:
+        return WatchRow(
+            id=row["id"],
+            product_id=row["product_id"],
+            source=row["source"],
+            url=row["url"],
+            asin=row["asin"],
+            affiliate_tag=row["affiliate_tag"],
+            poll_seconds=row["poll_seconds"],
+            created_at=row["created_at"],
+        )
+
     async def list_overlay_as_products(self, defaults: DefaultsConfig) -> list[ProductConfig]:
-        """Merge DB products with their watches and alerts into ProductConfig list."""
+        """Build ProductConfig list from ``catalog_products`` + watches + alerts (canonical catalog)."""
         products: dict[str, ProductConfig] = {}
         async with self._pool.acquire() as conn:
             product_rows = await conn.fetch(
@@ -117,7 +129,8 @@ class CatalogRepo:
                 p = products[pid]
                 products[pid] = p.model_copy(update={"alerts": alert_list})
 
-        return [p for p in products.values() if p.watches]
+        # Include products with zero watches so admin API and UIs can show the full catalog.
+        return sorted(products.values(), key=lambda p: (p.name.lower(), p.id))
 
     async def list_product_ids(self) -> set[str]:
         async with self._pool.acquire() as conn:
@@ -135,19 +148,7 @@ class CatalogRepo:
                 """,
                 product_id,
             )
-        return [
-            WatchRow(
-                id=r["id"],
-                product_id=r["product_id"],
-                source=r["source"],
-                url=r["url"],
-                asin=r["asin"],
-                affiliate_tag=r["affiliate_tag"],
-                poll_seconds=r["poll_seconds"],
-                created_at=r["created_at"],
-            )
-            for r in rows
-        ]
+        return [self._row_to_watch(r) for r in rows]
 
     async def get_product_id_by_retailer_sku(self, retailer: str, sku: str) -> str | None:
         """Resolve product_id from retailer+SKU (ASIN, product code, etc.)."""
@@ -421,6 +422,15 @@ class CatalogRepo:
             )
         return "0" not in str(result)
 
+    async def set_poll_seconds_on_all_watches(self, poll_seconds: int | None) -> int:
+        """Set every listing's poll interval. ``None`` clears to use YAML ``defaults.poll_seconds``."""
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(
+                "UPDATE catalog_watches SET poll_seconds = $1 RETURNING id",
+                poll_seconds,
+            )
+        return len(rows)
+
     async def get_watch(self, watch_id: int) -> WatchRow | None:
         async with self._pool.acquire() as conn:
             row = await conn.fetchrow(
@@ -429,16 +439,7 @@ class CatalogRepo:
             )
         if row is None:
             return None
-        return WatchRow(
-            id=row["id"],
-            product_id=row["product_id"],
-            source=row["source"],
-            url=row["url"],
-            asin=row["asin"],
-            affiliate_tag=row["affiliate_tag"],
-            poll_seconds=row["poll_seconds"],
-            created_at=row["created_at"],
-        )
+        return self._row_to_watch(row)
 
     async def ensure_product_and_add_watch(
         self,

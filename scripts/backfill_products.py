@@ -3,6 +3,7 @@
 import asyncio
 import json
 from pathlib import Path
+
 from commerce_platform.platform.config.loader import load
 from commerce_platform.platform.store.db import Database
 from commerce_platform.platform.store.repos import CatalogRepo
@@ -69,6 +70,7 @@ async def backfill_products(config_path: Path, json_path: Path) -> None:
 
 if __name__ == "__main__":
     import os
+
     from dotenv import load_dotenv
 
     load_dotenv()

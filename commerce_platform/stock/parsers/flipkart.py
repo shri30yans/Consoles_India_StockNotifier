@@ -8,6 +8,7 @@ import re
 from bs4 import BeautifulSoup
 
 from commerce_platform.platform.product_name import coerce_product_name
+from commerce_platform.stock.parsers._money import rupee_to_float as _rupee_to_float
 from commerce_platform.stock.parsers.json_ld_brand import brand_from_json_ld_object
 from commerce_platform.stock.parsers.protocol import ListingSnapshot, ParseSignal
 
@@ -85,17 +86,6 @@ def _extract_mrp(soup: BeautifulSoup) -> float | None:
             p = _rupee_to_float(el.get_text())
             if p and p > 0:
                 return p
-    return None
-
-
-def _rupee_to_float(text: str) -> float | None:
-    cleaned = re.sub(r"[₹,\s]", "", text)
-    m = re.search(r"(\d+(?:\.\d+)?)", cleaned)
-    if m:
-        try:
-            return float(m.group(1))
-        except ValueError:
-            pass
     return None
 
 

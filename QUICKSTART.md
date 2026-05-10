@@ -1,12 +1,12 @@
 # Quick Start — Deal Discovery Platform
 
-System verified and ready. Three terminals required to run the full pipeline.
+Run **`python -m commerce_platform`** to start **FastAPI + stock/deals workers + observation pipeline** in **one process**. Use **two terminals** only if you want separate shells for logs vs curl.
 
 ## Prerequisites (Already Verified ✓)
 - Python 3.10+: installed
 - PostgreSQL: Supabase connection confirmed
-- Config: `config.yaml` loaded with 5 platform sources
-- Database: Schema initialized (deals, config_settings, and all required tables)
+- Config: `config.yaml` loaded with platform sources
+- Database: Schema initialized (deals, config_settings, and required tables)
 
 ---
 
@@ -16,8 +16,6 @@ System verified and ready. Three terminals required to run the full pipeline.
 python scripts/init_db.py
 ```
 
-Creates all tables (catalog_products, deals, config_settings, price_snapshots, stock_state, rules, etc.).
-
 **Output:**
 ```
 Database schema initialized successfully!
@@ -25,65 +23,49 @@ Database schema initialized successfully!
 
 ---
 
-## 2. Terminal 1: Start the API Server
+## 2. Start the Platform (Single Command)
 
+From the repo root (with `.env` loaded — `python -m commerce_platform` loads dotenv):
+
+```powershell
+python -m commerce_platform --host 0.0.0.0 --port 8000
+```
+
+This starts:
+- HTTP API and static frontend on port **8000**
+- **`StockRunner`** (`commerce_platform.stock.runner`) — schedules product polls and **`DealDiscoveryWatcher`** jobs from config
+- **`observation-processor`** (`commerce_platform.runtime.worker_bootstrap`) — **`PriceObservation`** → **`RuleEngine`** → **`ChannelRouter`** / notifications
+
+**Expected output (examples):**
+```
+INFO:     Uvicorn running on http://0.0.0.0:8000
+INFO: StockRunner starting N jobs — full reload every …s
+INFO: Registering amazon_deals discovery source: poll_every=…s min_discount=…%
+INFO: DealDiscoveryWatcher started: type=amazon_deals seeds=… poll=…s
+INFO: Rule matched: product=… rule=… retailer=…
+```
+
+**Verify:** Open http://localhost:8000/api/health → should include `"status": "ok"`
+
+---
+
+## 3. Optional: Workers Only (Debugging)
+
+If you need the API in one terminal and workers in another (same DB):
+
+**Terminal A — API only**
 ```powershell
 uvicorn commerce_platform.web.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-**Expected output:**
-```
-INFO:     Uvicorn running on http://0.0.0.0:8000
-INFO:     Application startup complete
-```
-
-**Verify:** Open http://localhost:8000/health in browser → should return `{"status": "ok", ...}`
-
----
-
-## 3. Terminal 2: Start the Workers
-
-Workers poll retailers for deals, curate low-scoring deals, and auto-fix broken parsers.
-
+**Terminal B — Workers**
 ```powershell
-python -c "
-import asyncio
-from pathlib import Path
-from dotenv import load_dotenv
-from commerce_platform.platform.config.loader import load
-from commerce_platform.platform.store.db import Database
-from commerce_platform.runtime.worker_bootstrap import run_stock_and_deals_workers
-
-# Load environment
-load_dotenv(Path('.env'), override=True)
-
-# Run workers
-config = load(Path('config.yaml'))
-db = Database(config.platform.store)
-
-async def main():
-    await db.open()
-    try:
-        await run_stock_and_deals_workers(config, 'config.yaml', db=db)
-    finally:
-        await db.close()
-
-asyncio.run(main())
-"
-```
-
-**Expected output:**
-```
-INFO: stock-runner started (will reload config every 15s)
-INFO: observation-processor started
-INFO: discovery-loop started (polling every 3600s)
-INFO: curation-loop started (reviewing every 300s)
-INFO: parser-fixer started (listening for failures)
+python scripts/workers.py
 ```
 
 ---
 
-## 4. Terminal 3: Monitor the System
+## 4. Monitor the System
 
 ### Live Deals API
 ```powershell
@@ -92,7 +74,7 @@ curl http://localhost:8000/api/deals?limit=10
 
 ### System Health Check
 ```powershell
-curl http://localhost:8000/health/system
+curl http://localhost:8000/api/system
 ```
 
 Returns:
@@ -125,37 +107,20 @@ Auto-refreshes every 90 seconds. Shows:
 
 ### Recent Discoveries
 ```powershell
-curl http://localhost:8000/health/deals/recent
+curl http://localhost:8000/api/system/deals/recent
 ```
 
-Shows last 20 discovered deals with scores and reasons.
-
-### Pending Approval (Borderline Deals)
+### Pending Approval (Borderline / Unreviewed)
 ```powershell
-curl http://localhost:8000/health/deals/pending-approval
+curl http://localhost:8000/api/system/deals/pending-approval
 ```
-
-Deals scoring 0.30–0.40 (below auto-approve threshold) awaiting admin review.
 
 ### Watch Live Logs
-```powershell
-# Terminal 1: API logs (already visible)
-# Terminal 2: Worker logs (already visible)
-```
 
-Look for:
-```
-INFO: Discovery: amazon_deals — found=47 qualified=12 created=3 updated=2
-INFO: Curation: pending=3 sent_to_admin=2 approved=1
-INFO: ParserFixerAgent analyzing failure for flipkart_deals
-INFO: Claude suggested selectors: {".dealContainer": ".DealCard-module__dealContent"}
-```
+Look for **`DealDiscoveryWatcher started`**, **`StockRunner starting`**, **`Registering … discovery source`**, **`Rule matched`**, or **`Error processing observation`** / parser tracebacks. Parser extraction failures surface as **`ValueError`** in logs; confirm with **`tests/test_deal_scrapers_live.py`** after retailer HTML changes.
 
 ### Check Database Directly
 ```powershell
-# Open psql or DBeaver connected to your Supabase database
-# Then query:
-
 SELECT retailer, COUNT(*) as count, ROUND(AVG(score), 2) as avg_score
 FROM deals WHERE is_active = true
 GROUP BY retailer
@@ -164,10 +129,8 @@ ORDER BY count DESC;
 
 ### Admin API (Approve/Reject Deals)
 ```powershell
-# Get a pending deal ID
-curl "http://localhost:8000/health/deals/pending-approval" | ConvertFrom-Json | select -ExpandProperty deals | select id, title | head -1
+curl "http://localhost:8000/api/system/deals/pending-approval"
 
-# Approve it (replace DEAL_ID with actual ID, and JWT_TOKEN from auth)
 curl -X POST "http://localhost:8000/api/admin/deals/DEAL_ID/approve" `
   -H "Authorization: Bearer JWT_TOKEN" `
   -H "Content-Type: application/json" `
@@ -178,19 +141,18 @@ curl -X POST "http://localhost:8000/api/admin/deals/DEAL_ID/approve" `
 
 ## 6. Verify Everything Works (Test Checklist)
 
-- [ ] Terminal 1: API is running and responsive
-- [ ] Terminal 2: Workers are running (5 loops started)
-- [ ] Terminal 3: curl http://localhost:8000/health/system returns overall_status: "healthy"
-- [ ] Terminal 3: curl http://localhost:8000/api/deals returns array of deals
-- [ ] Terminal 3: Open http://localhost:8000/deals in browser, see deal grid
-- [ ] Check logs: "Discovery: amazon_deals — found=..." appears in worker logs within 60 sec
-- [ ] Wait 60 sec for discovery to run, then refresh /api/deals and browser
+- [ ] `python -m commerce_platform` runs without errors
+- [ ] http://localhost:8000/api/health returns ok
+- [ ] curl http://localhost:8000/api/system returns `overall_status` healthy (DB reachable)
+- [ ] curl http://localhost:8000/api/deals returns an array (may be empty until first successful poll)
+- [ ] Open http://localhost:8000/deals — grid loads
+- [ ] Logs show `DealDiscoveryWatcher started` for enabled platform sources
 
 ---
 
 ## 7. Configuration
 
-All config is in `config.yaml` + `config_settings` database table.
+Base file: `config.yaml`. **Scoring threshold and weights** are overridden from the **`config_settings`** table (merged at runtime); edit via admin API or SQL.
 
 ### Deal Scoring Weights (in DB)
 ```sql
@@ -199,7 +161,7 @@ SELECT key, value FROM config_settings WHERE key LIKE 'deals.scoring.%';
 
 Change via:
 ```
-PATCH /admin/deals/config
+PATCH /api/admin/deals/config
 {
   "threshold": 0.40,
   "weights": {
@@ -216,68 +178,45 @@ PATCH /admin/deals/config
 SELECT key, value FROM config_settings WHERE key LIKE 'affiliate.%';
 ```
 
-Change via:
-```
-PATCH /admin/affiliate/config
-[
-  {"retailer": "amazon", "tag": "consolesind09-21", "param_name": "tag"},
-  {"retailer": "flipkart", "tag": "aff_1234", "param_name": "affid"}
-]
-```
-
 ---
 
 ## 8. Architecture at a Glance
 
 ```
-Terminal 1 (API Port 8000)
-    ↓
-    FastAPI ← serves /deals UI, /api/deals, /health/*, /admin/*
-    ↓
-    PostgreSQL (Supabase)
+python -m commerce_platform (one OS process)
+    FastAPI :8000  ← React /deals, /api/*, /admin/*
+         │
+         └─ shared asyncpg pool ←→ PostgreSQL
 
-Terminal 2 (Workers)
-    ↓
-    DiscoveryLoop (every 60 min) → scrapes amazon/flipkart/ajio/myntra
-    ↓ (finds deals)
-    DealRepo.upsert() → deals table
-    ↓
-    CurationLoop (every 5 min) → reviews pending deals
-    ↓ (score < 0.40)
-    Sends to /api/admin/deals for approval
-    ↓
-    ParserFixerAgent (listens for failures)
-    ↓ (parser broke)
-    Calls Claude to analyze HTML + suggest new CSS selectors
-    ↓
-    Next poll cycle uses new selectors ✓
+asyncio.Tasks:
+    StockRunner
+      ├─ Poller (per product watch) → PriceObservation → EventBus
+      └─ DealDiscoveryWatcher (per deal source) → parse/score → DealRepo
+
+    observation-processor (in worker_bootstrap)
+      EventBus (PriceObservation) → RuleEngine → NotificationHandler → ChannelRouter
+      (telegram, discord, twitter, … — BaseHttpChannel for HTTP channels)
 ```
 
 ---
 
 ## 9. Stop the System
 
-```
-Terminal 1: Ctrl+C (FastAPI)
-Terminal 2: Ctrl+C (Workers)
-Terminal 3: Ctrl+C (Monitor/Curl)
-```
-
-Data persists in PostgreSQL. Next run will continue from last state.
+**Ctrl+C** in the terminal running `python -m commerce_platform`. Data persists in PostgreSQL.
 
 ---
 
 ## 10. Next Steps (Optional Enhancements)
 
-- [ ] **Frontend Admin Tab**: Build Deals tab in AdminPage.tsx (currently available via API only)
-- [ ] **Hermes Agent Integration**: Fork Hermes repo and integrate for adaptive discovery
-- [ ] **Notifications**: Set up Telegram/Discord for new deal alerts
-- [ ] **Fraud Detection**: Add ParserFixerAgent-style analyzer for seller legitimacy
-- [ ] **Web Intelligence**: Add agent to handle CAPTCHA, bot detection on retailers
-- [ ] **Price Tracking**: Build price history visualization on product detail page
+- [ ] **Frontend Admin Tab**: Richer deals tab in AdminPage.tsx
+- [ ] **Future / Not Built Yet:** **Hermes-style** adaptive discovery memory
+- [ ] **Notifications**: Wire Telegram/Discord/X credentials in channel config
+- [ ] **Future / Not Built Yet:** **Fraud / seller legitimacy** analyzer (no automatic selector repair exists today)
+- [ ] **Future / Not Built Yet:** Retailer bot/CAPTCHA handling
+- [ ] **Price Tracking**: Charts on product detail
 
 ---
 
 **System Status: READY TO RUN** ✓
 
-Start the three terminals above and monitor http://localhost:8000/health/system
+Run **`python -m commerce_platform`** and monitor **`http://localhost:8000/api/system`**.

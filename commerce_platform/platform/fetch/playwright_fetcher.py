@@ -1,55 +1,110 @@
-"""Browser automation fetcher using Playwright — for JS-heavy pages."""
+"""Playwright fetcher — one persistent Chromium powering both fast HTTP fetches
+and full JS-rendered page fetches.
+
+Two methods:
+  - ``get_html(url)`` — uses ``BrowserContext.request`` (real Chromium HTTP stack,
+    real Chrome TLS / JA3 fingerprint, shared cookies). No DOM, no JS. Use for
+    static HTML pages (most retailer PDPs).
+  - ``get_html_rendered(url)`` — opens a Page, navigates with
+    ``wait_until="domcontentloaded"`` then waits briefly for network to settle.
+    Use only for SPA / JS-rendered listings (Amazon /deals, Flipkart SERP, etc.).
+
+Both share one Browser + one BrowserContext, so cookies, storage_state, TLS, and
+proxy settings are identical across modes. A single Chromium process is launched
+on first use and torn down on ``close()``.
+"""
 
 from __future__ import annotations
 
 import asyncio
 import logging
+from pathlib import Path
 from typing import TYPE_CHECKING
 
-from playwright.async_api import async_playwright
+from playwright.async_api import (
+    Error as PlaywrightError,
+)
+from playwright.async_api import (
+    TimeoutError as PlaywrightTimeoutError,
+)
+from playwright.async_api import (
+    async_playwright,
+)
+
 from commerce_platform.platform.config.schema import StockFetchConfig
-from commerce_platform.platform.fetch._headers import random_ua
+from commerce_platform.platform.fetch._headers import random_profile
 
 if TYPE_CHECKING:
-    from playwright.async_api import Browser, BrowserContext, Page, Playwright
+    from playwright.async_api import Browser, BrowserContext, Playwright, Route
 
 logger = logging.getLogger(__name__)
 
 _STEALTH_SCRIPT = """
-Object.defineProperty(navigator, 'webdriver', {
-  get: () => undefined,
-  configurable: true,
-});
+Object.defineProperty(navigator, 'webdriver', {get: () => undefined, configurable: true});
 """
 
+# Resource types we never need for HTML scraping. Blocking them on the rendered
+# path cuts page weight ~70-80% and speeds up domcontentloaded proportionally.
+_BLOCKED_RESOURCE_TYPES = frozenset({"image", "media", "font", "stylesheet"})
 
-async def _launch_browser(cfg: StockFetchConfig, *, headless: bool = True, channel: str | None = None) -> tuple[Playwright, Browser, BrowserContext] | None:
-    """Launch Playwright browser and context, or return None if unavailable."""
+
+async def _launch_browser(
+    cfg: StockFetchConfig,
+    *,
+    headless: bool = True,
+    channel: str | None = None,
+) -> tuple[Playwright, Browser, BrowserContext] | None:
     try:
+        profile = random_profile()
+        state_path = Path(cfg.playwright_state_file) if cfg.playwright_state_file else None
+
         pw = await async_playwright().start()
         browser = await pw.chromium.launch(
             headless=headless,
             channel=(channel or "").strip() or None,
-            args=["--disable-blink-features=AutomationControlled"] if cfg.playwright_stealth else None,
+            args=["--disable-blink-features=AutomationControlled"] if cfg.playwright_stealth else [],
         )
-        context = await browser.new_context(
-            user_agent=random_ua(cfg),
+
+        ctx_kwargs: dict = dict(
+            user_agent=profile["ua"],
             locale=cfg.playwright_locale,
             timezone_id=cfg.playwright_timezone_id,
             viewport={"width": 1920, "height": 1080},
+            extra_http_headers={"Accept-Language": profile["accept_language"]},
         )
+        if state_path and state_path.exists():
+            ctx_kwargs["storage_state"] = str(state_path)
+            logger.debug("Loaded browser state from %s", state_path)
+
+        context = await browser.new_context(**ctx_kwargs)
+
         if cfg.playwright_stealth:
             await context.add_init_script(_STEALTH_SCRIPT)
+
         return pw, browser, context
     except NotImplementedError:
-        logger.warning("Playwright unavailable — asyncio subprocess not supported on this platform")
+        logger.warning("Playwright unavailable on this platform")
         return None
 
 
-class PlaywrightFetcher:
-    """Fetcher using Playwright for JavaScript rendering."""
+async def _block_subresources(route: Route) -> None:
+    if route.request.resource_type in _BLOCKED_RESOURCE_TYPES:
+        await route.abort()
+    else:
+        await route.continue_()
 
-    def __init__(self, cfg: StockFetchConfig, *, headless: bool = True, channel: str | None = None) -> None:
+
+class PlaywrightFetcher:
+    """Unified Chromium-backed fetcher: fast HTTP via APIRequestContext, plus an
+    on-demand rendered-page mode for JS-heavy listings."""
+
+    def __init__(
+        self,
+        cfg: StockFetchConfig,
+        *,
+        headless: bool = True,
+        channel: str | None = None,
+    ) -> None:
         self._cfg = cfg
         self._headless = headless
         self._channel = channel
@@ -57,19 +112,36 @@ class PlaywrightFetcher:
         self._browser: Browser | None = None
         self._context: BrowserContext | None = None
         self._available = True
+        self._start_lock = asyncio.Lock()
+        self._route_attached = False
 
     async def start(self) -> None:
-        """Initialize browser. Silent no-op if already initialized or unavailable."""
         if self._context is not None or not self._available:
             return
-        result = await _launch_browser(self._cfg, headless=self._headless, channel=self._channel)
-        if result is None:
-            self._available = False
+        async with self._start_lock:
+            if self._context is not None or not self._available:
+                return
+            result = await _launch_browser(self._cfg, headless=self._headless, channel=self._channel)
+            if result is None:
+                self._available = False
+                return
+            self._pw, self._browser, self._context = result
+            # Routes apply only to Page navigation traffic (not to context.request),
+            # so we can attach once and let it cover every rendered fetch.
+            await self._context.route("**/*", _block_subresources)
+            self._route_attached = True
+
+    async def save_state(self) -> None:
+        """Persist cookies + localStorage to ``playwright_state_file`` if configured."""
+        if self._context is None or not self._cfg.playwright_state_file:
             return
-        self._pw, self._browser, self._context = result
+        path = Path(self._cfg.playwright_state_file)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        await self._context.storage_state(path=str(path))
+        logger.info("Browser state saved to %s", path)
 
     async def close(self) -> None:
-        """Clean up browser resources."""
+        await self.save_state()
         if self._context:
             await self._context.close()
             self._context = None
@@ -79,68 +151,62 @@ class PlaywrightFetcher:
         if self._pw:
             await self._pw.stop()
             self._pw = None
+        self._route_attached = False
 
     async def get_html(self, url: str, *, label: str = "") -> str | None:
-        """Fetch URL via Playwright, or return None if unavailable."""
+        """Fast path: real Chrome TLS + cookie jar, no DOM/JS."""
+        await self.start()
+        if self._context is None:
+            return None
+        try:
+            response = await self._context.request.get(url, timeout=30_000)
+        except PlaywrightTimeoutError:
+            logger.warning("Request timeout for %s", label or url)
+            return None
+        except PlaywrightError as e:
+            logger.warning("Request error for %s: %s", label or url, e)
+            return None
+
+        if response.status not in (200, 304):
+            logger.warning("HTTP %s for %s", response.status, label or url)
+            if response.status == 404:
+                await asyncio.sleep(60)
+            return None
+        try:
+            return await response.text()
+        except PlaywrightError as e:
+            logger.warning("Body decode failed for %s: %s", label or url, e)
+            return None
+
+    async def get_html_rendered(self, url: str, *, label: str = "") -> str | None:
+        """Slow path: full Chromium render. Use only for JS-rendered pages."""
         await self.start()
         if self._context is None:
             return None
 
         page = await self._context.new_page()
         try:
-            response = await page.goto(url, timeout=120_000)
-            if response is None or response.status not in (200, 304):
-                if response:
-                    logger.warning("HTTP %s for %s", response.status, label or url)
-                    if response.status == 404:
-                        await asyncio.sleep(60)
-                else:
-                    logger.warning("No response for %s", label or url)
+            try:
+                response = await page.goto(url, timeout=30_000, wait_until="domcontentloaded")
+            except PlaywrightTimeoutError:
+                logger.debug("domcontentloaded timeout for %s", label or url)
                 return None
+
+            if response is None:
+                logger.warning("No response for %s", label or url)
+                return None
+            if response.status not in (200, 304):
+                logger.warning("HTTP %s for %s", response.status, label or url)
+                if response.status == 404:
+                    await asyncio.sleep(60)
+                return None
+
+            # Give the React tree a brief window to mount and finish XHRs.
+            try:
+                await page.wait_for_load_state("networkidle", timeout=8_000)
+            except PlaywrightTimeoutError:
+                pass  # networkidle is best-effort; SPAs with poll loops never reach it.
+
             return await page.content()
-        except asyncio.TimeoutError:
-            logger.warning("Playwright timeout for %s", label or url)
-            return None
         finally:
             await page.close()
-
-
-class PlaywrightPageFetcher:
-    """Reusable page fetcher — maintains a single page for repeated requests."""
-
-    def __init__(self, fetcher: PlaywrightFetcher) -> None:
-        self._fetcher = fetcher
-        self._page: Page | None = None
-
-    async def start(self) -> None:
-        """Initialize page."""
-        await self._fetcher.start()
-        if self._fetcher._context is None:
-            return
-        self._page = await self._fetcher._context.new_page()
-
-    async def close(self) -> None:
-        """Clean up page."""
-        if self._page:
-            await self._page.close()
-            self._page = None
-
-    async def get_html(self, url: str, *, label: str = "") -> str | None:
-        """Fetch URL via existing page."""
-        if self._page is None:
-            await self.start()
-        if self._page is None:
-            return None
-
-        try:
-            response = await self._page.goto(url, timeout=120_000)
-            if response is None or response.status not in (200, 304):
-                if response:
-                    logger.warning("HTTP %s for %s", response.status, label or url)
-                else:
-                    logger.warning("No response for %s", label or url)
-                return None
-            return await self._page.content()
-        except asyncio.TimeoutError:
-            logger.warning("Playwright timeout for %s", label or url)
-            return None
