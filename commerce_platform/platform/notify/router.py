@@ -9,7 +9,6 @@ import os
 from commerce_platform.platform.config.schema import ChannelConfig
 from commerce_platform.platform.notify.discord import DiscordNotifier
 from commerce_platform.platform.notify.telegram import TelegramNotifier
-from commerce_platform.platform.notify.twitter import TwitterNotifier
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +17,6 @@ class ChannelRouter:
     def __init__(self, channels: list[ChannelConfig]) -> None:
         self._telegram = TelegramNotifier()
         self._discord = DiscordNotifier()
-        self._twitter = TwitterNotifier()
         self._channels = {c.id: c for c in channels}
 
     async def send(self, channel_id: str, text: str) -> None:
@@ -36,8 +34,6 @@ class ChannelRouter:
             webhook = _resolve(channel.discord.webhook_url)
             if webhook:
                 tasks.append(self._discord.send(text, webhook))
-        if channel.twitter is not None:
-            tasks.append(self._twitter.send(text))
 
         if not tasks:
             logger.warning("Channel %s has no configured notifiers", channel_id)

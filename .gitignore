@@ -2,7 +2,6 @@
 .env
 .env.*
 !.env.example
-PAAPICredentials.csv
 .vscode/
 __pycache__/
 .mypy_cache/
@@ -20,9 +19,3 @@ build/
 *.egg-info/
 agent-tools/
 .runtime/
-
-# Scratch / debug captures
-_*.html
-_*.png
-.playwright_state.json
-

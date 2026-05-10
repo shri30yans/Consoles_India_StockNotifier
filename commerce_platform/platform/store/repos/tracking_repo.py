@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Literal, NamedTuple
+from typing import NamedTuple
 
 import asyncpg
 
@@ -69,20 +69,28 @@ class TrackingRepo:
             )
         return [self._row_to_tracking(r) for r in rows]
 
-    async def list_by_status(
-        self, status: Literal["pending", "approved", "rejected"] | None = None
-    ) -> list[TrackingRow]:
+    async def list_by_status(self, status: str | None) -> list[TrackingRow]:
         async with self._pool.acquire() as conn:
-            rows = await conn.fetch(
-                """
-                SELECT id, user_id, raw_url, normalized_retailer_hint, desired_product_name, note,
-                       status, admin_note, created_at, decided_at, decided_by, promoted_product_id
-                FROM tracking_requests
-                WHERE ($1::text IS NULL OR status = $1)
-                ORDER BY created_at DESC
-                """,
-                status,
-            )
+            if status is None:
+                rows = await conn.fetch(
+                    """
+                    SELECT id, user_id, raw_url, normalized_retailer_hint, desired_product_name, note,
+                           status, admin_note, created_at, decided_at, decided_by, promoted_product_id
+                    FROM tracking_requests
+                    ORDER BY created_at DESC
+                    """
+                )
+            else:
+                rows = await conn.fetch(
+                    """
+                    SELECT id, user_id, raw_url, normalized_retailer_hint, desired_product_name, note,
+                           status, admin_note, created_at, decided_at, decided_by, promoted_product_id
+                    FROM tracking_requests
+                    WHERE status = $1
+                    ORDER BY created_at DESC
+                    """,
+                    status,
+                )
         return [self._row_to_tracking(r) for r in rows]
 
     async def get(self, request_id: int) -> TrackingRow | None:
@@ -100,42 +108,41 @@ class TrackingRepo:
             return None
         return self._row_to_tracking(row)
 
-    async def resolve(
-        self,
-        request_id: int,
-        *,
-        decision: Literal["approved", "rejected"],
-        admin_id: int,
-        admin_note: str | None = None,
-        promoted_product_id: str | None = None,
-    ) -> bool:
-        """Mark a tracking request as approved or rejected.
-
-        ``promoted_product_id`` is required when ``decision='approved'`` and
-        ignored when ``'rejected'``.
-        """
-        if decision == "approved" and promoted_product_id is None:
-            raise ValueError("promoted_product_id is required when decision='approved'")
+    async def set_rejected(self, request_id: int, admin_id: int, admin_note: str) -> bool:
         from datetime import datetime, timezone
 
         now = datetime.now(timezone.utc).isoformat()
-        promoted = promoted_product_id if decision == "approved" else None
         async with self._pool.acquire() as conn:
             result = await conn.execute(
                 """
                 UPDATE tracking_requests
-                SET status = $1,
-                    admin_note = $2,
-                    decided_at = $3,
-                    decided_by = $4,
-                    promoted_product_id = $5
-                WHERE id = $6 AND status = 'pending'
+                SET status = 'rejected', admin_note = $1, decided_at = $2, decided_by = $3
+                WHERE id = $4 AND status = 'pending'
                 """,
-                decision,
                 admin_note,
                 now,
                 admin_id,
-                promoted,
+                request_id,
+            )
+        return "0" not in str(result)
+
+    async def set_approved_and_promote(
+        self, request_id: int, admin_id: int, admin_note: str, promoted_product_id: str
+    ) -> bool:
+        from datetime import datetime, timezone
+
+        now = datetime.now(timezone.utc).isoformat()
+        async with self._pool.acquire() as conn:
+            result = await conn.execute(
+                """
+                UPDATE tracking_requests
+                SET status = 'approved', admin_note = $1, decided_at = $2, decided_by = $3, promoted_product_id = $4
+                WHERE id = $5 AND status = 'pending'
+                """,
+                admin_note,
+                now,
+                admin_id,
+                promoted_product_id,
                 request_id,
             )
         return "0" not in str(result)

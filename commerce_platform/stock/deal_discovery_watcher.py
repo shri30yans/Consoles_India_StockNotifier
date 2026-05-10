@@ -10,19 +10,21 @@ from commerce_platform.deals.scorer import DealScorer
 from commerce_platform.platform.config.schema import PlatformSourceConfig
 from commerce_platform.platform.events.bus import EventBus
 from commerce_platform.platform.events.observation import PriceObservation
-from commerce_platform.platform.fetch.playwright_fetcher import PlaywrightFetcher
+from commerce_platform.platform.fetch.protocol import HtmlFetcher
 from commerce_platform.platform.store.repos import CatalogRepo, DealRepo
-from commerce_platform.stock.parsers.registry import get_parser_for_source
 from commerce_platform.stock.sources.serp_parsers import (
     ListingItem,
     extract_ajio_offer_items,
-    extract_ajio_serp_urls,
     extract_amazon_deal_items,
-    extract_amazon_serp_urls,
     extract_flipkart_offer_items,
-    extract_flipkart_serp_urls,
     extract_myntra_offer_items,
 )
+from commerce_platform.stock.sources.serp_parsers import (
+    extract_amazon_serp_urls,
+    extract_ajio_serp_urls,
+    extract_flipkart_serp_urls,
+)
+from commerce_platform.stock.parsers.registry import get_parser_for_source
 from commerce_platform.web.retailers import detect_retailer_and_asin
 
 logger = logging.getLogger(__name__)
@@ -67,14 +69,12 @@ class DealDiscoveryWatcher:
     def __init__(
         self,
         source: PlatformSourceConfig,
-        fetcher: PlaywrightFetcher,
+        fetcher: HtmlFetcher,
         catalog_repo: CatalogRepo,
         deal_repo: DealRepo,
         deal_scorer: DealScorer,
         bus: EventBus,
     ) -> None:
-        # Listings are React-rendered (rendered path); PDPs are static (fast path).
-        # Both modes share one Browser/BrowserContext via PlaywrightFetcher.
         self._source = source
         self._fetcher = fetcher
         self._catalog_repo = catalog_repo
@@ -118,9 +118,7 @@ class DealDiscoveryWatcher:
 
     async def _poll_seed(self, seed_url: str) -> None:
         """Fetch and process a single deal page seed."""
-        html = await self._fetcher.get_html_rendered(
-            seed_url, label=f"{self._source.type}:listing"
-        )
+        html = await self._fetcher.get_html(seed_url, label=f"{self._source.type}:listing")
         if html is None:
             logger.warning("Failed to fetch %s seed %s", self._source.type, seed_url)
             return

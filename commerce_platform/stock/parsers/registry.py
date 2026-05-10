@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from typing import Callable
 
 from commerce_platform.stock.parsers import ajio as ajio_parser
 from commerce_platform.stock.parsers import amazon as amazon_parser

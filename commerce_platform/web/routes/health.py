@@ -1,8 +1,4 @@
-"""System health checks and monitoring.
-
-All routes live under ``/system`` (in addition to ``/health``) so they never
-shadow public domain routes such as ``/deals``.
-"""
+"""System health checks and monitoring."""
 
 from __future__ import annotations
 
@@ -37,6 +33,7 @@ async def system_health(
         "api": {"status": "healthy"},
     }
 
+    # Check database connectivity
     try:
         await deal_repo.list_active(limit=1)
         checks["database"]["status"] = "healthy"
@@ -45,12 +42,14 @@ async def system_health(
         checks["database"]["status"] = "error"
         checks["database"]["error"] = str(e)
 
+    # Check deals system
     try:
         all_deals = await deal_repo.list_active(limit=10000)
         active_count = len(all_deals)
         pending = await deal_repo.get_pending_approval(minutes=5)
         expired = await deal_repo.list_expired(limit=100)
 
+        # Breakdown by retailer
         by_retailer: dict[str, int] = {}
         for deal in all_deals:
             by_retailer[deal.retailer] = by_retailer.get(deal.retailer, 0) + 1
@@ -60,13 +59,12 @@ async def system_health(
         checks["deals"]["pending_approval"] = len(pending)
         checks["deals"]["expired_deals"] = len(expired)
         checks["deals"]["by_retailer"] = by_retailer
-        checks["deals"]["last_updated"] = (
-            max([d.last_confirmed_at for d in all_deals], default=None) if all_deals else None
-        )
+        checks["deals"]["last_updated"] = max([d.last_confirmed_at for d in all_deals], default=None) if all_deals else None
     except Exception as e:
         checks["deals"]["status"] = "error"
         checks["deals"]["error"] = str(e)
 
+    # Overall status
     overall = "healthy"
     if any(c.get("status") == "error" for c in checks.values()):
         overall = "degraded"
@@ -78,13 +76,14 @@ async def system_health(
     }
 
 
-@router.get("/system/deals")
+@router.get("/deals")
 async def deals_status(deal_repo: DealRepo = Depends(get_deal_repo)) -> dict[str, Any]:
-    """Detailed deals system status (diagnostic — not the public ``/deals`` API)."""
+    """Detailed deals system status."""
     try:
         active = await deal_repo.list_active(limit=10000)
         pending = await deal_repo.get_pending_approval(minutes=60)
 
+        # Stats by retailer
         stats: dict[str, dict[str, Any]] = {}
         for deal in active:
             if deal.retailer not in stats:
@@ -94,6 +93,7 @@ async def deals_status(deal_repo: DealRepo = Depends(get_deal_repo)) -> dict[str
             if deal.discount_pct:
                 stats[deal.retailer]["avg_discount"] += deal.discount_pct
 
+        # Average out
         for retailer in stats:
             if stats[retailer]["count"] > 0:
                 stats[retailer]["avg_score"] /= stats[retailer]["count"]
@@ -110,7 +110,7 @@ async def deals_status(deal_repo: DealRepo = Depends(get_deal_repo)) -> dict[str
         return {"status": "error", "error": str(e), "timestamp": datetime.now(tz).isoformat()}
 
 
-@router.get("/system/deals/recent")
+@router.get("/deals/recent")
 async def recent_deals(
     deal_repo: DealRepo = Depends(get_deal_repo),
     limit: int = 20,
@@ -140,7 +140,7 @@ async def recent_deals(
         return {"error": str(e), "timestamp": datetime.now(tz).isoformat()}
 
 
-@router.get("/system/deals/pending-approval")
+@router.get("/deals/pending-approval")
 async def pending_approval(
     deal_repo: DealRepo = Depends(get_deal_repo),
     minutes: int = 60,

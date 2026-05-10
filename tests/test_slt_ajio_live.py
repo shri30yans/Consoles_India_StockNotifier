@@ -5,7 +5,8 @@ import os
 from pathlib import Path
 
 import pytest
-from commerce_platform.stock.listing_preview import scrape_listing
+
+from commerce_platform.web.listing_scrape import scrape_listing
 
 
 def _require_live_slt_enabled() -> None:

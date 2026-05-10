@@ -2,11 +2,10 @@
 """Start the FastAPI server."""
 
 from pathlib import Path
-
+from dotenv import load_dotenv
 from commerce_platform.platform.config.loader import load
 from commerce_platform.web.config import load_web_config
 from commerce_platform.web.main import create_app
-from dotenv import load_dotenv
 
 load_dotenv(Path(".env"), override=True)
 config = load(Path("config.yaml"))

@@ -126,6 +126,15 @@ class DealRepo:
         was_active = existing["is_active"]
         old_score = existing["score"]
 
+        if row.in_stock is False:  # type: ignore  # Will be detected from context
+            # Product out of stock → expire
+            async with self._pool.acquire() as conn:
+                await conn.execute(
+                    "UPDATE deals SET is_active = false WHERE product_url = $1",
+                    row.product_url,
+                )
+            return ("expired", False)
+
         if row.price_paise > old_price:
             # Price rose → expire
             async with self._pool.acquire() as conn:

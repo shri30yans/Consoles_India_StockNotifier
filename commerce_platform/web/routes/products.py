@@ -8,12 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from commerce_platform.platform.config.merge import load_merged_platform_config
 from commerce_platform.platform.config.schema import Money
 from commerce_platform.platform.store.repos import CatalogRepo, PriceRepo, StockRepo
-from commerce_platform.web.deps import (
-    get_catalog_repo,
-    get_config_path,
-    get_price_repo,
-    get_stock_repo,
-)
+from commerce_platform.web.deps import get_catalog_repo, get_config_path, get_price_repo, get_stock_repo
 
 router = APIRouter(tags=["products"])
 

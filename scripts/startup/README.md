@@ -20,14 +20,14 @@ This opens **2 terminal windows** and shows you what to do next.
 
 **Terminal 1: API Server** (port 8000)
 - Serves the React frontend
-- Serves the REST API (`/api/deals`, `/api/health`, `/api/system`, etc.)
-- Auto-reloads on code changes (when launched via the script’s uvicorn mode — see repo scripts)
+- Serves the REST API (`/api/deals`, `/api/health`, etc.)
+- Auto-reloads on code changes
 
-**Terminal 2: Workers** (when using split layout)
-- **`StockRunner`** schedules stock polls and **`DealDiscoveryWatcher`** loops from `config.yaml`
-- **`observation-processor`** consumes **`PriceObservation`** events from the in-process **`EventBus`** and routes notifications
-
-Or run **everything in one shell**: `python -m commerce_platform --host 0.0.0.0 --port 8000` (API + workers together).
+**Terminal 2: Workers**
+- Polls retailers every 60 minutes
+- Scores deals against 90-day history
+- Approves/rejects deals
+- Auto-fixes broken parsers
 
 ---
 
@@ -35,11 +35,11 @@ Or run **everything in one shell**: `python -m commerce_platform --host 0.0.0.0 
 
 | Time | What Happens |
 |------|--------------|
-| T=0s | Process binds HTTP; worker tasks start |
-| T= soon | **`StockRunner`** logs job count; **`DealDiscoveryWatcher`** logs `type=… seeds=… poll=…s` per enabled source |
-| T= … | First successful poll upserts deals; **`Rule matched`** may appear when rules fire |
-
-Poll intervals come from **`config.yaml`** (`poll_seconds` per source — not fixed “60 min” globally).
+| T=0s | Terminals open, API starts |
+| T=30s | API responding, workers started |
+| T=60s | **First discovery runs** — deals appear on page |
+| T=120s | Curation loop approves/rejects deals |
+| T=300s+ | Curation runs every 5 min, discovery every 60 min |
 
 ---
 
@@ -50,21 +50,24 @@ Poll intervals come from **`config.yaml`** (`poll_seconds` per source — not fi
    http://localhost:8000/deals
    ```
 
-2. **Wait for the configured poll interval** for first listing scrape
+2. **Wait 60 seconds** for first deal discovery
 
-3. **Deals appear** on the grid as **`DealRepo.upsert`** succeeds
+3. **Deals appear** on the grid automatically
 
-4. **Auto-refreshes** every 90 seconds (frontend)
+4. **Auto-refreshes** every 90 seconds
 
 ---
 
 ## Check Health
 
 ```bash
+# Basic health
 curl http://localhost:8000/api/health
 
+# System status
 curl http://localhost:8000/api/system
 
+# Deals grid
 http://localhost:8000/deals
 ```
 
@@ -77,13 +80,6 @@ In each terminal window, press **Ctrl+C** to stop.
 ---
 
 ## Manual Startup (If Scripts Don't Work)
-
-**One process (recommended):**
-```bash
-python -m commerce_platform --host 0.0.0.0 --port 8000
-```
-
-**Split (optional):**
 
 **Terminal 1:**
 ```bash
@@ -118,19 +114,19 @@ python verify_system.py
 
 Shows exactly what's missing (Python packages, database, etc.)
 
-### No deals after polls
-Check worker logs for **`Deal discovery poll error`**, **`ValueError`** from parsers, or DB errors. Parser extraction failures are explicit — update **`commerce_platform.stock.sources.serp_parsers`** / PDP parsers and re-run **`tests/test_deal_scrapers_live.py`**.
+### No deals appear after 60 seconds
+Check Terminal 2 logs for errors. Common issues:
+- Database not connected
+- Parser selectors broke (watch for "ParserFixerAgent analyzing...")
+- Network issues (retailer websites down)
 
-### Observation / notification issues
-Look for **`Error processing observation`** or channel errors in logs; verify channel credentials and **`commerce_platform.platform.notify`** configuration.
-
-### Database or repository errors
-If responses from `/api/system` show database/deals/stock errors, check:
+### "Curation pass failed"
+Usually means deal_repo or config_repo error. Check:
 ```bash
 curl http://localhost:8000/api/system
 ```
 
-If database shows `"error"`, run:
+If database shows "error", run:
 ```bash
 python verify_system.py
 ```
@@ -140,21 +136,23 @@ python verify_system.py
 ## Architecture
 
 ```
-Port 8000 (FastAPI)
-├─ React frontend (http://localhost:8000/deals)
-├─ REST API (/api/deals, /api/health, /api/system, …)
-└─ Shared Postgres pool with worker tasks
+Port 8000 (API Server)
+├─ Serves React frontend (http://localhost:8000/deals)
+├─ Serves REST API (/api/deals, /api/health, etc.)
+└─ Manages database connections
 
-Same Python process (typical: python -m commerce_platform)
-├─ StockRunner — Poller jobs + DealDiscoveryWatcher (deal sources)
-├─ observation-processor — EventBus → RuleEngine → ChannelRouter / NotificationHandler
-└─ PlaywrightFetcher — get_html / get_html_rendered
+Workers (Async Tasks)
+├─ StockRunner (product tracking)
+├─ DiscoveryLoop (polls retailers every 60 min)
+├─ CurationLoop (approves/rejects every 5 min)
+├─ ParserFixerAgent (auto-fixes selectors)
+└─ ObservationProcessor (notifications)
 ```
 
 ---
 
 ## For More Info
 
-- [../../QUICKSTART.md](../../QUICKSTART.md) — Detailed startup guide
+- [../../QUICKSTART.md](../../QUICKSTART.md) — Detailed 10-step guide
 - [../../MONITORING.md](../../MONITORING.md) — Health checks & troubleshooting
 - [../../README.md](../../README.md) — Architecture overview

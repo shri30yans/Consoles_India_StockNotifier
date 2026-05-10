@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-import asyncpg
 from fastapi import APIRouter, Depends, HTTPException, Request
+
+import asyncpg
 
 from commerce_platform.platform.store.repos import UserRepo
 from commerce_platform.web.auth_tokens import encode_access_token, hash_password, verify_password

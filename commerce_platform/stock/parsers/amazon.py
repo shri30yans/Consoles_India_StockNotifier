@@ -9,7 +9,6 @@ from dataclasses import dataclass
 from lxml import html
 
 from commerce_platform.platform.product_name import coerce_product_name
-from commerce_platform.stock.parsers._money import rupee_to_float as _rupee_to_float
 from commerce_platform.stock.parsers.json_ld_brand import brand_from_json_ld_object
 from commerce_platform.stock.parsers.protocol import ListingSnapshot, ParseSignal
 
@@ -118,6 +117,17 @@ def _extract_offers(doc: html.HtmlElement) -> list[str]:
         if text:
             offers.append(text[:100])
     return offers[:5]
+
+
+def _rupee_to_float(text: str) -> float | None:
+    cleaned = re.sub(r"[₹,\s]", "", text)
+    m = re.search(r"(\d+(?:\.\d+)?)", cleaned)
+    if m:
+        try:
+            return float(m.group(1))
+        except ValueError:
+            pass
+    return None
 
 
 def _amazon_listing_snapshot(doc: html.HtmlElement) -> ListingSnapshot | None:

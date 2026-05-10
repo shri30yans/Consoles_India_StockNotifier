@@ -22,15 +22,6 @@ class StockRepo:
     def __init__(self, pool: asyncpg.Pool) -> None:
         self._pool = pool
 
-    def _row_to_stock_state(self, row: asyncpg.Record) -> StockState:
-        return StockState(
-            product_id=row["product_id"],
-            retailer=row["retailer"],
-            in_stock=bool(row["in_stock"]),
-            last_changed_at=row["last_changed_at"],
-            last_checked_at=row["last_checked_at"],
-        )
-
     async def get(self, product_id: str, retailer: str) -> StockState | None:
         async with self._pool.acquire() as conn:
             row = await conn.fetchrow(
@@ -44,7 +35,13 @@ class StockRepo:
             )
         if row is None:
             return None
-        return self._row_to_stock_state(row)
+        return StockState(
+            product_id=row["product_id"],
+            retailer=row["retailer"],
+            in_stock=bool(row["in_stock"]),
+            last_changed_at=row["last_changed_at"],
+            last_checked_at=row["last_checked_at"],
+        )
 
     async def get_batch(self, pairs: list[tuple[str, str]]) -> dict[tuple[str, str], StockState]:
         """Stock rows for (product_id, retailer) pairs in one query."""
@@ -64,7 +61,13 @@ class StockRepo:
                 rets,
             )
         return {
-            (r["product_id"], r["retailer"]): self._row_to_stock_state(r)
+            (r["product_id"], r["retailer"]): StockState(
+                product_id=r["product_id"],
+                retailer=r["retailer"],
+                in_stock=bool(r["in_stock"]),
+                last_changed_at=r["last_changed_at"],
+                last_checked_at=r["last_checked_at"],
+            )
             for r in rows
         }
 

@@ -8,19 +8,14 @@ import random
 from collections.abc import Awaitable, Callable, Sequence
 from typing import Any, cast
 
-from commerce_platform.deals.scorer import DealScorer
 from commerce_platform.platform.config.schema import PlatformConfig, ProductConfig, WatchConfig
 from commerce_platform.platform.events.bus import EventBus
-from commerce_platform.platform.fetch.factory import create_fetcher
-from commerce_platform.platform.fetch.playwright_fetcher import PlaywrightFetcher
+from commerce_platform.platform.fetch.factory import create_http_fetcher, create_playwright_fetcher
 from commerce_platform.platform.fetch.protocol import HtmlFetcher
-from commerce_platform.platform.store.repos import (
-    CatalogRepo,
-    ConfigSettingsRepo,
-    DealRepo,
-    PriceRepo,
-)
+from commerce_platform.platform.store.repos import CatalogRepo, ConfigSettingsRepo, DealRepo, PriceRepo
+from commerce_platform.deals.scorer import DealScorer
 from commerce_platform.stock.deal_discovery_watcher import DealDiscoveryWatcher
+from commerce_platform.stock.deals_source_watcher import DealsSourceWatcher
 from commerce_platform.stock.poller import Poller
 from commerce_platform.stock.wishlist_watcher import WishlistWatcher
 
@@ -48,17 +43,17 @@ class StockRunner:
         self._deal_scorer: DealScorer | None = None
 
     async def run(self) -> None:
-        fetcher: PlaywrightFetcher | None = None
-        rendered_view: HtmlFetcher | None = None
+        http_fetcher = None
+        pw_fetcher = None
 
         while True:
             config = await self._get_config()
             reload_s = max(15, config.platform.config_reload_seconds)
 
-            if fetcher is None:
-                fetcher = create_fetcher(config.stock.fetch)
-                await fetcher.start()
-                rendered_view = _RenderedView(fetcher)
+            if http_fetcher is None:
+                http_fetcher = create_http_fetcher(config.stock.fetch)
+                await http_fetcher.start()
+                pw_fetcher = create_playwright_fetcher(config.stock.fetch)
 
             # Initialize deal scorer if repos available
             if self._deal_scorer is None and self._config_repo and self._price_repo:
@@ -73,21 +68,19 @@ class StockRunner:
             assert (
                 self._http_sem is not None
                 and self._pw_sem is not None
-                and rendered_view is not None
+                and pw_fetcher is not None
             )
 
             tasks = []
             for product in config.products:
                 for watch in product.watches:
                     poll_seconds = config.resolve_poll_seconds(watch)
-                    use_rendered = watch.source.endswith("_playwright")
-                    job_fetcher: HtmlFetcher = rendered_view if use_rendered else fetcher
-                    sem = self._pw_sem if use_rendered else self._http_sem
-                    tasks.append(self._job_loop(product, watch, job_fetcher, poll_seconds, sem))
+                    use_playwright = watch.source.endswith("_playwright")
+                    fetcher = pw_fetcher if use_playwright else http_fetcher
+                    sem = self._pw_sem if use_playwright else self._http_sem
+                    tasks.append(self._job_loop(product, watch, fetcher, poll_seconds, sem))
 
             for source in config.platform_sources:
-                if not source.enabled:
-                    continue
                 if source.type == "amazon_wishlist":
                     logger.info(
                         "Registering amazon_wishlist job: poll_every=%ds url=%s",
@@ -97,7 +90,7 @@ class StockRunner:
                     tasks.append(
                         WishlistWatcher(
                             source,
-                            fetcher,
+                            http_fetcher,
                             self._catalog_repo,
                             self._bus,
                         ).run()
@@ -123,12 +116,10 @@ class StockRunner:
                             source.type,
                         )
                         continue
-                    # Deal pages are React-rendered → DealDiscoveryWatcher fetches the
-                    # listing via the rendered path and PDPs via the static path itself.
                     tasks.append(
                         DealDiscoveryWatcher(
                             source,
-                            fetcher,
+                            http_fetcher,
                             self._catalog_repo,
                             self._deal_repo,
                             self._deal_scorer,
@@ -192,22 +183,3 @@ class StockRunner:
                 backoff = min(backoff * 2, 300)
                 continue
             await asyncio.sleep(poll_seconds)
-
-
-class _RenderedView:
-    """Adapts ``PlaywrightFetcher.get_html_rendered`` to the ``HtmlFetcher`` Protocol
-    so callers like Poller (which only know ``get_html``) can opt into the rendered
-    path without changing their interface. Lifecycle is owned by the underlying
-    fetcher; ``start`` / ``close`` are no-ops here."""
-
-    def __init__(self, fetcher: PlaywrightFetcher) -> None:
-        self._fetcher = fetcher
-
-    async def start(self) -> None:
-        await self._fetcher.start()
-
-    async def close(self) -> None:
-        return None
-
-    async def get_html(self, url: str, *, label: str = "") -> str | None:
-        return await self._fetcher.get_html_rendered(url, label=label)

@@ -86,7 +86,7 @@ async def main():
         ('Pydantic', 'pydantic'),
         ('AsyncPG', 'asyncpg'),
         ('BeautifulSoup4', 'bs4'),
-        ('Playwright', 'playwright'),
+        ('curl_cffi', 'curl_cffi'),
         ('python-dotenv', 'dotenv'),
     ]
 
@@ -114,6 +114,12 @@ async def main():
     except Exception as e:
         check_fail(f"Cannot import worker bootstrap: {e}")
         return
+
+    try:
+        from commerce_platform.deals.agent_gateway import AgentGateway
+        check_pass("Agent gateway can be imported")
+    except Exception as e:
+        check_fail(f"Cannot import agent gateway: {e}")
 
     section("Database Connection")
 
@@ -223,8 +229,9 @@ async def main():
     if checks_failed == 0:
         print(f"{GREEN}[SUCCESS] ALL CHECKS PASSED{RESET}")
         print(f"\nSystem is ready to start. Follow the steps in QUICKSTART.md:")
-        print(f"\n1. Start everything:    python -m commerce_platform")
-        print(f"2. Health check:        curl http://localhost:8000/api/system")
+        print(f"\n1. Terminal 1: uvicorn commerce_platform.web.main:app --host 0.0.0.0 --port 8000 --reload")
+        print(f"2. Terminal 2: python worker_runner.py")
+        print(f"3. Terminal 3: curl http://localhost:8000/health/system")
         print(f"\nMonitor at: http://localhost:8000/deals")
         return 0
     else:

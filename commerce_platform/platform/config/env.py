@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import re
 
+
 _ENV_PATTERN = re.compile(r"^env:([A-Z_][A-Z0-9_]*)$")
 
 

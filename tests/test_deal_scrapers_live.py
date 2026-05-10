@@ -1,14 +1,14 @@
 """Integration tests for deal scrapers — scrape real retailer sites."""
 
+import asyncio
 import logging
-
 import pytest
 from commerce_platform.stock.sources.serp_parsers import (
-    ListingItem,
-    extract_ajio_offer_items,
     extract_amazon_deal_items,
     extract_flipkart_offer_items,
+    extract_ajio_offer_items,
     extract_myntra_offer_items,
+    ListingItem,
 )
 
 logging.basicConfig(level=logging.DEBUG)

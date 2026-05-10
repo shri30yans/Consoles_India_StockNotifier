@@ -21,15 +21,6 @@ class UserRepo:
     def __init__(self, pool: asyncpg.Pool) -> None:
         self._pool = pool
 
-    def _row_to_user(self, row: asyncpg.Record) -> UserRow:
-        return UserRow(
-            id=row["id"],
-            email=row["email"],
-            password_hash=row["password_hash"],
-            role=row["role"],
-            created_at=row["created_at"],
-        )
-
     async def create(self, email: str, password_hash: str, *, role: str = "user") -> int:
         from datetime import datetime, timezone
 
@@ -56,7 +47,13 @@ class UserRepo:
             )
         if row is None:
             return None
-        return self._row_to_user(row)
+        return UserRow(
+            id=row["id"],
+            email=row["email"],
+            password_hash=row["password_hash"],
+            role=row["role"],
+            created_at=row["created_at"],
+        )
 
     async def get_by_id(self, user_id: int) -> UserRow | None:
         async with self._pool.acquire() as conn:
@@ -66,7 +63,13 @@ class UserRepo:
             )
         if row is None:
             return None
-        return self._row_to_user(row)
+        return UserRow(
+            id=row["id"],
+            email=row["email"],
+            password_hash=row["password_hash"],
+            role=row["role"],
+            created_at=row["created_at"],
+        )
 
     async def count(self) -> int:
         async with self._pool.acquire() as conn:

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Link, Navigate } from "react-router-dom"
 import { api, readErrorMessage } from "@/lib/api"
 import { useAuth } from "@/auth/AuthContext"
@@ -39,10 +39,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { HugeiconsIcon } from "@hugeicons/react"
-import { Edit02Icon } from "@hugeicons/core-free-icons"
 
 type AuthSettings = {
+  config_path: string
   jwt_algorithm: string
   jwt_expire_seconds: number
   open_registration: boolean
@@ -71,6 +70,7 @@ type AdminProduct = {
   emoji: string | null
   colour: number | null
   image_url: string | null
+  has_catalog_row: boolean
   watches: AdminWatch[]
 }
 
@@ -86,27 +86,17 @@ type PlatformSourceRow = {
   type: string
   poll_seconds: number
   ordinal: number
-  enabled?: boolean
   category?: string
   url?: string | null
   seed_urls?: string[]
   subreddits?: string[]
 }
 
-type StockFetchSettings = {
-  jitter_max_seconds: number
-  max_concurrent_requests: number
-  max_concurrent_playwright: number
-  playwright_stealth: boolean
-  playwright_locale: string
-  playwright_timezone_id: string
-}
-
 type IngestionConfig = {
+  config_path: string
   config_reload_seconds: number
   defaults_poll_seconds: number
   platform_sources: PlatformSourceRow[]
-  stock_fetch: StockFetchSettings
 }
 
 type Tab = "queue" | "catalog" | "auth"
@@ -128,87 +118,15 @@ function summarizePlatformSource(src: PlatformSourceRow): string {
   return "—"
 }
 
-function watchPollLabel(pollSeconds: number | null, defaultSeconds: number): string {
-  if (pollSeconds != null) return `${pollSeconds}s`
-  return `default (${defaultSeconds}s)`
-}
-
-/** Keep the previous slug when still present; otherwise first product. If `products` is empty, keep `previousId` (may be ""). */
-function resolveCatalogSelection(products: AdminProduct[], previousId: string): string {
-  if (products.length === 0) return previousId
-  if (previousId && products.some((p) => p.id === previousId)) return previousId
-  return products[0].id
-}
-
-type AdminCatalogApiJson = {
-  defaults_poll_seconds?: number
-  products?: AdminProduct[]
-}
-
-type AdminCatalogStateSlice = {
-  defaults_poll_seconds: number
-  products: AdminProduct[]
-}
-
-/** Normalizes GET /api/admin/catalog JSON and computes the next selection in one place. */
-function applyAdminCatalogResponse(
-  json: AdminCatalogApiJson,
-  previousSelectedId: string,
-): { catalogData: AdminCatalogStateSlice; selectedId: string } {
-  const products = json.products ?? []
-  const catalogData: AdminCatalogStateSlice = {
-    defaults_poll_seconds: json.defaults_poll_seconds ?? 60,
-    products,
-  }
-  return {
-    catalogData,
-    selectedId: resolveCatalogSelection(products, previousSelectedId),
-  }
-}
-
-/** One line of badges: each listing = retailer + poll (or default). */
-function ProductListingsSummary({
-  product,
-  defaultPollSeconds,
-}: {
-  product: AdminProduct
-  defaultPollSeconds: number
-}) {
-  if (product.watches.length === 0) {
-    return <span className="text-xs text-muted-foreground">No retailer URLs</span>
-  }
-  return (
-    <div className="flex max-w-[min(100%,520px)] flex-wrap gap-1">
-      {product.watches.map((w, i) => (
-        <Badge
-          key={w.db_watch_id != null ? `w-${w.db_watch_id}` : `u-${i}-${w.url.slice(0, 24)}`}
-          variant="outline"
-          className="max-w-full truncate font-normal text-[0.65rem]"
-          title={`${w.source} — ${w.url}`}
-        >
-          {w.source}: {watchPollLabel(w.poll_seconds, defaultPollSeconds)}
-        </Badge>
-      ))}
-    </div>
-  )
-}
-
 export function AdminPage() {
   const { me, loading } = useAuth()
   const [tab, setTab] = useState<Tab>("catalog")
 
   const [authSettings, setAuthSettings] = useState<AuthSettings | null>(null)
 
-  const [catalogData, setCatalogData] = useState<{
-    defaults_poll_seconds: number
-    products: AdminProduct[]
-  } | null>(null)
+  const [catalogData, setCatalogData] = useState<{ config_path: string; products: AdminProduct[] } | null>(null)
   const [ingestionConfig, setIngestionConfig] = useState<IngestionConfig | null>(null)
-  const [catalogSearch, setCatalogSearch] = useState("")
-  const [catalogDetailOpen, setCatalogDetailOpen] = useState(false)
   const [selectedId, setSelectedId] = useState("")
-  const selectedIdRef = useRef(selectedId)
-  selectedIdRef.current = selectedId
   const [pName, setPName] = useState("")
   const [pCategory, setPCategory] = useState("")
   const [pBrand, setPBrand] = useState("")
@@ -233,7 +151,11 @@ export function AdminPage() {
   const [approvePrefillMrp, setApprovePrefillMrp] = useState<number | null>(null)
   const [approvePrefillStock, setApprovePrefillStock] = useState<boolean | null>(null)
 
-  const [bulkPollSeconds, setBulkPollSeconds] = useState("")
+  const [nwSource, setNwSource] = useState("amazon")
+  const [nwUrl, setNwUrl] = useState("")
+  const [nwAsin, setNwAsin] = useState("")
+  const [nwAff, setNwAff] = useState("")
+  const [nwPoll, setNwPoll] = useState("")
 
   const loadQueue = useCallback(async () => {
     const r = await api("/api/admin/requests?status=pending")
@@ -250,34 +172,23 @@ export function AdminPage() {
   const loadCatalog = useCallback(async () => {
     const r = await api("/api/admin/catalog")
     if (!r.ok) return
-    const j = (await r.json()) as AdminCatalogApiJson
-    const { catalogData, selectedId: nextId } = applyAdminCatalogResponse(j, selectedIdRef.current)
-    setCatalogData(catalogData)
-    setSelectedId(nextId)
+    const j = (await r.json()) as { config_path: string; products: AdminProduct[] }
+    setCatalogData(j)
+    setSelectedId((prev) => {
+      if (prev && j.products.some((p) => p.id === prev)) return prev
+      return j.products[0]?.id ?? ""
+    })
   }, [])
 
   const loadIngestionConfig = useCallback(async () => {
     const r = await api("/api/admin/ingestion-config")
     if (!r.ok) return
-    const data = (await r.json()) as Partial<IngestionConfig> & {
-      platform_sources: PlatformSourceRow[]
-      stock_fetch?: StockFetchSettings
-    }
-    const stock_fetch = data.stock_fetch ?? {
-      jitter_max_seconds: 3,
-      max_concurrent_requests: 4,
-      max_concurrent_playwright: 2,
-      playwright_stealth: true,
-      playwright_locale: "en-IN",
-      playwright_timezone_id: "Asia/Kolkata",
-    }
+    const data = (await r.json()) as IngestionConfig
     setIngestionConfig({
-      config_reload_seconds: data.config_reload_seconds ?? 60,
-      defaults_poll_seconds: data.defaults_poll_seconds ?? 60,
-      stock_fetch,
-      platform_sources: (data.platform_sources ?? []).map((src, idx) => {
-        const priorSame = (data.platform_sources ?? []).slice(0, idx).filter((x) => x.type === src.type).length
-        return { ...src, ordinal: priorSame, enabled: src.enabled !== false }
+      ...data,
+      platform_sources: data.platform_sources.map((src, idx) => {
+        const priorSame = data.platform_sources.slice(0, idx).filter((x) => x.type === src.type).length
+        return { ...src, ordinal: priorSame }
       }),
     })
   }, [])
@@ -299,29 +210,6 @@ export function AdminPage() {
   }, [me?.role, tab, loadCatalog, loadIngestionConfig])
 
   const selected = catalogData?.products.find((p) => p.id === selectedId)
-
-  const defaultsPollSeconds = catalogData?.defaults_poll_seconds ?? 60
-
-  const filteredCatalogProducts = useMemo(() => {
-    if (!catalogData?.products.length) return []
-    const q = catalogSearch.trim().toLowerCase()
-    if (!q) return catalogData.products
-    return catalogData.products.filter((p) => {
-      const brand = (p.brand ?? "").toLowerCase()
-      return (
-        p.id.toLowerCase().includes(q) ||
-        p.name.toLowerCase().includes(q) ||
-        p.category.toLowerCase().includes(q) ||
-        brand.includes(q) ||
-        p.watches.some(
-          (w) =>
-            w.source.toLowerCase().includes(q) ||
-            w.url.toLowerCase().includes(q) ||
-            (w.asin ?? "").toLowerCase().includes(q),
-        )
-      )
-    })
-  }, [catalogData, catalogSearch])
 
   useEffect(() => {
     if (!selected) return
@@ -484,7 +372,7 @@ export function AdminPage() {
       setCatalogMsg(await readErrorMessage(r))
       return
     }
-    setCatalogMsg("Saved. Workers pick up DB changes on reload.")
+    setCatalogMsg("Saved. Workers reload merged config on their schedule.")
     await loadCatalog()
   }
 
@@ -527,41 +415,15 @@ export function AdminPage() {
         platform_sources: ingestionConfig.platform_sources.map((src) => ({
           type: src.type,
           poll_seconds: src.poll_seconds,
-          enabled: src.enabled !== false,
         })),
-        stock_fetch: ingestionConfig.stock_fetch,
       }),
     })
     if (!r.ok) {
       setCatalogMsg(await readErrorMessage(r))
       return
     }
-    setCatalogMsg("Scrape settings saved to platform config. Workers pick them up on reload.")
+    setCatalogMsg("Ingestion config saved.")
     await loadIngestionConfig()
-  }
-
-  async function applyPollAllWatches(useYamlDefaultOnly: boolean) {
-    setCatalogMsg(null)
-    let poll_seconds: number | null = null
-    if (!useYamlDefaultOnly) {
-      const n = parseInt(bulkPollSeconds.trim(), 10)
-      if (Number.isNaN(n) || n < 10) {
-        setCatalogMsg("Enter a poll interval of at least 10 seconds, or use “Use YAML default”.")
-        return
-      }
-      poll_seconds = n
-    }
-    const r = await api("/api/admin/catalog/watches/poll-all", {
-      method: "POST",
-      body: JSON.stringify({ poll_seconds }),
-    })
-    if (!r.ok) {
-      setCatalogMsg(await readErrorMessage(r))
-      return
-    }
-    const j = (await r.json()) as { updated?: number }
-    setCatalogMsg(`Updated ${j.updated ?? 0} listing(s). Reload catalog to see effective intervals.`)
-    await loadCatalog()
   }
 
   async function deleteWatch(id: number) {
@@ -573,6 +435,36 @@ export function AdminPage() {
       return
     }
     setCatalogMsg("Watch removed.")
+    await loadCatalog()
+  }
+
+  async function addWatch() {
+    if (!selectedId || !nwUrl.trim()) return
+    setCatalogMsg(null)
+    const poll =
+      nwPoll.trim() === "" ? null : (() => {
+        const n = parseInt(nwPoll, 10)
+        return Number.isNaN(n) ? null : n
+      })()
+    const r = await api(`/api/admin/catalog/products/${encodeURIComponent(selectedId)}/watches`, {
+      method: "POST",
+      body: JSON.stringify({
+        source: nwSource.trim(),
+        url: nwUrl.trim(),
+        asin: nwAsin.trim() || null,
+        affiliate_tag: nwAff.trim() || null,
+        poll_seconds: poll,
+      }),
+    })
+    if (!r.ok) {
+      setCatalogMsg(await readErrorMessage(r))
+      return
+    }
+    setNwUrl("")
+    setNwAsin("")
+    setNwAff("")
+    setNwPoll("")
+    setCatalogMsg("Watch added to SQLite overlay.")
     await loadCatalog()
   }
 
@@ -619,7 +511,8 @@ export function AdminPage() {
               <p className="text-[0.75rem] leading-relaxed text-muted-foreground">
                 These values come from <strong>environment variables</strong> (<span className="font-mono">WEB_*</span>) —
                 they control the HTTP API (logins, registration, browser rate limits). They are{" "}
-                <strong>not</strong> the same as scrape schedules in your platform config file.
+                <strong>not</strong> the same as scrape schedules in your YAML file. The path below is the{" "}
+                <strong>platform config file</strong> path this server was started with (workers should use the same file).
               </p>
               <Card>
                 <CardHeader>
@@ -629,6 +522,12 @@ export function AdminPage() {
                   <CardDescription>{authSettings.note}</CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                      Platform config file (path)
+                    </p>
+                    <p className="font-mono text-xs break-all text-foreground">{authSettings.config_path}</p>
+                  </div>
                   <div className="space-y-1">
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Registered Users</p>
                     <p className="text-sm font-semibold text-foreground">{authSettings.registered_users}</p>
@@ -681,367 +580,252 @@ export function AdminPage() {
 
         <TabsContent value="catalog" className="space-y-6">
           <p className="text-[0.75rem] leading-relaxed text-muted-foreground">
-            <strong>Product</strong> = one catalog item (name, image, category, slug). <strong>Listings</strong> = one row
-            per retailer URL the worker polls (Amazon product page, Flipkart page, wishlist watch, etc.). One product can
-            have many listings, each with its own poll interval. Below: global scrape limits; then the full product
-            directory. <strong>Deal pipelines</strong> are separate site-wide jobs (aggregators / SERP).
+            <strong>Products &amp; listings:</strong> edits below write to the <strong>database catalog</strong>. They merge
+            with your platform YAML for display and polling. Each listing can have its own{" "}
+            <strong>poll interval</strong> (seconds between scrapes).{" "}
+            <strong>Deal pipelines</strong> (Amazon SERP, DesiDime, Reddit, etc.) are configured in the same YAML and can
+            be edited below from this page.
           </p>
-          {!ingestionConfig ? (
-            <Card>
-              <CardContent className="flex justify-center py-10">
-                <LoadingSpinner label="Loading scrape settings" />
-              </CardContent>
-            </Card>
-          ) : (
+          {ingestionConfig && ingestionConfig.platform_sources.length > 0 ? (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Scraping &amp; rate limits</CardTitle>
+                <CardTitle className="text-base">Deal ingestion (YAML)</CardTitle>
                 <CardDescription>
-                  Saves to your platform config file. Stock worker reloads on{" "}
-                  {formatPollInterval(ingestionConfig.config_reload_seconds)}.
+                  Schedules for site-wide deal scrapers in{" "}
+                  <span className="font-mono break-all">{ingestionConfig.config_path}</span>. Reload every{" "}
+                  {ingestionConfig.config_reload_seconds}s.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6 overflow-x-auto">
-                <div>
-                  <h3 className="mb-2 font-heading text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Timing
-                  </h3>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label>Config reload (seconds)</Label>
-                      <Input
-                        type="number"
-                        value={ingestionConfig.config_reload_seconds}
-                        onChange={(e) =>
-                          setIngestionConfig((prev) =>
-                            prev
-                              ? {
-                                  ...prev,
-                                  config_reload_seconds: Number.parseInt(e.target.value || "0", 10) || 0,
-                                }
-                              : prev,
-                          )
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Default listing poll (seconds)</Label>
-                      <Input
-                        type="number"
-                        value={ingestionConfig.defaults_poll_seconds}
-                        onChange={(e) =>
-                          setIngestionConfig((prev) =>
-                            prev
-                              ? {
-                                  ...prev,
-                                  defaults_poll_seconds: Number.parseInt(e.target.value || "0", 10) || 0,
-                                }
-                              : prev,
-                          )
-                        }
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Used when a DB listing has no poll override ({formatPollInterval(ingestionConfig.defaults_poll_seconds)}).
-                      </p>
-                    </div>
+              <CardContent className="space-y-4 overflow-x-auto">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Config reload interval (seconds)</Label>
+                    <Input
+                      type="number"
+                      value={ingestionConfig.config_reload_seconds}
+                      onChange={(e) =>
+                        setIngestionConfig((prev) =>
+                          prev
+                            ? {
+                                ...prev,
+                                config_reload_seconds: Number.parseInt(e.target.value || "0", 10) || 0,
+                              }
+                            : prev,
+                        )
+                      }
+                    />
                   </div>
-                </div>
-
-                <div className="rounded-lg border border-border/70 bg-muted/20 p-4 space-y-3">
-                  <h3 className="font-heading text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    All tracked listings (bulk)
-                  </h3>
-                  <p className="text-xs text-muted-foreground">
-                    Applies to every retailer URL for every product in the database. Use “YAML default” to clear per-row
-                    overrides so the default above applies everywhere.
-                  </p>
-                  <div className="flex flex-wrap items-end gap-2">
-                    <div className="space-y-1">
-                      <Label htmlFor="bulk-poll">Seconds (≥10)</Label>
-                      <Input
-                        id="bulk-poll"
-                        className="h-8 w-32 text-xs"
-                        type="number"
-                        min={10}
-                        placeholder="e.g. 120"
-                        value={bulkPollSeconds}
-                        onChange={(e) => setBulkPollSeconds(e.target.value)}
-                      />
-                    </div>
-                    <Button type="button" size="sm" onClick={() => void applyPollAllWatches(false)}>
-                      Set all listings
-                    </Button>
-                    <Button type="button" size="sm" variant="outline" onClick={() => void applyPollAllWatches(true)}>
-                      Use YAML default only
-                    </Button>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="mb-2 font-heading text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Fetcher / concurrency (stock scrapes)
-                  </h3>
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    <div className="space-y-2">
-                      <Label>Jitter max (seconds)</Label>
-                      <Input
-                        type="number"
-                        step="0.5"
-                        value={ingestionConfig.stock_fetch.jitter_max_seconds}
-                        onChange={(e) =>
-                          setIngestionConfig((prev) =>
-                            prev
-                              ? {
-                                  ...prev,
-                                  stock_fetch: {
-                                    ...prev.stock_fetch,
-                                    jitter_max_seconds: Number.parseFloat(e.target.value || "0") || 0,
-                                  },
-                                }
-                              : prev,
-                          )
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Max concurrent HTTP</Label>
-                      <Input
-                        type="number"
-                        value={ingestionConfig.stock_fetch.max_concurrent_requests}
-                        onChange={(e) =>
-                          setIngestionConfig((prev) =>
-                            prev
-                              ? {
-                                  ...prev,
-                                  stock_fetch: {
-                                    ...prev.stock_fetch,
-                                    max_concurrent_requests: Number.parseInt(e.target.value || "0", 10) || 1,
-                                  },
-                                }
-                              : prev,
-                          )
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Max concurrent Playwright</Label>
-                      <Input
-                        type="number"
-                        value={ingestionConfig.stock_fetch.max_concurrent_playwright}
-                        onChange={(e) =>
-                          setIngestionConfig((prev) =>
-                            prev
-                              ? {
-                                  ...prev,
-                                  stock_fetch: {
-                                    ...prev.stock_fetch,
-                                    max_concurrent_playwright: Number.parseInt(e.target.value || "0", 10) || 1,
-                                  },
-                                }
-                              : prev,
-                          )
-                        }
-                      />
-                    </div>
-                    <div className="flex items-center gap-2 pt-6">
-                      <input
-                        id="pw-stealth"
-                        type="checkbox"
-                        className="size-4 accent-primary"
-                        checked={ingestionConfig.stock_fetch.playwright_stealth}
-                        onChange={(e) =>
-                          setIngestionConfig((prev) =>
-                            prev
-                              ? {
-                                  ...prev,
-                                  stock_fetch: { ...prev.stock_fetch, playwright_stealth: e.target.checked },
-                                }
-                              : prev,
-                          )
-                        }
-                      />
-                      <Label htmlFor="pw-stealth" className="font-normal">
-                        Playwright stealth
-                      </Label>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="mb-2 font-heading text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Deal pipelines
-                  </h3>
-                  {ingestionConfig.platform_sources.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      No <span className="font-mono">platform_sources</span> in config — add pipelines in YAML for
-                      aggregator / SERP discovery.
+                  <div className="space-y-2">
+                    <Label>Default watch poll (seconds)</Label>
+                    <Input
+                      type="number"
+                      value={ingestionConfig.defaults_poll_seconds}
+                      onChange={(e) =>
+                        setIngestionConfig((prev) =>
+                          prev
+                            ? {
+                                ...prev,
+                                defaults_poll_seconds: Number.parseInt(e.target.value || "0", 10) || 0,
+                              }
+                            : prev,
+                        )
+                      }
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {formatPollInterval(ingestionConfig.defaults_poll_seconds)} when a listing omits poll seconds.
                     </p>
-                  ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-14">On</TableHead>
-                          <TableHead>Source</TableHead>
-                          <TableHead>Interval</TableHead>
-                          <TableHead className="hidden md:table-cell">Detail</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {ingestionConfig.platform_sources.map((src, i) => (
-                          <TableRow key={`${src.type}-${i}`}>
-                            <TableCell>
-                              <input
-                                type="checkbox"
-                                className="size-4 accent-primary"
-                                checked={src.enabled !== false}
-                                onChange={(e) =>
-                                  setIngestionConfig((prev) => {
-                                    if (!prev) return prev
-                                    const nextSources = [...prev.platform_sources]
-                                    nextSources[i] = { ...nextSources[i], enabled: e.target.checked }
-                                    return { ...prev, platform_sources: nextSources }
-                                  })
-                                }
-                              />
-                            </TableCell>
-                            <TableCell className="font-mono text-xs">{src.type}</TableCell>
-                            <TableCell className="text-sm">
-                              <Input
-                                className="h-8 w-28 text-xs"
-                                type="number"
-                                value={src.poll_seconds}
-                                onChange={(e) =>
-                                  setIngestionConfig((prev) => {
-                                    if (!prev) return prev
-                                    const nextSources = [...prev.platform_sources]
-                                    const parsed = Number.parseInt(e.target.value || "0", 10) || 0
-                                    nextSources[i] = { ...nextSources[i], poll_seconds: parsed }
-                                    return { ...prev, platform_sources: nextSources }
-                                  })
-                                }
-                              />
-                              <span className="ml-2 text-xs text-muted-foreground">
-                                {formatPollInterval(src.poll_seconds)}
-                              </span>
-                            </TableCell>
-                            <TableCell className="hidden max-w-md font-mono text-[0.65rem] text-muted-foreground md:table-cell">
-                              {summarizePlatformSource(src)}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
+                  </div>
                 </div>
-
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Source type</TableHead>
+                      <TableHead>Interval</TableHead>
+                      <TableHead className="hidden md:table-cell">Detail</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {ingestionConfig.platform_sources.map((src, i) => (
+                      <TableRow key={`${src.type}-${i}`}>
+                        <TableCell className="font-mono text-xs">{src.type}</TableCell>
+                        <TableCell className="text-sm">
+                          <Input
+                            className="h-8 w-28 text-xs"
+                            type="number"
+                            value={src.poll_seconds}
+                            onChange={(e) =>
+                              setIngestionConfig((prev) => {
+                                if (!prev) return prev
+                                const nextSources = [...prev.platform_sources]
+                                const parsed = Number.parseInt(e.target.value || "0", 10) || 0
+                                nextSources[i] = { ...nextSources[i], poll_seconds: parsed }
+                                return { ...prev, platform_sources: nextSources }
+                              })
+                            }
+                          />
+                          <span className="ml-2 text-xs text-muted-foreground">{formatPollInterval(src.poll_seconds)}</span>
+                        </TableCell>
+                        <TableCell className="hidden max-w-md font-mono text-[0.65rem] text-muted-foreground md:table-cell">
+                          {summarizePlatformSource(src)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
                 <div>
                   <Button type="button" size="sm" onClick={() => void saveIngestionConfig()}>
-                    Save scrape settings
+                    Save ingestion config
                   </Button>
                 </div>
               </CardContent>
             </Card>
-          )}
+          ) : ingestionConfig && ingestionConfig.platform_sources.length === 0 ? (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Deal ingestion (YAML)</CardTitle>
+                <CardDescription>
+                  No <span className="font-mono">platform_sources</span> entries in{" "}
+                  <span className="font-mono break-all">{ingestionConfig.config_path}</span>. Add pipelines there to
+                  control aggregator / SERP scrape rates.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          ) : null}
           {!catalogData ? (
             <div className="flex justify-center py-10">
               <LoadingSpinner label="Loading catalog" />
             </div>
           ) : (
             <>
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Tracked products</CardTitle>
-                  <CardDescription>
-                    Each row is one product. The <strong>Listings</strong> column shows every retailer URL and poll
-                    interval. Use Edit for full fields and per-URL controls.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <Input
-                      type="search"
-                      placeholder="Search slug, name, category, brand, store, URL…"
-                      value={catalogSearch}
-                      onChange={(e) => setCatalogSearch(e.target.value)}
-                      className="max-w-md"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      {filteredCatalogProducts.length} of {catalogData.products.length} shown
-                    </p>
-                  </div>
-                  <div className="overflow-x-auto rounded-lg border border-border/80">
+              <div className="text-[0.7rem] text-muted-foreground">
+                Merged from <span className="font-mono">{catalogData.config_path}</span>
+              </div>
+              <div className="flex flex-wrap items-end gap-3">
+                <div className="space-y-2">
+                  <Label>Product</Label>
+                  <select
+                    className="flex h-8 w-[min(100%,280px)] rounded-md border border-input bg-input/20 px-2 text-xs"
+                    value={selectedId}
+                    onChange={(e) => setSelectedId(e.target.value)}
+                  >
+                    {catalogData.products.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.id} — {p.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {selected ? (
+                  <Badge variant={selected.has_catalog_row ? "secondary" : "outline"}>
+                    {selected.has_catalog_row ? "Has DB row" : "YAML metadata only"}
+                  </Badge>
+                ) : null}
+              </div>
+
+              {selected ? (
+                <Card size="sm">
+                  <CardHeader>
+                    <CardTitle>Product fields</CardTitle>
+                    <CardDescription>Slug <span className="font-mono">{selected.id}</span> cannot be changed here.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid max-w-2xl gap-3 sm:grid-cols-2">
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label htmlFor="adm-name">Name</Label>
+                      <Input id="adm-name" value={pName} onChange={(e) => setPName(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="adm-cat">Category</Label>
+                      <Input id="adm-cat" value={pCategory} onChange={(e) => setPCategory(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="adm-brand">Brand</Label>
+                      <Input id="adm-brand" value={pBrand} onChange={(e) => setPBrand(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="adm-emoji">Emoji</Label>
+                      <Input id="adm-emoji" value={pEmoji} onChange={(e) => setPEmoji(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="adm-colour">Colour (integer)</Label>
+                      <Input id="adm-colour" value={pColour} onChange={(e) => setPColour(e.target.value)} />
+                    </div>
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label htmlFor="adm-img">Image URL</Label>
+                      <Input id="adm-img" type="url" value={pImage} onChange={(e) => setPImage(e.target.value)} />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <Button type="button" size="sm" onClick={() => void saveProductMeta()}>
+                        Save product fields
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : null}
+
+              {selected && selected.watches.length > 0 ? (
+                <div className="space-y-2">
+                  <h3 className="font-heading text-sm font-semibold">Listings</h3>
+                  <div className="overflow-hidden rounded-lg border border-border/80">
                     <Table>
                       <TableHeader>
-                        <TableRow className="bg-muted/40 hover:bg-muted/40">
-                          <TableHead className="w-12 text-center">Edit</TableHead>
-                          <TableHead className="w-14"> </TableHead>
-                          <TableHead>Slug</TableHead>
-                          <TableHead className="min-w-[140px]">Name</TableHead>
-                          <TableHead className="hidden lg:table-cell">Category</TableHead>
-                          <TableHead className="hidden md:table-cell">Brand</TableHead>
-                          <TableHead className="min-w-[200px]">Listings (store · poll)</TableHead>
-                          <TableHead className="w-16 text-right tabular-nums">#</TableHead>
+                        <TableRow>
+                          <TableHead>Store</TableHead>
+                          <TableHead>URL</TableHead>
+                          <TableHead>Poll (s)</TableHead>
+                          <TableHead>DB id</TableHead>
+                          <TableHead />
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {filteredCatalogProducts.map((p) => (
-                          <TableRow key={p.id}>
-                            <TableCell className="text-center">
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 px-2"
-                                onClick={() => {
-                                  setSelectedId(p.id)
-                                  setCatalogDetailOpen(true)
-                                }}
-                              >
-                                <HugeiconsIcon icon={Edit02Icon} strokeWidth={2} className="size-4" aria-hidden />
-                                <span className="sr-only">Edit {p.name}</span>
-                              </Button>
-                            </TableCell>
-                            <TableCell className="align-middle">
-                              {p.image_url ? (
-                                <img
-                                  src={p.image_url}
-                                  alt=""
-                                  className="size-10 rounded-md border border-border object-cover"
-                                  loading="lazy"
-                                />
-                              ) : (
-                                <div className="size-10 rounded-md border border-dashed border-border bg-muted/50" />
-                              )}
-                            </TableCell>
-                            <TableCell className="align-top font-mono text-[0.7rem]" title={p.id}>
-                              <span className="line-clamp-2 max-w-[120px]">{p.id}</span>
-                            </TableCell>
-                            <TableCell className="align-top text-sm font-medium">
-                              <span className="line-clamp-2" title={p.name}>
-                                {p.name}
-                              </span>
-                            </TableCell>
-                            <TableCell className="hidden align-top text-xs lg:table-cell">{p.category}</TableCell>
-                            <TableCell className="hidden align-top text-xs md:table-cell">{p.brand ?? "—"}</TableCell>
-                            <TableCell className="align-top">
-                              <ProductListingsSummary
-                                product={p}
-                                defaultPollSeconds={defaultsPollSeconds}
-                              />
-                            </TableCell>
-                            <TableCell className="align-top text-right text-sm tabular-nums text-muted-foreground">
-                              {p.watches.length}
-                            </TableCell>
-                          </TableRow>
+                        {selected.watches.map((w, idx) => (
+                          <WatchRowEditor
+                            key={`${w.url}-${idx}`}
+                            watch={w}
+                            onSave={(x) => void saveWatch(x)}
+                            onDelete={(id) => void deleteWatch(id)}
+                          />
                         ))}
                       </TableBody>
                     </Table>
                   </div>
-                  {filteredCatalogProducts.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No products match this search.</p>
-                  ) : null}
-                </CardContent>
-              </Card>
+                </div>
+              ) : null}
+
+              {selected ? (
+                <Card size="sm">
+                  <CardHeader>
+                    <CardTitle>Add listing (SQLite)</CardTitle>
+                    <CardDescription>Creates a catalog row for this product first if needed.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid max-w-2xl gap-3 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label>Source</Label>
+                      <Input value={nwSource} onChange={(e) => setNwSource(e.target.value)} placeholder="amazon" />
+                    </div>
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label>Product URL</Label>
+                      <Input value={nwUrl} onChange={(e) => setNwUrl(e.target.value)} type="url" required />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>ASIN (optional)</Label>
+                      <Input value={nwAsin} onChange={(e) => setNwAsin(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Affiliate tag (optional)</Label>
+                      <Input value={nwAff} onChange={(e) => setNwAff(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Poll seconds (optional)</Label>
+                      <Input value={nwPoll} onChange={(e) => setNwPoll(e.target.value)} type="number" />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <Button type="button" size="sm" onClick={() => void addWatch()}>
+                        Add watch
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : null}
 
               {catalogMsg ? (
                 <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-200">
@@ -1152,94 +936,6 @@ export function AdminPage() {
           )}
         </TabsContent>
       </Tabs>
-
-      <Dialog open={catalogDetailOpen} onOpenChange={setCatalogDetailOpen}>
-        <DialogContent className="max-h-[min(92vh,900px)] max-w-3xl gap-4 overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit product</DialogTitle>
-            <DialogDescription>
-              Slug <span className="font-mono text-foreground">{selected?.id ?? ""}</span> is fixed. Change display fields
-              and retailer URLs below.
-            </DialogDescription>
-          </DialogHeader>
-          {selected ? (
-            <div className="space-y-6">
-              <div className="grid max-w-2xl gap-3 sm:grid-cols-2">
-                <div className="space-y-2 sm:col-span-2">
-                  <Label htmlFor="adm-name-dlg">Name</Label>
-                  <Input id="adm-name-dlg" value={pName} onChange={(e) => setPName(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="adm-cat-dlg">Category</Label>
-                  <Input id="adm-cat-dlg" value={pCategory} onChange={(e) => setPCategory(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="adm-brand-dlg">Brand</Label>
-                  <Input id="adm-brand-dlg" value={pBrand} onChange={(e) => setPBrand(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="adm-emoji-dlg">Emoji</Label>
-                  <Input id="adm-emoji-dlg" value={pEmoji} onChange={(e) => setPEmoji(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="adm-colour-dlg">Colour (integer)</Label>
-                  <Input id="adm-colour-dlg" value={pColour} onChange={(e) => setPColour(e.target.value)} />
-                </div>
-                <div className="space-y-2 sm:col-span-2">
-                  <Label htmlFor="adm-img-dlg">Image URL</Label>
-                  <Input id="adm-img-dlg" type="url" value={pImage} onChange={(e) => setPImage(e.target.value)} />
-                </div>
-                <div className="sm:col-span-2">
-                  <Button type="button" size="sm" onClick={() => void saveProductMeta()}>
-                    Save product fields
-                  </Button>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <h3 className="font-heading text-sm font-semibold">Listings</h3>
-                <p className="text-xs text-muted-foreground">
-                  Default poll when blank: {watchPollLabel(null, defaultsPollSeconds)} (from scrape settings above).
-                </p>
-                {selected.watches.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No retailer URLs yet for this product.</p>
-                ) : (
-                  <div className="overflow-hidden rounded-lg border border-border/80">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Store</TableHead>
-                          <TableHead>URL</TableHead>
-                          <TableHead>Poll (s)</TableHead>
-                          <TableHead>DB id</TableHead>
-                          <TableHead />
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {selected.watches.map((w, idx) => (
-                          <WatchRowEditor
-                            key={`${w.url}-${idx}`}
-                            watch={w}
-                            onSave={(x) => void saveWatch(x)}
-                            onDelete={(id) => void deleteWatch(id)}
-                          />
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">Select a product from the table.</p>
-          )}
-          <DialogFooter className="gap-2 sm:justify-start">
-            <Button type="button" variant="outline" onClick={() => setCatalogDetailOpen(false)}>
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <Dialog open={!!pick} onOpenChange={(open) => !open && setPick(null)}>
         <DialogContent className="max-w-lg">

@@ -104,7 +104,7 @@ The deal discovery pipeline is designed with these principles in mind:
 - Fall back to JSON-LD (reliable, W3C standard)
 - Raise ValueError if both fail (fail loud, never silent)
 - **Why**: Survivors CSS changes, provides diagnostic feedback when extraction fails
-- **Cost**: parser failures surface loudly in logs/tests; live tests catch CSS drift on next run
+- **Cost**: ParserFixerAgent (phase 11) will auto-analyze failures and suggest fixes
 
 ### 2. **Single DealRepo._row_to_dealrow() Method**
 All database queries (get_by_url, list_active, list_expired, get_by_id, get_pending_approval) share one canonical row converter.
@@ -125,17 +125,16 @@ async def mark_reviewed(
 - `user_id=123` → admin (user 123) approved/rejected
 - **Why**: Clear semantics, impossible to misuse, backward-compatible.
 
-### 4. **Polling Workers Coordinate via the In-Process EventBus**
-- `commerce_platform.stock.runner` schedules per-watch polling jobs.
-- `commerce_platform.deals.discovery_watcher.DealDiscoveryWatcher` scrapes retailer listing/PDP pages on the same loop.
-- Workers publish `PriceObservation` events to the in-process `EventBus`.
-- `observation_processor` consumes observations, evaluates user rules, and dispatches notifications via the channel router.
-- **Why**: One process, one bus, one config snapshot — no IPC, no Redis, no premature distribution.
+### 4. **Autonomous Agents Instead of Brittle Workers**
+- **DealDiscoveryAgent**: Fetches → parses → pre-filters → scores → upserts. Self-healing on parser failures.
+- **CuratorAgent**: Watches deals table, evaluates score vs threshold, routes borderline deals to admin.
+- **Why**: Agents adapt when parsers break. Workers are monolithic and fail silently.
 
-### 5. **Event-Driven Coordination (single process)**
-- Workers publish `PriceObservation` events; consumers subscribe.
-- The web API and workers run in the same process today, so they share the same bus instance.
-- **Why**: Loose coupling without distributed-systems complexity. If horizontal API scaling is ever needed, extract an explicit transport at that point — not before.
+### 5. **Event-Driven Coordination**
+- Agents publish PriceObservation events on EventBus
+- observation_processor consumes observations, evaluates rules, sends notifications
+- No tight coupling, easy to add new agents
+- **Why**: Scales to 100+ retailers without refactoring core logic.
 
 ### 6. **Database Config, Not YAML**
 - Scoring config (threshold, weights) stored in config_settings table
@@ -185,6 +184,7 @@ expired        → price rose or OOS (no notify)
 - **Unit tests**: mock HTML fixtures, test extraction logic in isolation
 - **Integration tests**: real retailer pages, live parsing, measure latency
 - **Expected failures**: When CSS changes, extractors raise ValueError → this is correct behavior
+- **ParserFixerAgent**: Phase 11 — automatically analyzes failures and suggests fixes
 
 **Live tests will fail when retailers change CSS. This is expected and good — it alerts us to changes.**
 
