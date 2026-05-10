@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, EmailStr, Field, model_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 
 
 class RegisterBody(BaseModel):
@@ -11,7 +11,7 @@ class RegisterBody(BaseModel):
     password_confirm: str = Field(min_length=8, max_length=128)
 
     @model_validator(mode="after")
-    def passwords_match(self) -> "RegisterBody":
+    def passwords_match(self) -> RegisterBody:
         if self.password != self.password_confirm:
             raise ValueError("Passwords do not match")
         return self
@@ -84,12 +84,43 @@ class AdminWatchPatchBody(BaseModel):
 class AdminConfigSourcePatchBody(BaseModel):
     type: str = Field(min_length=1, max_length=64)
     poll_seconds: int = Field(ge=10, le=86400 * 7)
+    enabled: bool = True
+
+
+class AdminStockFetchPatchBody(BaseModel):
+    """Subset of ``stock.fetch`` written to platform YAML (rate limits + concurrency)."""
+
+    jitter_max_seconds: float = Field(ge=0, le=120)
+    max_concurrent_requests: int = Field(ge=1, le=256)
+    max_concurrent_playwright: int = Field(ge=1, le=64)
+    playwright_stealth: bool = True
+    playwright_locale: str = Field(default="en-IN", max_length=16)
+    playwright_timezone_id: str = Field(default="Asia/Kolkata", max_length=64)
 
 
 class AdminIngestionConfigPatchBody(BaseModel):
     config_reload_seconds: int = Field(ge=5, le=86400)
     defaults_poll_seconds: int = Field(ge=10, le=86400 * 7)
     platform_sources: list[AdminConfigSourcePatchBody] = Field(default_factory=list)
+    stock_fetch: AdminStockFetchPatchBody | None = None
+
+
+class AdminApplyPollAllBody(BaseModel):
+    """Apply one poll interval to every catalog watch (product listing URL)."""
+
+    poll_seconds: int | None = Field(
+        default=None,
+        description="Seconds between checks; null clears override so YAML default applies",
+    )
+
+    @field_validator("poll_seconds")
+    @classmethod
+    def _poll_range(cls, v: int | None) -> int | None:
+        if v is None:
+            return None
+        if not 10 <= v <= 86400 * 7:
+            raise ValueError("poll_seconds must be between 10 and 604800")
+        return v
 
 
 class WatchResponse(BaseModel):

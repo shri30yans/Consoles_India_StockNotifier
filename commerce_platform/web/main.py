@@ -15,7 +15,6 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from commerce_platform.platform.config.loader import load
 from commerce_platform.platform.store.db import Database
-from commerce_platform.platform.events.bus import EventBus
 from commerce_platform.platform.store.repos import (
     CatalogRepo,
     ConfigSettingsRepo,
@@ -25,7 +24,6 @@ from commerce_platform.platform.store.repos import (
     TrackingRepo,
     UserRepo,
 )
-from commerce_platform.deals.agent_gateway import AgentGateway
 from commerce_platform.web.bootstrap import maybe_bootstrap_admin
 from commerce_platform.web.config import WebConfig, load_web_config
 from commerce_platform.web.rate_limit import RateLimiter
@@ -61,7 +59,6 @@ def create_app(
         app.state.catalog_repo = CatalogRepo(connection.pool)
         app.state.config_repo = ConfigSettingsRepo(connection.pool)
         app.state.deal_repo = DealRepo(connection.pool)
-        app.state.event_bus = EventBus()
         await maybe_bootstrap_admin(connection, web)
         logger.info("Web API using DB %s", connection.describe_for_logs())
 
@@ -71,8 +68,6 @@ def create_app(
             await _attach_db(app, db)
             yield
         else:
-            from commerce_platform.platform.config.loader import load
-
             owned = Database(load(config_path).platform.store)
             await owned.open()
             try:
@@ -105,20 +100,6 @@ def create_app(
     app.include_router(auth_routes.me_router, prefix=api)
     app.include_router(tracking_routes.router, prefix=api)
     app.include_router(admin_routes.router, prefix=api)
-
-    # Agent gateway (independent agent communication)
-    def register_agent_gateway():
-        agent_gateway = AgentGateway(
-            app.state.deal_repo,
-            app.state.config_repo,
-            app.state.event_bus,
-        )
-        app.include_router(agent_gateway.create_router(), prefix=api)
-
-    # Register after lifespan starts (DB available)
-    @app.on_event("startup")
-    async def startup():
-        register_agent_gateway()
 
     static_dir = Path(__file__).resolve().parent / "static"
     if static_dir.is_dir():

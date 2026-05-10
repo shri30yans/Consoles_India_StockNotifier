@@ -5,14 +5,13 @@ from __future__ import annotations
 import logging
 import os
 
-import aiohttp
-
+from commerce_platform.platform.notify._http_channel import BaseHttpChannel, ChannelError
 from commerce_platform.platform.notify.retry import with_retries
 
 logger = logging.getLogger(__name__)
 
 
-class TelegramNotifier:
+class TelegramNotifier(BaseHttpChannel):
     def __init__(self, *, token: str | None = None, retries: int = 4) -> None:
         self._token = token or os.environ.get("TELEGRAM_TOKEN", "")
         self._retries = retries
@@ -36,24 +35,20 @@ class TelegramNotifier:
         }
 
         async def _send() -> None:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    url, json=payload, timeout=aiohttp.ClientTimeout(total=30)
-                ) as resp:
-                    if resp.status >= 400:
-                        body = await resp.text()
-                        raise RuntimeError(f"Telegram {resp.status}: {body[:200]}")
+            try:
+                await self._post_json(url, payload)
+            except ChannelError as e:
+                raise RuntimeError(f"Telegram {e.status}: {(e.body_preview or '')[:200]}") from e
 
         await with_retries(_send, retries=self._retries, label=f"telegram:{resolved_chat}")
 
     async def send_raw(self, payload: dict) -> dict:
         """Send arbitrary payload; returns response JSON."""
         url = f"https://api.telegram.org/bot{self._token}/sendMessage"
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                url, json=payload, timeout=aiohttp.ClientTimeout(total=30)
-            ) as resp:
-                data = await resp.json(content_type=None)
-                if resp.status >= 400:
-                    raise RuntimeError(f"Telegram {resp.status}: {str(data)[:200]}")
-                return data.get("result") or {}
+        try:
+            data = await self._post_json(url, payload, return_json=True)
+        except ChannelError as e:
+            raise RuntimeError(f"Telegram {e.status}: {(e.body_preview or '')[:200]}") from e
+        if not isinstance(data, dict):
+            raise RuntimeError(f"Telegram unexpected response: {str(data)[:200]}")
+        return data.get("result") or {}

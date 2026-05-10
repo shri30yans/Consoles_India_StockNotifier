@@ -8,7 +8,6 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 from commerce_platform.platform.product_name import CanonicalProductName
 
-
 # ---------------------------------------------------------------------------
 # Money
 # ---------------------------------------------------------------------------
@@ -22,7 +21,7 @@ class Money:
         self.paise = paise
 
     @classmethod
-    def from_rupees(cls, r: float) -> "Money":
+    def from_rupees(cls, r: float) -> Money:
         return cls(round(r * 100))
 
     def to_rupees(self) -> float:
@@ -37,10 +36,10 @@ class Money:
     def __eq__(self, other: object) -> bool:
         return isinstance(other, Money) and self.paise == other.paise
 
-    def __lt__(self, other: "Money") -> bool:
+    def __lt__(self, other: Money) -> bool:
         return self.paise < other.paise
 
-    def __le__(self, other: "Money") -> bool:
+    def __le__(self, other: Money) -> bool:
         return self.paise <= other.paise
 
     def __hash__(self) -> int:
@@ -81,7 +80,7 @@ class AlertConfig(BaseModel):
     retailers: list[str] | None = None   # None = any retailer
 
     @model_validator(mode="after")
-    def _check_params(self) -> "AlertConfig":
+    def _check_params(self) -> AlertConfig:
         if self.type == "price_below" and self.threshold_inr is None:
             raise ValueError("price_below alert requires threshold_inr")
         if self.type == "discount_pct" and self.threshold is None:
@@ -120,11 +119,18 @@ class DiscordChannelConfig(BaseModel):
     webhook_url: str
 
 
+class TwitterChannelConfig(BaseModel):
+    """Post to the authenticated account; OAuth env vars only (see .env.example)."""
+
+    pass
+
+
 class ChannelConfig(BaseModel):
     id: str
     name: str
     telegram: TelegramChannelConfig | None = None
     discord: DiscordChannelConfig | None = None
+    twitter: TwitterChannelConfig | None = None
 
 
 class PlatformSourceConfig(BaseModel):
@@ -140,6 +146,7 @@ class PlatformSourceConfig(BaseModel):
         "reddit",
         "amazon_wishlist",
     ]
+    enabled: bool = True
     url: str | None = None              # required for amazon_wishlist
     wishlist_id: str | None = None      # optional stable key for routing (default: hash of url)
     channels: list[str] = []           # alert channels for amazon_wishlist back-in-stock
@@ -152,15 +159,18 @@ class PlatformSourceConfig(BaseModel):
 
 
 class StockFetchConfig(BaseModel):
-    http_client: Literal["aiohttp", "curl_cffi"] = "curl_cffi"
-    curl_impersonate: str = "chrome124"
     jitter_max_seconds: float = 3.0
+    # Cap on concurrent fast-path (APIRequestContext) fetches.
     max_concurrent_requests: int = 4
+    # Cap on concurrent rendered-page fetches (each opens a Chromium Page).
     max_concurrent_playwright: int = 2
     playwright_stealth: bool = True
-    use_fake_useragent: bool = True
     playwright_locale: str = "en-IN"
     playwright_timezone_id: str = "Asia/Kolkata"
+    # Path to a Playwright storage-state JSON (cookies + localStorage).
+    # Generate once with: python scripts/save_browser_state.py
+    # Leave null to start with a fresh session each run.
+    playwright_state_file: str | None = None
 
 
 class StockConfig(BaseModel):

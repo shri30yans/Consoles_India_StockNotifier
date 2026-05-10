@@ -1,56 +1,20 @@
-"""Load YAML platform config merged with DB-backed catalog overlay."""
+"""Runtime platform config: YAML for channels, sources, and defaults; products only from the database."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
 from commerce_platform.platform.config.loader import load
-from commerce_platform.platform.config.schema import PlatformConfig, ProductConfig
+from commerce_platform.platform.config.schema import PlatformConfig
 from commerce_platform.platform.store.repos.catalog_repo import CatalogRepo
 
 
-def merge_products(base: PlatformConfig, overlays: list[ProductConfig]) -> list[ProductConfig]:
-    merged_list = list(base.products)
-    by_id: dict[str, ProductConfig] = {p.id: p for p in merged_list}
-    id_to_idx = {p.id: i for i, p in enumerate(merged_list)}
-
-    for o in overlays:
-        if o.id not in by_id:
-            merged_list.append(o)
-            id_to_idx[o.id] = len(merged_list) - 1
-            by_id[o.id] = o
-            continue
-        cur = by_id[o.id]
-        by_url = {w.url: w for w in cur.watches}
-        new_watches = list(cur.watches)
-        for w in o.watches:
-            if w.url in by_url:
-                idx = next((i for i, existing in enumerate(new_watches) if existing.url == w.url), -1)
-                if idx >= 0:
-                    new_watches[idx] = w
-                by_url[w.url] = w
-                continue
-            new_watches.append(w)
-            by_url[w.url] = w
-        updated = cur.model_copy(
-            update={
-                "name": o.name,
-                "brand": o.brand,
-                "category": o.category,
-                "colour": o.colour,
-                "image_url": o.image_url or cur.image_url,
-                "watches": new_watches,
-            }
-        )
-        idx = id_to_idx[o.id]
-        merged_list[idx] = updated
-        by_id[o.id] = updated
-
-    return merged_list
-
-
 async def load_merged_platform_config(yaml_path: str | Path, catalog_repo: CatalogRepo) -> PlatformConfig:
+    """Load YAML, then replace ``products`` with rows from ``catalog_products`` / ``catalog_watches``.
+
+    Any ``products:`` section in the YAML file is ignored at runtime — the catalog lives in the database.
+    Use ``scripts/import_yaml_products_to_db.py`` once if you still have products defined only in YAML.
+    """
     base = load(yaml_path)
-    extra = await catalog_repo.list_overlay_as_products(base.defaults)
-    merged_products = merge_products(base, extra)
-    return base.model_copy(update={"products": merged_products})
+    products = await catalog_repo.list_overlay_as_products(base.defaults)
+    return base.model_copy(update={"products": products})
